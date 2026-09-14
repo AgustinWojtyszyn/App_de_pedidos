@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, Loader2, X } from 'lucide-react'
 import { db, supabase } from '../../supabaseClient'
 import { ALL_COMPANY_LIST, COMPANY_CATALOG } from '../../constants/companyConfig'
-import { ORDER_CUTOFF_HOUR, ORDER_START_HOUR, ORDER_TIMEZONE } from '../../constants/orderRules'
 import { addDaysToISO, getTodayISOInTimeZone } from '../../utils/dateUtils'
 import { mergeCompanyMenuItems } from '../../utils/order/companyMenuMerge'
 import { filterOrderableMenuItems, getMenuDisplay, withMenuSlotIndex } from '../../utils/order/menuDisplay'
@@ -33,20 +32,6 @@ const ADMIN_EXTRA_BEVERAGE_OPTION = {
 }
 
 const LATE_ADMIN_TIMEZONE = 'America/Argentina/San_Juan'
-
-const getArgentinaHour = () => {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: ORDER_TIMEZONE,
-    hour: '2-digit',
-    hour12: false
-  }).formatToParts(new Date())
-  return Number(parts.find((part) => part.type === 'hour')?.value || 0)
-}
-
-const isOutsideOrderWindow = () => {
-  const hour = getArgentinaHour()
-  return hour < ORDER_START_HOUR || hour >= ORDER_CUTOFF_HOUR
-}
 
 const getLateWindowInfo = (date = new Date()) => {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -351,6 +336,7 @@ const AdminExtraOrderModal = ({
   const [companyLocationsError, setCompanyLocationsError] = useState(null)
   const [selectedPerson, setSelectedPerson] = useState(null)
   const [preferredHabitLocation, setPreferredHabitLocation] = useState('')
+  const [orderScheduleContext, setOrderScheduleContext] = useState(null)
 
   const selectedCompany = useMemo(
     () => companyOptions.find((company) => company.slug === companySlug) || null,
@@ -364,7 +350,7 @@ const AdminExtraOrderModal = ({
   const locations = requiresCompanyLocations
     ? companyLocations
     : (selectedCompany?.locations?.length ? selectedCompany.locations : [selectedCompany?.name].filter(Boolean))
-  const outsideWindow = isOutsideOrderWindow()
+  const outsideWindow = Boolean(location && orderScheduleContext?.is_open === false)
   const resolvedReason = reason === 'otro' ? normalizeText(otherReason) : reason
   const resolvedOperationalDate = lateWindowMode ? lateWindowInfo.operationalDate : deliveryDate
   const operationalDateLabel = formatOperationalDate(resolvedOperationalDate)
@@ -376,6 +362,7 @@ const AdminExtraOrderModal = ({
     setCompanySlug(companyOptions[0]?.slug || '')
     setSelectedPerson(null)
     setPreferredHabitLocation('')
+    setOrderScheduleContext(null)
   }, [companyOptions, lateWindowInfo.operationalDate, lateWindowMode, open, operationalDate, today])
 
   useEffect(() => {
@@ -417,6 +404,27 @@ const AdminExtraOrderModal = ({
       return requiresCompanyLocations ? '' : locations[0] || ''
     })
   }, [locations, preferredHabitLocation, requiresCompanyLocations, selectedCompany])
+
+  useEffect(() => {
+    if (!open || !location) {
+      setOrderScheduleContext(null)
+      return undefined
+    }
+
+    let cancelled = false
+    setOrderScheduleContext(null)
+
+    const loadOrderSchedule = async () => {
+      const { data, error } = await db.getOrderScheduleContext({ location })
+      if (cancelled) return
+      setOrderScheduleContext(error ? null : (data || null))
+    }
+
+    loadOrderSchedule()
+    return () => {
+      cancelled = true
+    }
+  }, [companySlug, location, open])
 
   useEffect(() => {
     if (!open || !companySlug || !resolvedOperationalDate) return
@@ -699,7 +707,7 @@ const AdminExtraOrderModal = ({
             <div className="flex gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
-                Estás cargando fuera del horario normal ({String(ORDER_START_HOUR).padStart(2, '0')}:00 a {String(ORDER_CUTOFF_HOUR).padStart(2, '0')}:00, Argentina). Se registrará como excepción horaria.
+                Estás cargando fuera del horario normal de {selectedCompany?.name || 'esta empresa'} ({orderScheduleContext?.opens_at || '--:--'} a {orderScheduleContext?.closes_at || '--:--'}, Argentina). Se registrará como excepción horaria.
               </span>
             </div>
           )}
