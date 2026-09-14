@@ -5,6 +5,7 @@ import { Shield } from 'lucide-react'
 import RequireUser from './RequireUser'
 import LoadingState from './ui/LoadingState'
 import AdminHeader from './admin/AdminHeader'
+import AdminDailyAlerts from './admin/AdminDailyAlerts'
 import AdminTabs from './admin/AdminTabs'
 import AdminUsersSection from './admin/AdminUsersSection'
 import AdminCompanyRolesPanel from './admin/AdminCompanyRolesPanel'
@@ -87,6 +88,10 @@ const AdminPanel = () => {
     <RequireUser user={user} loading={loading}>
     <div data-debug-component="admin-panel" className="min-h-dvh pt-16 pb-24 p-3 sm:p-6 space-y-6 sm:space-y-8" style={{ paddingBottom: '120px' }}>
       <AdminHeader />
+
+      {isAdmin && (
+        <AdminDailyAlerts companies={companiesSection.companies} />
+      )}
 
       {/* Tabs - Scroll horizontal completo en mobile */}
       <AdminTabs
