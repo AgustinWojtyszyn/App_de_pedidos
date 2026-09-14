@@ -15,7 +15,11 @@ import AuditLogsHealthTab from './audit/AuditLogsHealthTab'
 import { useAuditLogsData } from '../hooks/auditLogs/useAuditLogsData'
 import { useAuditLogFilters } from '../hooks/auditLogs/useAuditLogFilters'
 import { useHealthProbeFilters } from '../hooks/auditLogs/useHealthProbeFilters'
-import { ENABLE_DUPLICATE_GROUPING, DUPLICATE_WINDOW_SECONDS } from '../utils/auditLogs/auditLogConstants'
+import {
+  AUDIT_EVENT_TYPE_LABELS,
+  ENABLE_DUPLICATE_GROUPING,
+  DUPLICATE_WINDOW_SECONDS
+} from '../utils/auditLogs/auditLogConstants'
 import { friendlyAction, formatTimestamp } from '../utils/auditLogs/auditLogFormatters'
 
 const AuditLogs = () => {
@@ -48,6 +52,10 @@ const AuditLogs = () => {
     setActorFilter,
     actionFilter,
     setActionFilter,
+    companyFilter,
+    setCompanyFilter,
+    eventTypeFilter,
+    setEventTypeFilter,
     dateFrom,
     setDateFrom,
     dateTo,
@@ -73,7 +81,21 @@ const AuditLogs = () => {
 
   const actionOptions = useMemo(() => {
     const set = new Set(preparedLogs.map((log) => log.action).filter(Boolean))
+    return Array.from(set).sort((a, b) => friendlyAction(a).localeCompare(friendlyAction(b), 'es'))
+  }, [preparedLogs])
+
+  const companyOptions = useMemo(() => {
+    const set = new Set(preparedLogs.map((log) => log.company).filter(Boolean))
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'))
+  }, [preparedLogs])
+
+  const eventTypeOptions = useMemo(() => {
+    const set = new Set(preparedLogs.map((log) => log.eventType).filter(Boolean))
+    return Array.from(set).sort((a, b) => {
+      const labelA = AUDIT_EVENT_TYPE_LABELS[a] || a
+      const labelB = AUDIT_EVENT_TYPE_LABELS[b] || b
+      return labelA.localeCompare(labelB, 'es')
+    })
   }, [preparedLogs])
 
   const filteredLogs = useMemo(() => {
@@ -86,10 +108,22 @@ const AuditLogs = () => {
       actions: selectedActions,
       actor: actorFilter,
       action: actionFilter,
+      company: companyFilter,
+      eventType: eventTypeFilter,
       dateFrom,
       dateTo
     })
-  }, [preparedLogs, activeFilters, search, actorFilter, actionFilter, dateFrom, dateTo])
+  }, [
+    preparedLogs,
+    activeFilters,
+    search,
+    actorFilter,
+    actionFilter,
+    companyFilter,
+    eventTypeFilter,
+    dateFrom,
+    dateTo
+  ])
 
   const visibleLogs = useMemo(
     () => groupDuplicateAuditLogs(filteredLogs, { enabled: ENABLE_DUPLICATE_GROUPING, windowSeconds: DUPLICATE_WINDOW_SECONDS }),
@@ -137,12 +171,18 @@ const AuditLogs = () => {
           setActorFilter={setActorFilter}
           actionFilter={actionFilter}
           setActionFilter={setActionFilter}
+          companyFilter={companyFilter}
+          setCompanyFilter={setCompanyFilter}
+          eventTypeFilter={eventTypeFilter}
+          setEventTypeFilter={setEventTypeFilter}
           dateFrom={dateFrom}
           setDateFrom={setDateFrom}
           dateTo={dateTo}
           setDateTo={setDateTo}
           actorOptions={actorOptions}
           actionOptions={actionOptions}
+          companyOptions={companyOptions}
+          eventTypeOptions={eventTypeOptions}
           friendlyAction={friendlyAction}
           formatTimestamp={formatTimestamp}
         />
