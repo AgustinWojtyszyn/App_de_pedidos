@@ -38,3 +38,15 @@ describe('AdminExtraOrderModal person autocomplete', () => {
     expect(source).toContain('p_late_window: lateWindowMode')
   })
 })
+
+describe('AdminExtraOrderModal order schedule warning', () => {
+  it('uses the selected location schedule instead of fixed global opening hours', () => {
+    expect(source).toContain('db.getOrderScheduleContext({ location })')
+    expect(source).toContain('orderScheduleContext?.is_open === false')
+    expect(source).toContain("orderScheduleContext?.opens_at || '--:--'")
+    expect(source).toContain("orderScheduleContext?.closes_at || '--:--'")
+    expect(source).not.toContain('ORDER_START_HOUR')
+    expect(source).not.toContain('ORDER_CUTOFF_HOUR')
+    expect(source).not.toContain('isOutsideOrderWindow')
+  })
+})
