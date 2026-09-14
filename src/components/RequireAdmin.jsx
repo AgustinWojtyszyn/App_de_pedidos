@@ -4,6 +4,8 @@ import { useAuthContext } from '../contexts/authContextValue'
 import serviFoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 
 const PERMISSION_VALIDATION_TIMEOUT_MS = 12000
+const AUTO_PERMISSION_RETRY_LIMIT = 2
+const AUTO_PERMISSION_RETRY_DELAY_MS = 700
 
 const AdminLoader = () => (
   <div
@@ -90,6 +92,7 @@ export default function RequireAdmin({ children }) {
   } = useAuthContext()
   const location = useLocation()
   const [validationTimedOut, setValidationTimedOut] = useState(false)
+  const [autoRetryCount, setAutoRetryCount] = useState(0)
   const isValidating = loading || permissionLoading
 
   useEffect(() => {
@@ -105,8 +108,34 @@ export default function RequireAdmin({ children }) {
     return () => window.clearTimeout(timeoutId)
   }, [isValidating])
 
+  useEffect(() => {
+    if (!user?.id) {
+      setAutoRetryCount(0)
+      return undefined
+    }
+
+    if (!permissionError) {
+      if (!isValidating && autoRetryCount > 0) setAutoRetryCount(0)
+      return undefined
+    }
+
+    if (isValidating || autoRetryCount >= AUTO_PERMISSION_RETRY_LIMIT || typeof refreshPermissions !== 'function') {
+      return undefined
+    }
+
+    const retryNumber = autoRetryCount + 1
+    const timeoutId = window.setTimeout(async () => {
+      setValidationTimedOut(false)
+      setAutoRetryCount(retryNumber)
+      await refreshPermissions()
+    }, AUTO_PERMISSION_RETRY_DELAY_MS * retryNumber)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [autoRetryCount, isValidating, permissionError, refreshPermissions, user?.id])
+
   const retryPermissionValidation = async () => {
     setValidationTimedOut(false)
+    setAutoRetryCount(0)
     await refreshPermissions?.()
   }
 
@@ -130,6 +159,10 @@ export default function RequireAdmin({ children }) {
   }
 
   if (permissionError) {
+    if (autoRetryCount < AUTO_PERMISSION_RETRY_LIMIT) {
+      return <AdminLoader />
+    }
+
     return (
       <AccessDeniedScreen
         variant="validation-error"
