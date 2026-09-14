@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, Loader2, X } from 'lucide-react'
-import { db } from '../../supabaseClient'
+import { db, supabase } from '../../supabaseClient'
 import { ALL_COMPANY_LIST, COMPANY_CATALOG } from '../../constants/companyConfig'
 import { ORDER_CUTOFF_HOUR, ORDER_START_HOUR, ORDER_TIMEZONE } from '../../constants/orderRules'
 import { addDaysToISO, getTodayISOInTimeZone } from '../../utils/dateUtils'
@@ -10,7 +10,9 @@ import { sortMenuItems } from '../../utils/order/orderMenuHelpers'
 import { canChooseCustomSide } from '../../utils/order/orderCustomSideRules'
 import { isGreifRefrigerioMenuItem, withGreifRefrigerioMenuItem } from '../../utils/order/greifDefaultSnack'
 import { getMenuBeverageTitle, hasFruitDessertChoiceRules, requiresMenuBeverageChoice } from '../../utils/order/companySpecialRules'
+import { findHabitLocationOption } from '../../utils/order/adminExtraHabitProfile'
 import { notifyError, notifySuccess } from '../../utils/notice'
+import AdminExtraPersonAutocomplete from './AdminExtraPersonAutocomplete'
 
 const REASONS = [
   { value: 'olvido', label: 'Olvido' },
@@ -131,6 +133,9 @@ const mapErrorMessage = (error) => {
   if (message.includes('late_admin_extra_not_authorized')) return 'Tu cuenta no está autorizada para cargar pedidos fuera de término.'
   if (message.includes('late_admin_extra_authorized_account_not_configured')) return 'No se configuró la cuenta autorizada para esta operación.'
   if (message.includes('late_admin_extra_window_closed')) return 'La carga de pedidos fuera de término para esta jornada cerró a las 18:00.'
+  if (message.includes('create_personalized_admin_extra_order') && message.includes('schema cache')) return 'Falta aplicar la migración de autocompletado de pedidos extra en Supabase.'
+  if (message.includes('client_not_found')) return 'La persona seleccionada ya no está disponible. Buscala nuevamente.'
+  if (message.includes('client_invalid') || message.includes('client_required')) return 'La persona seleccionada no es válida. Buscala nuevamente.'
   if (message.includes('not_authorized')) return 'No tenés autorización para cargar pedidos extra en esa empresa.'
   if (message.includes('invalid_delivery_date')) return 'No se pueden cargar pedidos extra para fechas pasadas.'
   if (message.includes('menu_required')) return 'No existe un menú válido para esa fecha, empresa y turno.'
@@ -344,6 +349,8 @@ const AdminExtraOrderModal = ({
   const [companyLocationRows, setCompanyLocationRows] = useState([])
   const [companyLocationsLoading, setCompanyLocationsLoading] = useState(false)
   const [companyLocationsError, setCompanyLocationsError] = useState(null)
+  const [selectedPerson, setSelectedPerson] = useState(null)
+  const [preferredHabitLocation, setPreferredHabitLocation] = useState('')
 
   const selectedCompany = useMemo(
     () => companyOptions.find((company) => company.slug === companySlug) || null,
@@ -367,6 +374,8 @@ const AdminExtraOrderModal = ({
     if (!open) return
     setDeliveryDate(lateWindowMode ? lateWindowInfo.operationalDate : (operationalDate || today))
     setCompanySlug(companyOptions[0]?.slug || '')
+    setSelectedPerson(null)
+    setPreferredHabitLocation('')
   }, [companyOptions, lateWindowInfo.operationalDate, lateWindowMode, open, operationalDate, today])
 
   useEffect(() => {
@@ -402,10 +411,12 @@ const AdminExtraOrderModal = ({
       return
     }
     setLocation((current) => {
+      const habitualMatch = findHabitLocationOption(preferredHabitLocation, locations)
+      if (habitualMatch) return habitualMatch
       if (locations.includes(current)) return current
       return requiresCompanyLocations ? '' : locations[0] || ''
     })
-  }, [locations, requiresCompanyLocations, selectedCompany])
+  }, [locations, preferredHabitLocation, requiresCompanyLocations, selectedCompany])
 
   useEffect(() => {
     if (!open || !companySlug || !resolvedOperationalDate) return
@@ -551,6 +562,14 @@ const AdminExtraOrderModal = ({
     }))
   }
 
+  const handlePersonSelection = ({ person, profile }) => {
+    setSelectedPerson(person)
+    setPreferredHabitLocation(profile?.location || '')
+    if (!person || !profile) return
+    setCompanySlug(profile.companySlug)
+    setService(profile.service)
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     if (lateWindowMode && !lateWindowAllowed) {
@@ -604,9 +623,9 @@ const AdminExtraOrderModal = ({
     }
     setSubmitting(true)
     const payload = {
-      client_user_id: null,
-      customer_name: null,
-      customer_email: null,
+      client_user_id: selectedPerson?.id || null,
+      customer_name: selectedPerson?.full_name || null,
+      customer_email: selectedPerson?.email || null,
       customer_phone: null,
       delivery_date: resolvedOperationalDate,
       company_slug: companySlug,
@@ -627,15 +646,30 @@ const AdminExtraOrderModal = ({
       duplicate_confirmed: false
     }
 
-    const { data, error } = lateWindowMode
-      ? await db.createLateAdminExtraOrder(payload)
-      : await db.createAdminExtraOrder(payload)
+    const personalizedRequestId = selectedPerson?.id
+      ? `admin-extra-person-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`
+      : null
+
+    const result = selectedPerson?.id
+      ? await supabase.rpc('create_personalized_admin_extra_order', {
+          p_payload: { ...payload, idempotency_key: personalizedRequestId },
+          p_late_window: lateWindowMode
+        })
+      : lateWindowMode
+        ? await db.createLateAdminExtraOrder(payload)
+        : await db.createAdminExtraOrder(payload)
+
+    const { data, error } = result
     setSubmitting(false)
     if (error) {
       notifyError(mapErrorMessage(error))
       return
     }
-    notifySuccess(lateWindowMode ? 'Pedido fuera de término cargado correctamente.' : 'Pedido extra cargado correctamente.')
+    notifySuccess(selectedPerson?.id
+      ? `Pedido extra de ${selectedPerson.full_name || selectedPerson.email} cargado correctamente.`
+      : lateWindowMode
+        ? 'Pedido fuera de término cargado correctamente.'
+        : 'Pedido extra cargado correctamente.')
     onCreated?.(data)
     onClose()
   }
@@ -682,6 +716,12 @@ const AdminExtraOrderModal = ({
             </div>
           )}
 
+          <AdminExtraPersonAutocomplete
+            enabled={Boolean(isGlobalAdmin)}
+            companyOptions={companyOptions}
+            onSelect={handlePersonSelection}
+          />
+
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-bold text-slate-700">
               Fecha de entrega
@@ -704,7 +744,10 @@ const AdminExtraOrderModal = ({
               Empresa
               <select
                 value={companySlug}
-                onChange={(event) => setCompanySlug(event.target.value)}
+                onChange={(event) => {
+                  setCompanySlug(event.target.value)
+                  setPreferredHabitLocation('')
+                }}
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold"
               >
                 {companyOptions.map((company) => (
@@ -717,7 +760,10 @@ const AdminExtraOrderModal = ({
               Ubicación o sede
               <select
                 value={location}
-                onChange={(event) => setLocation(event.target.value)}
+                onChange={(event) => {
+                  setLocation(event.target.value)
+                  setPreferredHabitLocation('')
+                }}
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold"
                 required
                 disabled={requiresCompanyLocations && (companyLocationsLoading || companyLocationsError || locations.length === 0)}
@@ -872,6 +918,7 @@ const AdminExtraOrderModal = ({
               <h3 className="font-black text-slate-900">Revisá antes de confirmar</h3>
               <dl className="mt-2 grid gap-2 sm:grid-cols-2">
                 <div><dt className="text-xs font-bold uppercase text-slate-500">Jornada</dt><dd className="font-semibold text-slate-800">{operationalDateLabel || '-'}</dd></div>
+                <div><dt className="text-xs font-bold uppercase text-slate-500">Persona</dt><dd className="font-semibold text-slate-800">{selectedPerson?.full_name || 'Extra general'}</dd></div>
                 <div><dt className="text-xs font-bold uppercase text-slate-500">Empresa</dt><dd className="font-semibold text-slate-800">{selectedCompany?.name || companySlug || '-'}</dd></div>
                 <div><dt className="text-xs font-bold uppercase text-slate-500">Ubicación</dt><dd className="font-semibold text-slate-800">{location || '-'}</dd></div>
                 <div><dt className="text-xs font-bold uppercase text-slate-500">Turno</dt><dd className="font-semibold text-slate-800">{service === 'dinner' ? 'Cena' : 'Almuerzo'}</dd></div>
