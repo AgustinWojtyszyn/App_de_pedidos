@@ -39,6 +39,80 @@ const sameDay = (a, b) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate()
 
+const firstText = (...values) =>
+  values
+    .map((value) => (value == null ? '' : String(value).trim()))
+    .find(Boolean) || ''
+
+export const getAuditCompany = (log = {}) => {
+  const metadata = log?.metadata && typeof log.metadata === 'object' ? log.metadata : {}
+
+  return firstText(
+    metadata.company_name,
+    metadata.companyName,
+    metadata.company_slug,
+    metadata.companySlug,
+    metadata.company,
+    metadata.organization,
+    metadata.snapshot?.company_name,
+    metadata.snapshot?.company_slug,
+    metadata.snapshot_after?.company_name,
+    metadata.snapshot_after?.company_slug,
+    metadata.snapshot_before?.company_name,
+    metadata.snapshot_before?.company_slug,
+    metadata.new?.company_name,
+    metadata.new?.company_slug,
+    metadata.previous?.company_name,
+    metadata.previous?.company_slug
+  )
+}
+
+const getAuditOrderOrigin = (metadata = {}) =>
+  toLower(firstText(
+    metadata.order_origin,
+    metadata.orderOrigin,
+    metadata.snapshot?.order_origin,
+    metadata.snapshot_after?.order_origin,
+    metadata.snapshot_before?.order_origin,
+    metadata.new?.order_origin,
+    metadata.previous?.order_origin
+  ))
+
+const getAuditOrderStatus = (metadata = {}) =>
+  toLower(firstText(
+    metadata.status,
+    metadata.new_status,
+    metadata.snapshot?.status,
+    metadata.snapshot_after?.status,
+    metadata.snapshot_before?.status,
+    metadata.new?.status,
+    metadata.previous?.status
+  ))
+
+export const getAuditEventType = (log = {}) => {
+  const action = toLower(log?.action)
+  const metadata = log?.metadata && typeof log.metadata === 'object' ? log.metadata : {}
+  const orderOrigin = getAuditOrderOrigin(metadata)
+  const orderStatus = getAuditOrderStatus(metadata)
+
+  if (action === 'order_item_discount_created') return 'discount'
+  if (action === 'admin_order_cancelled') return 'cancellation'
+
+  if (action === 'late_admin_extra_order_created' || orderStatus === 'post_report_extra') {
+    return 'post_report_extra'
+  }
+
+  if (action.includes('admin_extra') || orderOrigin === 'admin_extra') {
+    return 'admin_extra'
+  }
+
+  if (action.startsWith('admin_order_') || metadata.order_id || metadata.orderId) {
+    return 'order'
+  }
+
+  return 'other'
+}
+
 export const prepareAuditLogs = (logs = []) => {
   return (Array.isArray(logs) ? logs : [])
     .map((log) => {
@@ -47,12 +121,16 @@ export const prepareAuditLogs = (logs = []) => {
       const detail = getReadableDetail(log)
       const createdAt = log.created_at || log.timestamp || null
       const createdAtTs = safeTimestamp(createdAt)
+      const company = getAuditCompany(log)
+      const eventType = getAuditEventType(log)
 
       return {
         ...log,
         actor,
         target,
         detail,
+        company,
+        eventType,
         createdAt,
         createdAtTs,
         dedupeDetail: normalizeDetail(detail)
@@ -67,6 +145,8 @@ export const filterAuditLogs = (logs = [], filters = {}) => {
     actions = [],
     actor = 'all',
     action = 'all',
+    company = 'all',
+    eventType = 'all',
     dateFrom = '',
     dateTo = ''
   } = filters
@@ -81,6 +161,8 @@ export const filterAuditLogs = (logs = [], filters = {}) => {
     if (selectedActions.length > 0 && !selectedActions.includes(log.action)) return false
     if (action !== 'all' && log.action !== action) return false
     if (actor !== 'all' && log.actor !== actor) return false
+    if (company !== 'all' && toLower(log.company) !== toLower(company)) return false
+    if (eventType !== 'all' && log.eventType !== eventType) return false
 
     if (fromTs && log.createdAtTs < fromTs) return false
     if (toTs && log.createdAtTs > toTs) return false
@@ -90,6 +172,8 @@ export const filterAuditLogs = (logs = [], filters = {}) => {
     const haystack = [
       log.actor,
       log.target,
+      log.company,
+      log.eventType,
       log.action,
       log.detail,
       JSON.stringify(log.metadata || {})
@@ -207,6 +291,8 @@ export const buildAuditExportRows = (logs = [], actionFormatter = (action) => ac
   return (Array.isArray(logs) ? logs : []).map((log) => ({
     Fecha: log.createdAt || '',
     Accion: actionFormatter(log.action),
+    TipoEvento: log.eventType || 'other',
+    Empresa: log.company || '',
     Detalle: log.detail || '',
     Responsable: log.actor || '',
     UsuarioAfectado: log.target || '',
