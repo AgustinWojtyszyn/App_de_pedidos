@@ -5,6 +5,8 @@ export const useAuditLogFilters = () => {
   const [activeFilters, setActiveFilters] = useState([])
   const [actorFilter, setActorFilter] = useState('all')
   const [actionFilter, setActionFilter] = useState('all')
+  const [companyFilter, setCompanyFilter] = useState('all')
+  const [eventTypeFilter, setEventTypeFilter] = useState('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
@@ -22,6 +24,8 @@ export const useAuditLogFilters = () => {
     setActiveFilters([])
     setActorFilter('all')
     setActionFilter('all')
+    setCompanyFilter('all')
+    setEventTypeFilter('all')
     setDateFrom('')
     setDateTo('')
   }, [])
@@ -34,6 +38,10 @@ export const useAuditLogFilters = () => {
     setActorFilter,
     actionFilter,
     setActionFilter,
+    companyFilter,
+    setCompanyFilter,
+    eventTypeFilter,
+    setEventTypeFilter,
     dateFrom,
     setDateFrom,
     dateTo,
