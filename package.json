@@ -24,7 +24,7 @@
     "deno": "^2.6.8",
     "dompurify": "^3.4.15",
     "dotenv": "^17.2.3",
-    "exceljs": "^3.4.0",
+    "exceljs": "^3.10.0",
     "framer-motion": "^12.23.24",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.553.0",
