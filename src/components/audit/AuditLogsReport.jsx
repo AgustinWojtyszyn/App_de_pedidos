@@ -1,6 +1,6 @@
 import { ClipboardList, RefreshCcw, Search, ShieldCheck } from 'lucide-react'
 import excelLogo from '../../assets/logoexcel.png'
-import { ACTION_FILTERS } from '../../utils/auditLogs/auditLogConstants'
+import { ACTION_FILTERS, AUDIT_EVENT_TYPE_LABELS } from '../../utils/auditLogs/auditLogConstants'
 
 export default function AuditLogsReport({
   loading,
@@ -23,12 +23,18 @@ export default function AuditLogsReport({
   setActorFilter,
   actionFilter,
   setActionFilter,
+  companyFilter,
+  setCompanyFilter,
+  eventTypeFilter,
+  setEventTypeFilter,
   dateFrom,
   setDateFrom,
   dateTo,
   setDateTo,
   actorOptions,
   actionOptions,
+  companyOptions,
+  eventTypeOptions,
   friendlyAction,
   formatTimestamp
 }) {
@@ -48,8 +54,7 @@ export default function AuditLogsReport({
                 Reporte de acciones administrativas
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Seguimiento legible de eventos sensibles: transferencias de rol, altas y bajas de usuarios,
-                cambios de permisos y ajustes de menú.
+                Seguimiento de permisos, menús y movimientos operativos de pedidos, extras, descuentos y bajas.
               </p>
             </div>
           </div>
@@ -60,7 +65,7 @@ export default function AuditLogsReport({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por responsable, usuario afectado o detalle"
+                placeholder="Buscar por empresa, usuario, responsable o detalle"
                 className="w-full pl-10 pr-3 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-inner bg-white/70"
               />
             </div>
@@ -108,7 +113,7 @@ export default function AuditLogsReport({
             </div>
           </div>
 
-          <div className="grid gap-2 md:grid-cols-4">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
             <select
               value={actorFilter}
               onChange={(e) => setActorFilter(e.target.value)}
@@ -129,16 +134,40 @@ export default function AuditLogsReport({
                 <option key={action} value={action}>{friendlyAction(action)}</option>
               ))}
             </select>
+            <select
+              value={companyFilter}
+              onChange={(e) => setCompanyFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-gray-200 text-sm"
+            >
+              <option value="all">Empresa: Todas</option>
+              {companyOptions.map((company) => (
+                <option key={company} value={company}>{company}</option>
+              ))}
+            </select>
+            <select
+              value={eventTypeFilter}
+              onChange={(e) => setEventTypeFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-gray-200 text-sm"
+            >
+              <option value="all">Tipo: Todos</option>
+              {eventTypeOptions.map((eventType) => (
+                <option key={eventType} value={eventType}>
+                  {AUDIT_EVENT_TYPE_LABELS[eventType] || eventType}
+                </option>
+              ))}
+            </select>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
+              aria-label="Fecha desde"
               className="px-3 py-2 rounded-xl border border-gray-200 text-sm"
             />
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
+              aria-label="Fecha hasta"
               className="px-3 py-2 rounded-xl border border-gray-200 text-sm"
             />
           </div>
@@ -186,6 +215,8 @@ export default function AuditLogsReport({
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Acción</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Empresa</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Detalle</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Responsable</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Usuario afectado</th>
@@ -194,7 +225,7 @@ export default function AuditLogsReport({
             <tbody className="bg-white divide-y divide-gray-100">
               {!loading && missingTable && (
                 <tr>
-                  <td className="px-4 py-6 text-left text-gray-700 text-sm space-y-2" colSpan={5}>
+                  <td className="px-4 py-6 text-left text-gray-700 text-sm space-y-2" colSpan={7}>
                     <p className="font-semibold text-red-700">La tabla <code>audit_logs</code> no existe en Supabase.</p>
                     <p className="text-gray-700">
                       Crea la tabla y vuelve a cargar la página. SQL sugerido:
@@ -227,14 +258,14 @@ create index audit_logs_created_at_idx on public.audit_logs (created_at desc);`}
               )}
               {!loading && !missingTable && visibleLogs.length === 0 && (
                 <tr>
-                  <td className="px-4 py-6 text-center text-gray-500 text-sm" colSpan={5}>
+                  <td className="px-4 py-6 text-center text-gray-500 text-sm" colSpan={7}>
                     No hay eventos que coincidan con los filtros actuales.
                   </td>
                 </tr>
               )}
               {loading && (
                 <tr>
-                  <td className="px-4 py-6 text-center text-gray-500 text-sm" colSpan={5}>
+                  <td className="px-4 py-6 text-center text-gray-500 text-sm" colSpan={7}>
                     Cargando registros de auditoría...
                   </td>
                 </tr>
@@ -253,6 +284,12 @@ create index audit_logs_created_at_idx on public.audit_logs (created_at desc);`}
                         </span>
                       )}
                     </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                    {AUDIT_EVENT_TYPE_LABELS[log.eventType] || log.eventType || 'Otro'}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                    {log.company || 'Sin empresa'}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700">
                     {log.detail}
