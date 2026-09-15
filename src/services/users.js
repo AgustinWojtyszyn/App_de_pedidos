@@ -27,6 +27,7 @@ const getUserById = async (userId) => {
 const ACCESS_RETRY_ATTEMPTS = 4
 const ACCESS_RETRY_DELAY_MS = 450
 const ACCESS_CACHE_TTL_MS = 30 * 60 * 1000
+const ACCESS_CACHE_PREFIX = 'servifood-access-context:'
 const accessContextCache = new Map()
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -40,20 +41,49 @@ const getAuthenticatedUserId = async () => {
   }
 }
 
-const getCachedAccessContext = (userId) => {
-  if (!userId) return null
-  const cached = accessContextCache.get(userId)
-  if (!cached) return null
-  if (Date.now() - cached.savedAt > ACCESS_CACHE_TTL_MS) {
-    accessContextCache.delete(userId)
+const readSessionCache = (userId) => {
+  if (!userId || typeof window === 'undefined') return null
+  try {
+    const raw = window.sessionStorage?.getItem(`${ACCESS_CACHE_PREFIX}${userId}`)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch {
     return null
   }
-  return cached.data
+}
+
+const removeSessionCache = (userId) => {
+  if (!userId || typeof window === 'undefined') return
+  try {
+    window.sessionStorage?.removeItem(`${ACCESS_CACHE_PREFIX}${userId}`)
+  } catch {
+    // Storage can be unavailable in hardened/private browser contexts.
+  }
+}
+
+const getCachedAccessContext = (userId) => {
+  if (!userId) return null
+  const cached = accessContextCache.get(userId) || readSessionCache(userId)
+  if (!cached) return null
+  if (Date.now() - Number(cached.savedAt || 0) > ACCESS_CACHE_TTL_MS) {
+    accessContextCache.delete(userId)
+    removeSessionCache(userId)
+    return null
+  }
+  accessContextCache.set(userId, cached)
+  return cached.data || null
 }
 
 const cacheAccessContext = (userId, data) => {
   if (!userId || !data) return
-  accessContextCache.set(userId, { data, savedAt: Date.now() })
+  const cached = { data, savedAt: Date.now() }
+  accessContextCache.set(userId, cached)
+  if (typeof window === 'undefined') return
+  try {
+    window.sessionStorage?.setItem(`${ACCESS_CACHE_PREFIX}${userId}`, JSON.stringify(cached))
+  } catch {
+    // In-memory cache remains available if sessionStorage is blocked.
+  }
 }
 
 const getAdminAccessContext = async () => {
