@@ -9,6 +9,7 @@
     "build:analyze": "vite build --mode production && npx vite-bundle-visualizer",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:e2e:labels": "playwright test --config=playwright.labels.config.mjs",
     "preview": "vite preview",
     "test:load": "node testing/load/test-load.js",
     "test:light": "node testing/load/test-load.js 10 5",
