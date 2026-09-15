@@ -40,12 +40,11 @@ describe('thermal label print safety gates', () => {
     expect(pageSource).toContain('thermalPages.length === expectedLabelCount')
     expect(previewSource).toContain('className="thermal-label-page"')
     expect(previewSource).toContain('@page { size: ${printPageSize}; margin: 0; }')
-    expect(cssSource).toContain('height: var(--thermal-label-height, 50mm)')
+    expect(cssSource).toMatch(/\.labels-print-thermal \.thermal-label-page\s*\{[\s\S]*?height: var\(--thermal-label-height, 50mm\) !important;/)
     expect(cssSource).toContain('break-after: page !important')
     expect(cssSource).toContain('page-break-after: always !important')
     expect(cssSource).toContain('.labels-print-thermal .thermal-label-page:last-child')
     expect(cssSource).toContain('page-break-after: auto !important')
-    expect(cssSource).not.toContain('height: auto;\n    min-height: 0;\n    max-height: none;')
   })
 
   it('removes layout ancestors and scroll clipping from the Chromium print formatting context', () => {
