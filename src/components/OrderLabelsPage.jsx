@@ -61,8 +61,9 @@ const waitForPrintDocumentReady = async (expectedLabelCount) => {
 const getUniqueOrdersForPrint = (orders = []) => {
   const seenIds = new Set()
   const safeOrders = []
+  const sourceOrders = Array.isArray(orders) ? orders : []
 
-  ;(Array.isArray(orders) ? orders : []).forEach((order) => {
+  sourceOrders.forEach((order) => {
     const orderId = String(order?.id || '').trim()
     if (!orderId || seenIds.has(orderId)) return
     seenIds.add(orderId)
@@ -122,13 +123,40 @@ const OrderLabelsPage = () => {
       }
     }
 
-    const result = await labels.markPrinted(
-      safeOrders.map(order => order.id)
+    const requestedIds = safeOrders.map(order => String(order.id))
+    const result = await labels.markPrinted(requestedIds)
+
+    if (result?.error) {
+      return {
+        tracked: false,
+        error: result.error
+      }
+    }
+
+    const trackedIds = new Set(
+      (Array.isArray(result?.data) ? result.data : [])
+        .filter(row => row?.id && row?.label_printed_at)
+        .map(row => String(row.id))
     )
 
+    const completeTracking =
+      trackedIds.size === requestedIds.length &&
+      requestedIds.every(orderId => trackedIds.has(orderId))
+
+    if (!completeTracking) {
+      const trackingError = new Error('incomplete_label_tracking')
+      labels.setPrintWarning(
+        'El lote salió, pero el registro quedó incompleto. No lo vuelvas a imprimir: reintentá guardar este mismo lote.'
+      )
+      return {
+        tracked: false,
+        error: trackingError
+      }
+    }
+
     return {
-      tracked: !result?.error,
-      error: result?.error || null
+      tracked: true,
+      error: null
     }
   }, [labels])
 
@@ -215,7 +243,7 @@ const OrderLabelsPage = () => {
     const trackingResult = await registerPrintedOrders(safeOrders)
     if (!trackingResult.tracked) {
       labels.setPrintWarning(
-        'El lote salió, pero no se pudo guardar su estado. No lo vuelvas a imprimir: usá “Reintentar registrar lote”.'
+        'El lote salió, pero no se pudo guardar su estado completo. No lo vuelvas a imprimir: usá “Reintentar registrar lote”.'
       )
       return {
         printed: true,
