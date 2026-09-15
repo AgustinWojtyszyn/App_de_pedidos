@@ -22,16 +22,19 @@
     const width = Math.max(40, Number(params.get('width') || 100))
     const height = Math.max(25, Number(params.get('height') || 50))
 
-    const pageStyle = document.createElement('style')
-    pageStyle.media = 'print'
-    pageStyle.textContent = `@page { size: ${width}mm ${height}mm; margin: 0; }`
-    document.head.appendChild(pageStyle)
-
     const previewRoot = document.createElement('section')
     previewRoot.className = 'labels-preview-root labels-preview-thermal'
     previewRoot.style.setProperty('--thermal-label-width', `${width}mm`)
     previewRoot.style.setProperty('--thermal-label-height', `${height}mm`)
     previewRoot.style.setProperty('--label-a4-columns', '2')
+
+    // Replica OrderLabelsPreview: la regla @page vive dentro del árbol de preview,
+    // que luego queda oculto durante print. El E2E verifica que aun así Chromium
+    // respete el tamaño físico cuando el contenido real está en el top-level mount.
+    const pageStyle = document.createElement('style')
+    pageStyle.media = 'print'
+    pageStyle.textContent = `@page { size: ${width}mm ${height}mm; margin: 0; }`
+    previewRoot.appendChild(pageStyle)
 
     const surface = document.createElement('div')
     surface.className = 'labels-print-surface labels-print-thermal'
