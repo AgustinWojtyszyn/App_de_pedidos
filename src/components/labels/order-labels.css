@@ -192,139 +192,94 @@
   font-size: 11.2px;
 }
 
+/*
+ * La impresión real de etiquetas vive en un iframe aislado cuyo body usa
+ * .labels-print-frame. La vista previa de /labels nunca vuelve a imprimir el
+ * árbol completo de Layout, evitando que overflow/flex/position de la app
+ * puedan ocultar, recortar o dejar en blanco el lote en Chromium.
+ */
 @media print {
   html,
-  body {
+  body.labels-print-frame {
     width: auto !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
-
     overflow: visible !important;
     position: static !important;
-
-    background: #fff !important;
-
     margin: 0 !important;
     padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
   }
 
-  /*
-   * Chromium pagina usando el contexto de formato completo de los ancestros.
-   * En /labels ese contexto incluye Layout -> flex -> main -> contenedor con
-   * overflow-y-auto/overflow-hidden. Durante impresión dejamos únicamente la
-   * rama DOM que contiene las etiquetas y neutralizamos todos sus ancestros.
-   * Así ninguna altura de viewport, overflow, flex/grid o posición puede
-   * recortar el lote después de la primera página física.
-   */
-  body *:not(:has(.labels-print-surface)):not(.labels-print-surface):not(.labels-print-surface *) {
-    display: none !important;
+  body.labels-print-frame .labels-print-export-root,
+  body.labels-print-frame .labels-print-surface,
+  body.labels-print-frame .labels-print-surface * {
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
-  body *:has(.labels-print-surface) {
+  body.labels-print-frame .labels-print-export-root {
     display: block !important;
-
     position: static !important;
     inset: auto !important;
-
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
-
     overflow: visible !important;
-
     margin: 0 !important;
     padding: 0 !important;
-
-    flex: none !important;
     transform: none !important;
     contain: none !important;
-    clip: auto !important;
-    clip-path: none !important;
+    background: #fff !important;
   }
 
-  .print-hide {
-    display: none !important;
-  }
-
-  .labels-preview-root {
-    position: static !important;
-
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-
-    overflow: visible !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    background: white;
-    color: #000;
-  }
-
-  .labels-print-surface {
+  body.labels-print-frame .labels-print-surface {
     box-sizing: border-box !important;
-
     border: 0 !important;
     border-radius: 0 !important;
-
-    background: white;
-
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
     overflow: visible !important;
-
     margin: 0 !important;
     padding: 0 !important;
+    background: #fff !important;
   }
 
-  .labels-preview-thermal {
-    width: var(--thermal-label-width, 100mm) !important;
-    min-width: var(--thermal-label-width, 100mm) !important;
-    max-width: var(--thermal-label-width, 100mm) !important;
-  }
-
-  .labels-print-a4 {
-    gap: 6mm;
-
+  body.labels-print-frame .labels-print-a4 {
+    display: grid !important;
     grid-template-columns: repeat(
       var(--label-a4-columns, 2),
       minmax(0, 1fr)
-    );
-
+    ) !important;
+    gap: 6mm !important;
     padding: 8mm !important;
   }
 
-  .labels-print-thermal {
-    display: block !important;
+  body.labels-print-frame .labels-print-a4 .sf-label-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
 
+  body.labels-print-frame .labels-print-thermal {
+    display: block !important;
     width: var(--thermal-label-width, 100mm) !important;
     min-width: var(--thermal-label-width, 100mm) !important;
     max-width: var(--thermal-label-width, 100mm) !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
-
     overflow: visible !important;
-
     break-inside: auto !important;
     page-break-inside: auto !important;
-
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  .labels-print-thermal .thermal-label-page {
+  body.labels-print-frame .labels-print-thermal .thermal-label-page {
     display: block !important;
-
     box-sizing: border-box !important;
     width: var(--thermal-label-width, 100mm) !important;
     min-width: var(--thermal-label-width, 100mm) !important;
@@ -332,28 +287,25 @@
     height: var(--thermal-label-height, 50mm) !important;
     min-height: var(--thermal-label-height, 50mm) !important;
     max-height: var(--thermal-label-height, 50mm) !important;
-
     break-before: auto !important;
     page-break-before: auto !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     break-after: page !important;
     page-break-after: always !important;
-
     overflow: hidden !important;
-
     margin: 0 !important;
     padding: 0 !important;
+    background: #fff !important;
   }
 
-  .labels-print-thermal .thermal-label-page:last-child {
+  body.labels-print-frame .labels-print-thermal .thermal-label-page:last-child {
     break-after: auto !important;
     page-break-after: auto !important;
   }
 
-  .labels-print-thermal .sf-label-card {
+  body.labels-print-frame .labels-print-thermal .sf-label-card {
     display: flex !important;
-
     box-sizing: border-box !important;
     width: 100% !important;
     min-width: 100% !important;
@@ -361,38 +313,19 @@
     height: 100% !important;
     min-height: 100% !important;
     max-height: 100% !important;
-
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-
     overflow: hidden !important;
-
-    border-radius: 0;
-
+    border-radius: 0 !important;
     margin: 0 !important;
-  }
-
-  .labels-print-thermal .sf-label-fit-area {
-    overflow: hidden !important;
-  }
-
-  .labels-print-a4 .sf-label-card {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .sf-label-card {
-    box-shadow: none;
-
     background: #fff !important;
     color: #000 !important;
-
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  .sf-label-card * {
-    color: inherit !important;
+  body.labels-print-frame .labels-print-thermal .sf-label-fit-area {
+    overflow: hidden !important;
   }
 }
 
