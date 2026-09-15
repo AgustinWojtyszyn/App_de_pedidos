@@ -24,19 +24,27 @@
   justify-content: center;
 }
 
+.thermal-label-page {
+  box-sizing: border-box;
+  width: var(--thermal-label-width, 100mm);
+  min-width: var(--thermal-label-width, 100mm);
+  max-width: var(--thermal-label-width, 100mm);
+  height: var(--thermal-label-height, 50mm);
+  min-height: var(--thermal-label-height, 50mm);
+  max-height: var(--thermal-label-height, 50mm);
+  overflow: hidden;
+  background: #fff;
+}
+
 .sf-label-card {
   display: flex;
   box-sizing: border-box;
+  min-width: 0;
 
   break-inside: avoid;
   page-break-inside: avoid;
-  break-before: auto;
-  break-after: auto;
-  page-break-before: auto;
-  page-break-after: auto;
 
   flex-direction: column;
-  gap: 1.45mm;
 
   overflow: visible;
 
@@ -54,9 +62,35 @@
   text-transform: uppercase;
 }
 
+.sf-label-fit-area {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.sf-label-card[data-label-fit-fixed='true'] {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.sf-label-card[data-label-fit-fixed='true'] .sf-label-fit-area {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.sf-label-card-content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1.45mm;
+}
+
 .labels-print-thermal .sf-label-card {
-  width: var(--thermal-label-width, 100mm);
-  max-width: var(--thermal-label-width, 100mm);
+  width: 100%;
+  max-width: 100%;
 }
 
 .sf-label-header {
@@ -115,10 +149,12 @@
 }
 
 .sf-label-card--dense {
-  gap: 1.15mm;
   padding: 2.2mm;
-
   line-height: 1.1;
+}
+
+.sf-label-card--dense .sf-label-card-content {
+  gap: 1.15mm;
 }
 
 .sf-label-card--dense .sf-label-customer {
@@ -132,6 +168,28 @@
 
 .sf-label-card--dense .sf-label-items {
   font-size: 12.2px;
+}
+
+.sf-label-card--very-dense {
+  padding: 1.7mm;
+  line-height: 1.06;
+}
+
+.sf-label-card--very-dense .sf-label-card-content {
+  gap: 0.8mm;
+}
+
+.sf-label-card--very-dense .sf-label-customer {
+  font-size: 16.5px;
+}
+
+.sf-label-card--very-dense .sf-label-meta,
+.sf-label-card--very-dense .sf-label-line {
+  font-size: 10.4px;
+}
+
+.sf-label-card--very-dense .sf-label-items {
+  font-size: 11.2px;
 }
 
 @media print {
@@ -158,31 +216,32 @@
 
   .labels-preview-root {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
 
     width: 100%;
 
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
 
     background: white;
     color: #000;
   }
 
   .labels-print-surface {
-    border: 0;
-    border-radius: 0;
+    border: 0 !important;
+    border-radius: 0 !important;
 
     background: white;
 
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .labels-preview-thermal {
-    width: var(
-      --thermal-label-width,
-      100mm
-    );
+    width: var(--thermal-label-width, 100mm) !important;
+    min-width: var(--thermal-label-width, 100mm) !important;
+    max-width: var(--thermal-label-width, 100mm) !important;
   }
 
   .labels-print-a4 {
@@ -193,49 +252,68 @@
       minmax(0, 1fr)
     );
 
-    padding: 8mm;
+    padding: 8mm !important;
   }
 
   .labels-print-thermal {
-    display: block;
+    display: block !important;
 
-    width: var(
-      --thermal-label-width,
-      100mm
-    );
+    width: var(--thermal-label-width, 100mm) !important;
+    min-width: var(--thermal-label-width, 100mm) !important;
+    max-width: var(--thermal-label-width, 100mm) !important;
 
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .labels-print-thermal .thermal-label-page {
+    display: block !important;
+
+    box-sizing: border-box !important;
+    width: var(--thermal-label-width, 100mm) !important;
+    min-width: var(--thermal-label-width, 100mm) !important;
+    max-width: var(--thermal-label-width, 100mm) !important;
+    height: var(--thermal-label-height, 50mm) !important;
+    min-height: var(--thermal-label-height, 50mm) !important;
+    max-height: var(--thermal-label-height, 50mm) !important;
+
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+
+    overflow: hidden !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .labels-print-thermal .thermal-label-page:not(:last-child) {
+    break-after: page !important;
+    page-break-after: always !important;
   }
 
   .labels-print-thermal .sf-label-card {
     display: flex !important;
 
-    width: var(
-      --thermal-label-width,
-      100mm
-    );
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
 
-    max-width: var(
-      --thermal-label-width,
-      100mm
-    );
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
 
-    /*
-      CRÍTICO:
-      comportamiento histórico funcional del 05/08.
-    */
-    height: auto;
-    min-height: 0;
-    max-height: none;
+    overflow: hidden !important;
 
     border-radius: 0;
 
-    margin: 0;
+    margin: 0 !important;
   }
 
-  .labels-print-thermal .sf-label-card:not(:last-child) {
-    break-after: page;
-    page-break-after: always;
+  .labels-print-thermal .sf-label-fit-area {
+    overflow: hidden !important;
   }
 
   .labels-print-a4 .sf-label-card {
@@ -259,6 +337,5 @@
 }
 
 @page {
-  size: A4;
   margin: 0;
 }
