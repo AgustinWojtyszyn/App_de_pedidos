@@ -6,8 +6,9 @@ const normalizeOrderId = (order = {}) => String(order?.id || '').trim()
 export const getUniquePrintableOrders = (orders = []) => {
   const seenIds = new Set()
   const printableOrders = []
+  const sourceOrders = Array.isArray(orders) ? orders : []
 
-  ;(Array.isArray(orders) ? orders : []).forEach((order) => {
+  sourceOrders.forEach((order) => {
     const orderId = normalizeOrderId(order)
     if (!orderId || seenIds.has(orderId)) return
 
