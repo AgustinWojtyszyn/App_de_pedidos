@@ -1,7 +1,8 @@
 export const LABEL_PRINT_BATCH_SIZE_OPTIONS = Object.freeze([25, 50, 100])
 export const DEFAULT_LABEL_PRINT_BATCH_SIZE = 50
 
-const normalizeOrderId = (order = {}) => String(order?.id || '').trim()
+const normalizeId = (value) => String(value || '').trim()
+const normalizeOrderId = (order = {}) => normalizeId(order?.id)
 
 export const getUniquePrintableOrders = (orders = []) => {
   const seenIds = new Set()
@@ -46,4 +47,27 @@ export const createLabelPrintBatches = (
   }
 
   return batches
+}
+
+export const hasCompleteLabelTracking = (
+  requestedIds = [],
+  trackedRows = []
+) => {
+  const safeRequestedIds = [...new Set(
+    (Array.isArray(requestedIds) ? requestedIds : [])
+      .map(normalizeId)
+      .filter(Boolean)
+  )]
+
+  if (safeRequestedIds.length === 0) return false
+
+  const trackedIds = new Set(
+    (Array.isArray(trackedRows) ? trackedRows : [])
+      .filter(row => row?.id && row?.label_printed_at)
+      .map(row => normalizeId(row.id))
+      .filter(Boolean)
+  )
+
+  return trackedIds.size === safeRequestedIds.length &&
+    safeRequestedIds.every(orderId => trackedIds.has(orderId))
 }
