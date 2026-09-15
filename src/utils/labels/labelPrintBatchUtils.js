@@ -1,0 +1,73 @@
+export const LABEL_PRINT_BATCH_SIZE_OPTIONS = Object.freeze([25, 50, 100])
+export const DEFAULT_LABEL_PRINT_BATCH_SIZE = 50
+
+const normalizeId = (value) => String(value || '').trim()
+const normalizeOrderId = (order = {}) => normalizeId(order?.id)
+
+export const getUniquePrintableOrders = (orders = []) => {
+  const seenIds = new Set()
+  const printableOrders = []
+  const sourceOrders = Array.isArray(orders) ? orders : []
+
+  sourceOrders.forEach((order) => {
+    const orderId = normalizeOrderId(order)
+    if (!orderId || seenIds.has(orderId)) return
+
+    seenIds.add(orderId)
+    printableOrders.push(order)
+  })
+
+  return printableOrders
+}
+
+export const normalizeLabelPrintBatchSize = (
+  value,
+  fallback = DEFAULT_LABEL_PRINT_BATCH_SIZE
+) => {
+  const parsed = Number(value)
+  const safeFallback = LABEL_PRINT_BATCH_SIZE_OPTIONS.includes(Number(fallback))
+    ? Number(fallback)
+    : DEFAULT_LABEL_PRINT_BATCH_SIZE
+
+  return LABEL_PRINT_BATCH_SIZE_OPTIONS.includes(parsed)
+    ? parsed
+    : safeFallback
+}
+
+export const createLabelPrintBatches = (
+  orders = [],
+  batchSize = DEFAULT_LABEL_PRINT_BATCH_SIZE
+) => {
+  const printableOrders = getUniquePrintableOrders(orders)
+  const safeBatchSize = normalizeLabelPrintBatchSize(batchSize)
+  const batches = []
+
+  for (let index = 0; index < printableOrders.length; index += safeBatchSize) {
+    batches.push(printableOrders.slice(index, index + safeBatchSize))
+  }
+
+  return batches
+}
+
+export const hasCompleteLabelTracking = (
+  requestedIds = [],
+  trackedRows = []
+) => {
+  const safeRequestedIds = [...new Set(
+    (Array.isArray(requestedIds) ? requestedIds : [])
+      .map(normalizeId)
+      .filter(Boolean)
+  )]
+
+  if (safeRequestedIds.length === 0) return false
+
+  const trackedIds = new Set(
+    (Array.isArray(trackedRows) ? trackedRows : [])
+      .filter(row => row?.id && row?.label_printed_at)
+      .map(row => normalizeId(row.id))
+      .filter(Boolean)
+  )
+
+  return trackedIds.size === safeRequestedIds.length &&
+    safeRequestedIds.every(orderId => trackedIds.has(orderId))
+}

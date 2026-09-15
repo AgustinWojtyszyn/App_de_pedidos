@@ -1,0 +1,52 @@
+import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+
+const cardSource = readFileSync(
+  new URL('./OrderLabelCard.jsx', import.meta.url),
+  'utf8'
+)
+
+const pageSource = readFileSync(
+  new URL('../OrderLabelsPage.jsx', import.meta.url),
+  'utf8'
+)
+
+const previewSource = readFileSync(
+  new URL('./OrderLabelsPreview.jsx', import.meta.url),
+  'utf8'
+)
+
+const cssSource = readFileSync(
+  new URL('./order-labels.css', import.meta.url),
+  'utf8'
+)
+
+describe('thermal label print safety gates', () => {
+  it('never shrinks fixed-page content below the readable safety threshold', () => {
+    expect(cardSource).toContain('const MIN_FIXED_PAGE_SCALE = 0.65')
+    expect(cardSource).toContain('safeScale >= MIN_FIXED_PAGE_SCALE')
+    expect(cardSource).toContain('data-label-fit-valid')
+    expect(cardSource).toContain('data-label-fit-ready')
+  })
+
+  it('blocks the print dialog when any thermal label cannot fit safely', () => {
+    expect(pageSource).toContain('invalidFits')
+    expect(pageSource).toContain('data-label-fit-valid="false"')
+    expect(pageSource).toContain("throw new Error('label_print_content_too_dense')")
+    expect(pageSource).toContain('La impresión fue bloqueada para evitar una etiqueta recortada o ilegible')
+  })
+
+  it('requires one physical thermal page for every expected label before printing', () => {
+    expect(pageSource).toContain('thermalPages.length === expectedLabelCount')
+    expect(previewSource).toContain('className="thermal-label-page"')
+    expect(cssSource).toContain('height: var(--thermal-label-height, 50mm)')
+    expect(cssSource).toContain('break-after: page !important')
+    expect(cssSource).not.toContain('height: auto;\n    min-height: 0;\n    max-height: none;')
+  })
+
+  it('keeps explicit printer setup guidance next to thermal batch printing', () => {
+    expect(previewSource).toContain('Zebra GC420t')
+    expect(previewSource).toContain('escala 100 %')
+    expect(previewSource).toContain('sin márgenes')
+  })
+})
