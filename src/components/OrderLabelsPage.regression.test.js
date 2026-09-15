@@ -194,6 +194,7 @@ describe('order labels print flow', () => {
     expect(cardSource).toContain('data-label-fit-scale')
     expect(cardSource).toContain('ResizeObserver')
     expect(cardSource).toContain('measuredScale * 0.985')
+    expect(cardSource).toContain('sf-label-card--very-dense')
     expect(cssSource).toContain('overflow: hidden')
 
     const longOrder = {
@@ -220,7 +221,7 @@ describe('order labels print flow', () => {
 
     const html = renderPreviewWithOrders([longOrder])
     expect(countLabelCards(html)).toBe(1)
-    expect(html).toContain('sf-label-card--very-dense')
+    expect(html).toContain('sf-label-card--dense')
     expect(html).toContain('data-label-fit-fixed="true"')
   })
 
@@ -260,6 +261,8 @@ describe('order labels print flow', () => {
     expect(previewSource).toContain('Reintentar registrar lote')
     expect(previewSource).toContain('onRegisterPrinted(pendingRegistrationBatch)')
     expect(pageSource).toContain('No lo vuelvas a imprimir')
+    expect(pageSource).toContain('incomplete_label_tracking')
+    expect(batchUtilsSource).toContain('hasCompleteLabelTracking')
   })
 
   it('preserves selection, filters, print-state controls and modern tracking', () => {
