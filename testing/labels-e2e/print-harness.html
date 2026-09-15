@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Label print E2E harness</title>
+</head>
+<body>
+  <main id="app-shell"></main>
+
+  <script type="module">
+    import '/src/components/labels/order-labels.css'
+    import {
+      cleanupDirectLabelPrint,
+      getDirectLabelPrintState,
+      prepareDirectLabelPrint,
+      printLabelsDirectly
+    } from '/src/utils/labels/labelPrintFrame.js'
+
+    const params = new URLSearchParams(window.location.search)
+    const count = Math.max(1, Number(params.get('count') || 1))
+    const width = Math.max(40, Number(params.get('width') || 100))
+    const height = Math.max(25, Number(params.get('height') || 50))
+
+    const previewRoot = document.createElement('section')
+    previewRoot.className = 'labels-preview-root labels-preview-thermal'
+    previewRoot.style.setProperty('--thermal-label-width', `${width}mm`)
+    previewRoot.style.setProperty('--thermal-label-height', `${height}mm`)
+    previewRoot.style.setProperty('--label-a4-columns', '2')
+
+    // Replica OrderLabelsPreview: la regla @page vive dentro del árbol de preview,
+    // que luego queda oculto durante print. El E2E verifica que aun así Chromium
+    // respete el tamaño físico cuando el contenido real está en el top-level mount.
+    const pageStyle = document.createElement('style')
+    pageStyle.media = 'print'
+    pageStyle.textContent = `@page { size: ${width}mm ${height}mm; margin: 0; }`
+    previewRoot.appendChild(pageStyle)
+
+    const surface = document.createElement('div')
+    surface.className = 'labels-print-surface labels-print-thermal'
+    surface.setAttribute('data-print-label-count', String(count))
+
+    for (let index = 1; index <= count; index += 1) {
+      const page = document.createElement('div')
+      page.className = 'thermal-label-page'
+      page.setAttribute('data-thermal-page-index', String(index))
+
+      const card = document.createElement('article')
+      card.className = 'sf-label-card'
+      card.setAttribute('data-label-fit-fixed', 'true')
+      card.setAttribute('data-label-fit-ready', 'true')
+      card.setAttribute('data-label-fit-valid', 'true')
+      card.setAttribute('data-label-fit-scale', '1.0000')
+
+      const fitArea = document.createElement('div')
+      fitArea.className = 'sf-label-fit-area'
+
+      const content = document.createElement('div')
+      content.className = 'sf-label-card-content'
+
+      const header = document.createElement('header')
+      header.className = 'sf-label-header'
+      header.innerHTML = `
+        <div class="sf-label-customer">ETIQUETA ${index}</div>
+        <div class="sf-label-code">#${String(index).padStart(4, '0')}</div>
+      `
+
+      const meta = document.createElement('div')
+      meta.className = 'sf-label-meta'
+      meta.innerHTML = '<strong>SERVIFOOD TEST</strong><span>ALMUERZO</span><span>15/09/2026</span>'
+
+      const items = document.createElement('div')
+      items.className = 'sf-label-items'
+      items.innerHTML = `<strong>Pedido:</strong> MENÚ DE PRUEBA ${index}`
+
+      content.append(header, meta, items)
+      fitArea.appendChild(content)
+      card.appendChild(fitArea)
+      page.appendChild(card)
+      surface.appendChild(page)
+    }
+
+    previewRoot.appendChild(surface)
+    document.getElementById('app-shell').appendChild(previewRoot)
+
+    window.__LABEL_PRINT_E2E__ = {
+      count,
+      prepare: () => prepareDirectLabelPrint(count),
+      print: () => printLabelsDirectly(count),
+      cleanup: cleanupDirectLabelPrint,
+      state: getDirectLabelPrintState
+    }
+  </script>
+</body>
+</html>

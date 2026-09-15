@@ -21,7 +21,7 @@ const cssSource = readFileSync(
   'utf8'
 )
 
-const printFrameSource = readFileSync(
+const printModuleSource = readFileSync(
   new URL('../../utils/labels/labelPrintFrame.js', import.meta.url),
   'utf8'
 )
@@ -45,38 +45,48 @@ describe('thermal label print safety gates', () => {
     expect(pageSource).toContain('thermalPages.length === expectedLabelCount')
     expect(previewSource).toContain('className="thermal-label-page"')
     expect(previewSource).toContain('@page { size: ${printPageSize}; margin: 0; }')
-    expect(cssSource).toMatch(/body\.labels-print-frame \.labels-print-thermal \.thermal-label-page\s*\{[\s\S]*?height: var\(--thermal-label-height, 50mm\) !important;/)
+    expect(cssSource).toMatch(/#label-print-mount \.thermal-label-page\s*\{[\s\S]*?height: var\(--thermal-label-height, 50mm\) !important;/)
     expect(cssSource).toContain('break-after: page !important')
     expect(cssSource).toContain('page-break-after: always !important')
-    expect(cssSource).toContain('body.labels-print-frame .labels-print-thermal .thermal-label-page:last-child')
+    expect(cssSource).toContain('#label-print-mount .thermal-label-page:last-child')
     expect(cssSource).toContain('page-break-after: auto !important')
   })
 
-  it('isolates printing from the application layout instead of rewriting Layout ancestors', () => {
-    expect(pageSource).toContain('printLabelsInIsolatedFrame')
-    expect(printFrameSource).toContain("document.createElement('iframe')")
-    expect(printFrameSource).toContain('<body class="labels-print-frame"></body>')
-    expect(printFrameSource).toContain('sourceSurface.cloneNode(true)')
-    expect(cssSource).toContain('body.labels-print-frame')
+  it('prints from a direct body child instead of any iframe or offscreen document', () => {
+    expect(pageSource).toContain('printLabelsDirectly')
+    expect(printModuleSource).toContain("mount.id = PRINT_MOUNT_ID")
+    expect(printModuleSource).toContain('document.body.appendChild(mount)')
+    expect(printModuleSource).toContain("document.body.classList.add(PRINT_BODY_CLASS)")
+    expect(printModuleSource).toContain('window.print()')
+    expect(printModuleSource).not.toContain("createElement('iframe')")
+    expect(printModuleSource).not.toContain('document.write')
+    expect(printModuleSource).not.toContain('collectLoadedCssText')
+    expect(printModuleSource).not.toContain('frameWindow')
+  })
+
+  it('removes the application from the print tree and keeps only the root print mount', () => {
+    expect(cssSource).toContain('body.is-printing-labels > *:not(#label-print-mount)')
+    expect(cssSource).toContain('#label-print-mount {')
+    expect(cssSource).toContain('display: none;')
+    expect(cssSource).toContain('display: block !important')
+    expect(cssSource).not.toContain('body.labels-print-frame')
     expect(cssSource).not.toContain(':has(.labels-print-surface)')
     expect(cssSource).not.toContain('body *:not(:has(')
   })
 
-  it('validates that the isolated native print snapshot is visible, complete and text-identical', () => {
-    expect(printFrameSource).toContain('label_print_frame_count_mismatch')
-    expect(printFrameSource).toContain('label_print_frame_content_mismatch')
-    expect(printFrameSource).toContain('label_print_frame_page_count_mismatch')
-    expect(printFrameSource).toContain('label_print_frame_blank')
-    expect(printFrameSource).toContain("computedStyle.visibility === 'hidden'")
-    expect(printFrameSource).toContain('rect.width <= 0')
-    expect(printFrameSource).toContain('frameTexts.some')
+  it('validates the cloned mount against the visible preview before printing', () => {
+    expect(printModuleSource).toContain("source: 'source'")
+    expect(printModuleSource).toContain("source: 'mount'")
+    expect(printModuleSource).toContain('expectedTexts: labelTexts')
+    expect(printModuleSource).toContain('label_print_${source}_count_mismatch')
+    expect(printModuleSource).toContain('label_print_${source}_content_mismatch')
+    expect(printModuleSource).toContain('label_print_${source}_page_count_mismatch')
   })
 
-  it('forces the thermal print container to be fragmentable instead of flex/grid constrained', () => {
-    expect(cssSource).toContain('body.labels-print-frame .labels-print-thermal {')
-    expect(cssSource).toContain('display: block !important')
-    expect(cssSource).toContain('break-inside: auto !important')
-    expect(cssSource).toContain('page-break-inside: auto !important')
+  it('cleans the temporary print mount after the native dialog closes', () => {
+    expect(printModuleSource).toContain("window.addEventListener('afterprint', cleanup, { once: true })")
+    expect(printModuleSource).toContain('cleanupDirectLabelPrint()')
+    expect(printModuleSource).toContain('PRINT_MOUNT_FALLBACK_CLEANUP_MS')
   })
 
   it('keeps explicit printer setup guidance next to thermal batch printing', () => {

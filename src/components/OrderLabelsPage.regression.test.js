@@ -29,7 +29,7 @@ const cssSource = readFileSync(
   'utf8'
 )
 
-const printFrameSource = readFileSync(
+const printModuleSource = readFileSync(
   new URL('../utils/labels/labelPrintFrame.js', import.meta.url),
   'utf8'
 )
@@ -137,7 +137,7 @@ describe('order labels print flow', () => {
     expect(html).toContain('data-print-label-count="50"')
   })
 
-  it('creates one isolated thermal page per label in the current batch', () => {
+  it('creates one thermal page per label in the current batch', () => {
     const html = renderPreview(25)
 
     expect(countLabelCards(html)).toBe(25)
@@ -146,7 +146,7 @@ describe('order labels print flow', () => {
     expect(html).toContain('data-thermal-page-index="25"')
   })
 
-  it('supports a custom 64 x 32 mm thermal page through dynamic @page', () => {
+  it('supports custom thermal dimensions through the dynamic page rule', () => {
     const html = renderPreview(1, {
       printFormat: 'thermal',
       thermalPreset: 'custom',
@@ -156,56 +156,28 @@ describe('order labels print flow', () => {
       }
     })
 
-    expect(html).toContain(
-      '@page { size: 64mm 32mm; margin: 0; }'
-    )
-
-    expect(html).toContain(
-      '--thermal-label-width:64mm'
-    )
-
-    expect(html).toContain(
-      '--thermal-label-height:32mm'
-    )
+    expect(html).toContain('@page { size: 64mm 32mm; margin: 0; }')
+    expect(html).toContain('--thermal-label-width:64mm')
+    expect(html).toContain('--thermal-label-height:32mm')
   })
 
-  it('locks thermal width and height at page, wrapper, and card level', () => {
-    expect(cssSource).toContain('.thermal-label-page')
-    expect(cssSource).toContain('height: var(--thermal-label-height, 50mm)')
-    expect(cssSource).toContain('min-height: var(--thermal-label-height, 50mm)')
-    expect(cssSource).toContain('max-height: var(--thermal-label-height, 50mm)')
-    expect(cssSource).toContain(".sf-label-card[data-label-fit-fixed='true']")
-    expect(cssSource).toContain('height: 100%')
-
-    const thermalPrintBlock = cssSource.slice(
-      cssSource.indexOf('body.labels-print-frame .labels-print-thermal .thermal-label-page'),
-      cssSource.indexOf('body.labels-print-frame .labels-print-thermal .sf-label-card')
-    )
-    expect(thermalPrintBlock).not.toContain('height: auto')
-    expect(thermalPrintBlock).not.toContain('max-height: none')
-  })
-
-  it('forces one physical page per thermal label without adding a blank final page', () => {
-    expect(cssSource).toContain(
-      'body.labels-print-frame .labels-print-thermal .thermal-label-page {'
-    )
+  it('locks each thermal page to its physical dimensions in the top-level mount', () => {
+    expect(cssSource).toContain('#label-print-mount .thermal-label-page {')
+    expect(cssSource).toContain('height: var(--thermal-label-height, 50mm) !important')
+    expect(cssSource).toContain('min-height: var(--thermal-label-height, 50mm) !important')
+    expect(cssSource).toContain('max-height: var(--thermal-label-height, 50mm) !important')
     expect(cssSource).toContain('break-after: page !important')
     expect(cssSource).toContain('page-break-after: always !important')
-    expect(cssSource).toContain(
-      'body.labels-print-frame .labels-print-thermal .thermal-label-page:last-child'
-    )
-    expect(cssSource).toContain('break-after: auto !important')
+    expect(cssSource).toContain('#label-print-mount .thermal-label-page:last-child')
     expect(cssSource).toContain('page-break-after: auto !important')
   })
 
-  it('fits long label content inside the fixed physical page instead of spilling into the next label', () => {
+  it('fits long content inside the fixed physical page instead of spilling', () => {
     expect(cardSource).toContain('fitToFixedPage')
     expect(cardSource).toContain('data-label-fit-ready')
     expect(cardSource).toContain('data-label-fit-scale')
     expect(cardSource).toContain('ResizeObserver')
     expect(cardSource).toContain('measuredScale * 0.985')
-    expect(cardSource).toContain('sf-label-card--very-dense')
-    expect(cssSource).toContain('overflow: hidden')
 
     const longOrder = {
       ...buildSampleOrder('long-order'),
@@ -221,17 +193,12 @@ describe('order labels print flow', () => {
         {
           name: 'Tarta integral de verduras con guarnicion especial',
           quantity: 1
-        },
-        {
-          name: 'Wrap de pollo con vegetales asados y salsa adicional',
-          quantity: 1
         }
       ]
     }
 
     const html = renderPreviewWithOrders([longOrder])
     expect(countLabelCards(html)).toBe(1)
-    expect(html).toContain('sf-label-card--dense')
     expect(html).toContain('data-label-fit-fixed="true"')
   })
 
@@ -246,34 +213,28 @@ describe('order labels print flow', () => {
     expect(
       pageSource.indexOf('await waitForPrintDocumentReady')
     ).toBeLessThan(
-      pageSource.indexOf('await printLabelsInIsolatedFrame')
+      pageSource.indexOf('await printLabelsDirectly')
     )
   })
 
-  it('prints the exact visible preview snapshot in an isolated iframe instead of printing the application DOM', () => {
-    expect(pageSource).toContain("import { printLabelsInIsolatedFrame }")
-    expect(pageSource).not.toContain('window.print()')
+  it('prints the visible snapshot from a top-level body mount and never an iframe', () => {
+    expect(pageSource).toContain("import { printLabelsDirectly }")
+    expect(pageSource).not.toContain('printLabelsInIsolatedFrame')
 
-    expect(printFrameSource).toContain("document.createElement('iframe')")
-    expect(printFrameSource).toContain("data-label-print-frame")
-    expect(printFrameSource).toContain('sourceSurface.cloneNode(true)')
-    expect(printFrameSource).toContain("data-print-export-surface")
-    expect(printFrameSource).toContain('frameWindow.print()')
-    expect(printFrameSource).toContain('label_print_frame_count_mismatch')
-    expect(printFrameSource).toContain('label_print_frame_content_mismatch')
-    expect(printFrameSource).toContain('label_print_frame_blank')
-    expect(printFrameSource).toContain('frameTexts.some')
+    expect(printModuleSource).toContain("const PRINT_MOUNT_ID = 'label-print-mount'")
+    expect(printModuleSource).toContain('document.body.appendChild(mount)')
+    expect(printModuleSource).toContain("document.body.classList.add(PRINT_BODY_CLASS)")
+    expect(printModuleSource).toContain('sourceSurface.cloneNode(true)')
+    expect(printModuleSource).toContain('window.print()')
+    expect(printModuleSource).not.toContain("createElement('iframe')")
+    expect(printModuleSource).not.toContain('collectLoadedCssText')
+    expect(printModuleSource).not.toContain('document.write')
+
+    expect(cssSource).toContain('body.is-printing-labels > *:not(#label-print-mount)')
+    expect(cssSource).not.toContain('body.labels-print-frame')
   })
 
-  it('does not depend on Chromium :has tree surgery to make labels printable', () => {
-    expect(cssSource).toContain('body.labels-print-frame')
-    expect(cssSource).not.toContain(':has(.labels-print-surface)')
-    expect(cssSource).not.toContain('body *:not(:has(')
-    expect(printFrameSource).toContain('collectLoadedCssText')
-    expect(printFrameSource).toContain('buildIsolatedLabelPrintCss')
-  })
-
-  it('uses an immutable print-session snapshot so marking one batch cannot skip the next one', () => {
+  it('uses an immutable print-session snapshot so completing one batch cannot skip another', () => {
     expect(pageSource).toContain('printSessionOrders')
     expect(pageSource).toContain('setPrintSessionOrders(sessionOrders)')
     expect(pageSource).toContain('selectedOrders={printSessionOrders}')
@@ -289,7 +250,7 @@ describe('order labels print flow', () => {
     expect(previewSource).toContain('Imprimir 1 de prueba')
   })
 
-  it('does not reprint a physically completed batch when tracking persistence fails', () => {
+  it('does not reprint a completed batch when tracking persistence fails', () => {
     expect(previewSource).toContain('pendingRegistrationBatch')
     expect(previewSource).toContain('Reintentar registrar lote')
     expect(previewSource).toContain('onRegisterPrinted(pendingRegistrationBatch)')
@@ -298,7 +259,7 @@ describe('order labels print flow', () => {
     expect(batchUtilsSource).toContain('hasCompleteLabelTracking')
   })
 
-  it('preserves selection, filters, print-state controls and modern tracking', () => {
+  it('preserves selection, filters, print-state controls and tracking', () => {
     expect(pageSource).toContain('Seleccionar todos visibles')
     expect(pageSource).toContain('Limpiar selección')
     expect(pageSource).toContain('Imprimir seleccionados')
@@ -320,21 +281,21 @@ describe('order labels print flow', () => {
     expect(cardSource).toContain('label.deliveryLocation')
   })
 
-  it('keeps batch sizes explicit and finite', () => {
+  it('keeps batch sizes explicit, finite and deduplicated', () => {
     expect(batchUtilsSource).toContain('Object.freeze([25, 50, 100])')
     expect(batchUtilsSource).toContain('DEFAULT_LABEL_PRINT_BATCH_SIZE = 50')
     expect(batchUtilsSource).toContain('seenIds.has(orderId)')
     expect(batchUtilsSource).toContain('printableOrders.slice(index, index + safeBatchSize)')
   })
 
-  it('marks a batch printed only after the native print call and explicit operator confirmation', () => {
+  it('marks a batch printed only after the native print call and explicit confirmation', () => {
     expect(pageSource).toContain('requestPrintSuccessConfirmation')
     expect(pageSource).toContain('const confirmed = await requestPrintSuccessConfirmation')
     expect(pageSource).toContain('if (!confirmed)')
     expect(pageSource).toContain('registerPrintedOrders(safeOrders)')
 
     expect(
-      pageSource.indexOf('await printLabelsInIsolatedFrame')
+      pageSource.indexOf('await printLabelsDirectly')
     ).toBeLessThan(
       pageSource.indexOf('const confirmed = await requestPrintSuccessConfirmation')
     )

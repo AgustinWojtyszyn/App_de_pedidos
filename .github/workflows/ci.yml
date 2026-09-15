@@ -47,3 +47,47 @@ jobs:
 
       - name: Build production bundle
         run: npm run build
+
+  labels-print-e2e:
+    name: Thermal labels Chromium E2E
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      CI: true
+      VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+      VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Install Playwright in an isolated tool directory
+        run: |
+          mkdir -p /tmp/labels-playwright
+          npm install --prefix /tmp/labels-playwright --no-package-lock --no-save @playwright/test@1.63.0
+          ln -s /tmp/labels-playwright/node_modules/@playwright node_modules/@playwright
+          ln -s /tmp/labels-playwright/node_modules/playwright node_modules/playwright
+          ln -s /tmp/labels-playwright/node_modules/playwright-core node_modules/playwright-core
+          ln -s /tmp/labels-playwright/node_modules/.bin/playwright node_modules/.bin/playwright
+
+      - name: Install Chromium and system dependencies
+        run: /tmp/labels-playwright/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Install PDF inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+
+      - name: Verify thermal print PDFs in real Chromium
+        run: npm run test:e2e:labels
