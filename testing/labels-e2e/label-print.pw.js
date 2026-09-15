@@ -6,15 +6,29 @@ const normalizeText = (value) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-const readPdfPageCount = (pdfPath) => {
-  const output = execFileSync('pdfinfo', [pdfPath], {
-    encoding: 'utf8'
-  })
-  const match = output.match(/^Pages:\s+(\d+)$/m)
+const readPdfInfo = (pdfPath) => execFileSync(
+  'pdfinfo',
+  [pdfPath],
+  { encoding: 'utf8' }
+)
+
+const readPdfPageCount = (pdfInfo, pdfPath) => {
+  const match = pdfInfo.match(/^Pages:\s+(\d+)$/m)
   if (!match) {
     throw new Error(`No se pudo leer la cantidad de páginas de ${pdfPath}`)
   }
   return Number(match[1])
+}
+
+const readPdfPageSizePoints = (pdfInfo, pdfPath) => {
+  const match = pdfInfo.match(/^Page size:\s+([0-9.]+) x ([0-9.]+) pts/m)
+  if (!match) {
+    throw new Error(`No se pudo leer el tamaño físico de página de ${pdfPath}`)
+  }
+  return {
+    width: Number(match[1]),
+    height: Number(match[2])
+  }
 }
 
 const readPdfPageText = (pdfPath, pageNumber) => execFileSync(
@@ -94,7 +108,14 @@ for (const expectedCount of [1, 2, 25]) {
       scale: 1
     })
 
-    expect(readPdfPageCount(pdfPath)).toBe(expectedCount)
+    const pdfInfo = readPdfInfo(pdfPath)
+    expect(readPdfPageCount(pdfInfo, pdfPath)).toBe(expectedCount)
+
+    const pageSize = readPdfPageSizePoints(pdfInfo, pdfPath)
+    expect(pageSize.width).toBeGreaterThan(282)
+    expect(pageSize.width).toBeLessThan(285)
+    expect(pageSize.height).toBeGreaterThan(140)
+    expect(pageSize.height).toBeLessThan(143)
 
     for (let pageNumber = 1; pageNumber <= expectedCount; pageNumber += 1) {
       const text = normalizeText(readPdfPageText(pdfPath, pageNumber))
