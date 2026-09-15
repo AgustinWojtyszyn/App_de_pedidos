@@ -35,17 +35,33 @@ const waitForPrintDocumentReady = async (expectedLabelCount) => {
   }
 
   for (let attempt = 0; attempt < 60; attempt += 1) {
+    const thermalPreview = document.querySelector(
+      '.labels-preview-root.labels-preview-thermal'
+    )
     const pendingFits = document.querySelectorAll(
       '.labels-preview-thermal [data-label-fit-fixed="true"][data-label-fit-ready="false"]'
     )
-
+    const invalidFits = document.querySelectorAll(
+      '.labels-preview-thermal [data-label-fit-fixed="true"][data-label-fit-ready="true"][data-label-fit-valid="false"]'
+    )
     const renderedLabels = document.querySelectorAll(
       '.labels-print-surface .sf-label-card'
     )
+    const thermalPages = document.querySelectorAll(
+      '.labels-preview-thermal .thermal-label-page'
+    )
+
+    if (invalidFits.length > 0) {
+      throw new Error('label_print_content_too_dense')
+    }
+
+    const thermalPageCountIsExact =
+      !thermalPreview || thermalPages.length === expectedLabelCount
 
     if (
       pendingFits.length === 0 &&
-      renderedLabels.length === expectedLabelCount
+      renderedLabels.length === expectedLabelCount &&
+      thermalPageCountIsExact
     ) {
       await nextAnimationFrame()
       await nextAnimationFrame()
@@ -202,9 +218,12 @@ const OrderLabelsPage = () => {
     try {
       await waitForPrintDocumentReady(safeOrders.length)
       window.print()
-    } catch (_error) {
+    } catch (error) {
+      const contentTooDense = error?.message === 'label_print_content_too_dense'
       labels.setPrintWarning(
-        'El lote no terminó de prepararse de forma segura. No se envió nada a imprimir. Intentá nuevamente.'
+        contentTooDense
+          ? 'Hay una etiqueta con demasiado contenido para el tamaño elegido. La impresión fue bloqueada para evitar una etiqueta recortada o ilegible. Elegí un tamaño mayor antes de continuar.'
+          : 'El lote no terminó de prepararse de forma segura. No se envió nada a imprimir. Intentá nuevamente.'
       )
       return {
         printed: false,
