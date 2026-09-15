@@ -34,8 +34,14 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const getAuthenticatedUserId = async () => {
   try {
-    const { data } = await supabase.auth.getUser()
-    return data?.user?.id || null
+    // getSession normally resolves from the local Supabase session, so the
+    // fallback still works precisely when the network is having trouble.
+    const { data: sessionData } = await supabase.auth.getSession()
+    const sessionUserId = sessionData?.session?.user?.id
+    if (sessionUserId) return sessionUserId
+
+    const { data: userData } = await supabase.auth.getUser()
+    return userData?.user?.id || null
   } catch {
     return null
   }
