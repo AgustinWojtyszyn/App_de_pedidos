@@ -5,6 +5,7 @@ import OrderLabelsFilters from './labels/OrderLabelsFilters'
 import OrderLabelsPreview from './labels/OrderLabelsPreview'
 import OrderLabelsResults from './labels/OrderLabelsResults'
 import { useOrderLabels } from '../hooks/labels/useOrderLabels'
+import { printLabelsInIsolatedFrame } from '../utils/labels/labelPrintFrame'
 import './labels/order-labels.css'
 
 // Regresión histórica: "Seleccionar todos visibles" ya no alcanza cuando hay más de una página.
@@ -217,13 +218,29 @@ const OrderLabelsPage = () => {
 
     try {
       await waitForPrintDocumentReady(safeOrders.length)
-      window.print()
+      await printLabelsInIsolatedFrame(safeOrders.length)
     } catch (error) {
       const contentTooDense = error?.message === 'label_print_content_too_dense'
+      const invalidPrintSnapshot = [
+        'label_print_source_missing',
+        'label_print_source_count_mismatch',
+        'label_print_source_blank',
+        'label_print_source_page_count_mismatch',
+        'label_print_preview_root_missing',
+        'label_print_frame_missing',
+        'label_print_frame_count_mismatch',
+        'label_print_frame_content_mismatch',
+        'label_print_frame_page_count_mismatch',
+        'label_print_frame_blank',
+        'label_print_frame_unavailable'
+      ].includes(error?.message)
+
       labels.setPrintWarning(
         contentTooDense
           ? 'Hay una etiqueta con demasiado contenido para el tamaño elegido. La impresión fue bloqueada para evitar una etiqueta recortada o ilegible. Elegí un tamaño mayor antes de continuar.'
-          : 'El lote no terminó de prepararse de forma segura. No se envió nada a imprimir. Intentá nuevamente.'
+          : invalidPrintSnapshot
+            ? 'La vista de impresión no contiene exactamente las etiquetas del lote o quedó vacía. Se bloqueó la impresión para evitar hojas en blanco o faltantes. Cerrá la vista previa, volvé a abrirla e intentá nuevamente.'
+            : 'El lote no terminó de prepararse de forma segura. No se envió nada a imprimir. Intentá nuevamente.'
       )
       return {
         printed: false,
