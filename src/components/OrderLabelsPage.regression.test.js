@@ -29,6 +29,11 @@ const cssSource = readFileSync(
   'utf8'
 )
 
+const printFrameSource = readFileSync(
+  new URL('../utils/labels/labelPrintFrame.js', import.meta.url),
+  'utf8'
+)
+
 const labelUtilsSource = readFileSync(
   new URL('../utils/labels/labelOrderUtils.js', import.meta.url),
   'utf8'
@@ -173,8 +178,8 @@ describe('order labels print flow', () => {
     expect(cssSource).toContain('height: 100%')
 
     const thermalPrintBlock = cssSource.slice(
-      cssSource.indexOf('.labels-print-thermal .thermal-label-page'),
-      cssSource.indexOf('.labels-print-a4 .sf-label-card')
+      cssSource.indexOf('body.labels-print-frame .labels-print-thermal .thermal-label-page'),
+      cssSource.indexOf('body.labels-print-frame .labels-print-thermal .sf-label-card')
     )
     expect(thermalPrintBlock).not.toContain('height: auto')
     expect(thermalPrintBlock).not.toContain('max-height: none')
@@ -182,12 +187,12 @@ describe('order labels print flow', () => {
 
   it('forces one physical page per thermal label without adding a blank final page', () => {
     expect(cssSource).toContain(
-      '.labels-print-thermal .thermal-label-page {'
+      'body.labels-print-frame .labels-print-thermal .thermal-label-page {'
     )
     expect(cssSource).toContain('break-after: page !important')
     expect(cssSource).toContain('page-break-after: always !important')
     expect(cssSource).toContain(
-      '.labels-print-thermal .thermal-label-page:last-child'
+      'body.labels-print-frame .labels-print-thermal .thermal-label-page:last-child'
     )
     expect(cssSource).toContain('break-after: auto !important')
     expect(cssSource).toContain('page-break-after: auto !important')
@@ -241,8 +246,31 @@ describe('order labels print flow', () => {
     expect(
       pageSource.indexOf('await waitForPrintDocumentReady')
     ).toBeLessThan(
-      pageSource.indexOf('window.print()')
+      pageSource.indexOf('await printLabelsInIsolatedFrame')
     )
+  })
+
+  it('prints the exact visible preview snapshot in an isolated iframe instead of printing the application DOM', () => {
+    expect(pageSource).toContain("import { printLabelsInIsolatedFrame }")
+    expect(pageSource).not.toContain('window.print()')
+
+    expect(printFrameSource).toContain("document.createElement('iframe')")
+    expect(printFrameSource).toContain("data-label-print-frame")
+    expect(printFrameSource).toContain('sourceSurface.cloneNode(true)')
+    expect(printFrameSource).toContain("data-print-export-surface")
+    expect(printFrameSource).toContain('frameWindow.print()')
+    expect(printFrameSource).toContain('label_print_frame_count_mismatch')
+    expect(printFrameSource).toContain('label_print_frame_content_mismatch')
+    expect(printFrameSource).toContain('label_print_frame_blank')
+    expect(printFrameSource).toContain('frameTexts.some')
+  })
+
+  it('does not depend on Chromium :has tree surgery to make labels printable', () => {
+    expect(cssSource).toContain('body.labels-print-frame')
+    expect(cssSource).not.toContain(':has(.labels-print-surface)')
+    expect(cssSource).not.toContain('body *:not(:has(')
+    expect(printFrameSource).toContain('collectLoadedCssText')
+    expect(printFrameSource).toContain('buildIsolatedLabelPrintCss')
   })
 
   it('uses an immutable print-session snapshot so marking one batch cannot skip the next one', () => {
@@ -299,14 +327,14 @@ describe('order labels print flow', () => {
     expect(batchUtilsSource).toContain('printableOrders.slice(index, index + safeBatchSize)')
   })
 
-  it('marks a batch printed only after explicit operator confirmation', () => {
+  it('marks a batch printed only after the native print call and explicit operator confirmation', () => {
     expect(pageSource).toContain('requestPrintSuccessConfirmation')
     expect(pageSource).toContain('const confirmed = await requestPrintSuccessConfirmation')
     expect(pageSource).toContain('if (!confirmed)')
     expect(pageSource).toContain('registerPrintedOrders(safeOrders)')
 
     expect(
-      pageSource.indexOf('window.print()')
+      pageSource.indexOf('await printLabelsInIsolatedFrame')
     ).toBeLessThan(
       pageSource.indexOf('const confirmed = await requestPrintSuccessConfirmation')
     )
