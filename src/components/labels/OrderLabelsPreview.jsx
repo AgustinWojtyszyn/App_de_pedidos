@@ -1,5 +1,12 @@
-import { ArrowLeft, Printer, X } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { ArrowLeft, CheckCircle2, Printer, RotateCcw, X } from 'lucide-react'
 import { buildLabelOrder } from '../../utils/labels/labelOrderUtils'
+import {
+  DEFAULT_LABEL_PRINT_BATCH_SIZE,
+  LABEL_PRINT_BATCH_SIZE_OPTIONS,
+  createLabelPrintBatches,
+  normalizeLabelPrintBatchSize
+} from '../../utils/labels/labelPrintBatchUtils'
 import OrderLabelCard from './OrderLabelCard'
 
 const THERMAL_LIMITS = {
@@ -41,6 +48,12 @@ const normalizeThermalMillimeters = (
   )
 }
 
+const waitForNextPaint = () => new Promise((resolve) => {
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(resolve)
+  })
+})
+
 const OrderLabelsPreview = ({
   selectedOrders,
   printing = false,
@@ -54,11 +67,47 @@ const OrderLabelsPreview = ({
   setCustomThermalSize,
   onBack,
   onCancel,
-  onPrint
+  onPrint,
+  onRegisterPrinted
 }) => {
-  // 1 pedido = 1 etiqueta.
-  // Se conserva buildLabelOrder moderno.
-  const labels = selectedOrders
+  const [batchSize, setBatchSize] = useState(DEFAULT_LABEL_PRINT_BATCH_SIZE)
+  const [completedBatchIndex, setCompletedBatchIndex] = useState(0)
+  const [printScope, setPrintScope] = useState('batch')
+  const [localBusy, setLocalBusy] = useState(false)
+  const [pendingRegistrationBatch, setPendingRegistrationBatch] = useState(null)
+  const operationLockRef = useRef(false)
+
+  const batches = useMemo(
+    () => createLabelPrintBatches(selectedOrders, batchSize),
+    [batchSize, selectedOrders]
+  )
+
+  const sessionTotal = useMemo(
+    () => batches.reduce((sum, batch) => sum + batch.length, 0),
+    [batches]
+  )
+
+  const completedCount = useMemo(
+    () => batches
+      .slice(0, completedBatchIndex)
+      .reduce((sum, batch) => sum + batch.length, 0),
+    [batches, completedBatchIndex]
+  )
+
+  const sessionComplete = sessionTotal > 0 && completedBatchIndex >= batches.length
+  const currentBatch = sessionComplete
+    ? []
+    : (batches[completedBatchIndex] || [])
+  const currentBatchNumber = batches.length === 0
+    ? 0
+    : Math.min(completedBatchIndex + 1, batches.length)
+  const batchLocked = completedBatchIndex > 0 || Boolean(pendingRegistrationBatch)
+  const displayOrders = printScope === 'test'
+    ? currentBatch.slice(0, 1)
+    : currentBatch
+
+  // 1 pedido único = 1 etiqueta única dentro del lote actual.
+  const labels = displayOrders
     .filter(order => order?.id)
     .map(order => ({
       ...buildLabelOrder(order),
@@ -138,6 +187,73 @@ const OrderLabelsPreview = ({
     }))
   }
 
+  const runExclusive = async (operation) => {
+    if (operationLockRef.current) return
+
+    operationLockRef.current = true
+    setLocalBusy(true)
+    try {
+      await operation()
+    } finally {
+      operationLockRef.current = false
+      setLocalBusy(false)
+    }
+  }
+
+  const handleBatchSizeChange = (value) => {
+    if (batchLocked) return
+    setBatchSize(normalizeLabelPrintBatchSize(value))
+  }
+
+  const handleTestPrint = () => runExclusive(async () => {
+    const testOrder = currentBatch[0]
+    if (!testOrder) return
+
+    setPrintScope('test')
+    await waitForNextPaint()
+    await onPrint([testOrder], {
+      markAsPrinted: false,
+      printedLabelCount: 1,
+      contextLabel: 'Prueba de impresión'
+    })
+    setPrintScope('batch')
+    await waitForNextPaint()
+  })
+
+  const handlePrintCurrentBatch = () => runExclusive(async () => {
+    if (currentBatch.length === 0 || pendingRegistrationBatch) return
+
+    setPrintScope('batch')
+    await waitForNextPaint()
+
+    const result = await onPrint(currentBatch, {
+      markAsPrinted: true,
+      printedLabelCount: currentBatch.length,
+      contextLabel: `Lote ${currentBatchNumber} de ${batches.length}`
+    })
+
+    if (result?.confirmed && result?.tracked) {
+      setCompletedBatchIndex(index => index + 1)
+      return
+    }
+
+    if (result?.confirmed && !result?.tracked) {
+      setPendingRegistrationBatch(currentBatch)
+    }
+  })
+
+  const handleRetryRegistration = () => runExclusive(async () => {
+    if (!pendingRegistrationBatch?.length) return
+
+    const result = await onRegisterPrinted(pendingRegistrationBatch)
+    if (!result?.tracked) return
+
+    setPendingRegistrationBatch(null)
+    setCompletedBatchIndex(index => index + 1)
+  })
+
+  const busy = printing || localBusy
+
   return (
     <section
       className={`labels-preview-root ${previewModeClass}`}
@@ -155,29 +271,34 @@ const OrderLabelsPreview = ({
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <h2 className="text-xl font-black text-slate-900">
-              Vista previa de etiquetas
+              Impresión por lotes
             </h2>
 
             <p className="text-sm font-semibold text-slate-500">
-              {labels.length} etiqueta
-              {labels.length === 1 ? '' : 's'} final
-              {labels.length === 1 ? '' : 'es'}
-              {' · '}
-              {printFormat === 'a4'
-                ? `${approxSheets} hoja${approxSheets === 1 ? '' : 's'} A4 aprox.`
-                : `${approxSheets} página${approxSheets === 1 ? '' : 's'} térmica${approxSheets === 1 ? '' : 's'}`}
+              {sessionTotal} etiqueta
+              {sessionTotal === 1 ? '' : 's'} seleccionada
+              {sessionTotal === 1 ? '' : 's'}
+              {batches.length > 0 && (
+                <>
+                  {' · '}
+                  Lote {currentBatchNumber} de {batches.length}
+                  {' · '}
+                  {completedCount}/{sessionTotal} completadas
+                </>
+              )}
             </p>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-4 xl:min-w-[760px]">
+          <div className="grid gap-3 md:grid-cols-5 xl:min-w-[920px]">
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-slate-600">
                 Formato
               </span>
 
               <select
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
                 value={printFormat}
+                disabled={batchLocked || busy}
                 onChange={event =>
                   setPrintFormat(event.target.value)
                 }
@@ -192,6 +313,25 @@ const OrderLabelsPreview = ({
               </select>
             </label>
 
+            <label className="space-y-1">
+              <span className="text-xs font-bold uppercase text-slate-600">
+                Por lote
+              </span>
+
+              <select
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
+                value={batchSize}
+                disabled={batchLocked || busy}
+                onChange={event => handleBatchSizeChange(event.target.value)}
+              >
+                {LABEL_PRINT_BATCH_SIZE_OPTIONS.map(size => (
+                  <option key={size} value={size}>
+                    {size} etiquetas
+                  </option>
+                ))}
+              </select>
+            </label>
+
             {printFormat === 'a4' ? (
               <label className="space-y-1">
                 <span className="text-xs font-bold uppercase text-slate-600">
@@ -199,8 +339,9 @@ const OrderLabelsPreview = ({
                 </span>
 
                 <select
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
                   value={a4Columns}
+                  disabled={batchLocked || busy}
                   onChange={event =>
                     setA4Columns(
                       Number(event.target.value)
@@ -224,8 +365,9 @@ const OrderLabelsPreview = ({
                   </span>
 
                   <select
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
                     value={thermalPreset}
+                    disabled={batchLocked || busy}
                     onChange={event =>
                       setThermalPreset(
                         event.target.value
@@ -257,7 +399,7 @@ const OrderLabelsPreview = ({
                     min="40"
                     max="150"
                     step="1"
-                    disabled={thermalPreset !== 'custom'}
+                    disabled={thermalPreset !== 'custom' || batchLocked || busy}
                     value={customThermalSize.width}
                     onChange={event =>
                       updateCustomThermalSize(
@@ -284,7 +426,7 @@ const OrderLabelsPreview = ({
                     min="25"
                     max="100"
                     step="1"
-                    disabled={thermalPreset !== 'custom'}
+                    disabled={thermalPreset !== 'custom' || batchLocked || busy}
                     value={customThermalSize.height}
                     onChange={event =>
                       updateCustomThermalSize(
@@ -304,59 +446,142 @@ const OrderLabelsPreview = ({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver a editar selección
-          </button>
+        {sessionComplete ? (
+          <div className="mt-4 flex flex-col gap-3 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-900 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2 font-black">
+              <CheckCircle2 className="h-5 w-5" />
+              Todos los lotes fueron impresos y registrados.
+            </div>
 
-          <button
-            type="button"
-            onClick={onCancel}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-          >
-            <X className="h-4 w-4" />
-            Cancelar vista previa
-          </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800"
+            >
+              Finalizar
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-bold text-blue-950">
+              Lote actual: <strong>{currentBatch.length}</strong> etiqueta
+              {currentBatch.length === 1 ? '' : 's'}.
+              {printFormat === 'thermal' && (
+                <>
+                  {' '}Cada una se genera como una página física independiente de <strong>{width} × {height} mm</strong>.
+                </>
+              )}
+              {printFormat === 'a4' && (
+                <>
+                  {' '}Equivale a unas <strong>{estimateA4Sheets(currentBatch.length, a4Columns)}</strong> hojas A4.
+                </>
+              )}
+            </div>
 
-          <button
-            type="button"
-            onClick={() => onPrint(labels.length)}
-            disabled={labels.length === 0 || printing}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Printer className="h-4 w-4" />
-            {printing
-              ? 'Abriendo impresión...'
-              : 'Imprimir etiquetas'}
-          </button>
-        </div>
+            {pendingRegistrationBatch ? (
+              <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-bold text-amber-950">
+                <p>
+                  Este lote ya salió físicamente. No lo vuelvas a imprimir: falta solamente guardar el estado de {pendingRegistrationBatch.length} etiquetas.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleRetryRegistration}
+                  disabled={busy}
+                  className="mt-3 inline-flex items-center gap-2 rounded-lg bg-amber-700 px-4 py-2 text-sm font-black text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Reintentar registrar lote
+                </button>
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={onBack}
+                  disabled={busy || completedBatchIndex > 0}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Volver a editar selección
+                </button>
 
-        {printFormat === 'thermal' && (
-          <p className="mt-3 text-xs font-bold text-slate-500 print-hide">
-            Para la Zebra GC420t usar orientación Horizontal en el controlador de impresión.
-          </p>
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  disabled={busy}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" />
+                  Cerrar
+                </button>
+
+                {printFormat === 'thermal' && (
+                  <button
+                    type="button"
+                    onClick={handleTestPrint}
+                    disabled={currentBatch.length === 0 || busy}
+                    className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-black text-blue-900 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Imprimir 1 de prueba
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handlePrintCurrentBatch}
+                  disabled={currentBatch.length === 0 || busy}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Printer className="h-4 w-4" />
+                  {busy
+                    ? 'Preparando impresión...'
+                    : `Imprimir lote ${currentBatchNumber} (${currentBatch.length})`}
+                </button>
+              </div>
+            )}
+
+            {printFormat === 'thermal' && (
+              <p className="mt-3 text-xs font-bold text-slate-500 print-hide">
+                Zebra GC420t: usar el mismo tamaño físico configurado arriba, escala 100 % y sin márgenes del controlador.
+              </p>
+            )}
+          </>
         )}
       </div>
 
-      <div
-        className={`labels-print-surface ${
-          printFormat === 'thermal'
-            ? 'labels-print-thermal'
-            : 'labels-print-a4'
-        }`}
-      >
-        {labels.map(label => (
-          <OrderLabelCard
-            key={label.labelInstanceId}
-            label={label}
-          />
-        ))}
-      </div>
+      {!sessionComplete && (
+        <div
+          className={`labels-print-surface ${
+            printFormat === 'thermal'
+              ? 'labels-print-thermal'
+              : 'labels-print-a4'
+          }`}
+          data-print-label-count={labels.length}
+          data-print-batch-number={currentBatchNumber}
+          data-print-batch-total={batches.length}
+        >
+          {printFormat === 'thermal'
+            ? labels.map((label, index) => (
+                <div
+                  key={label.labelInstanceId}
+                  className="thermal-label-page"
+                  data-thermal-page-index={index + 1}
+                >
+                  <OrderLabelCard
+                    label={label}
+                    fitToFixedPage
+                  />
+                </div>
+              ))
+            : labels.map(label => (
+                <OrderLabelCard
+                  key={label.labelInstanceId}
+                  label={label}
+                />
+              ))}
+        </div>
+      )}
     </section>
   )
 }
