@@ -39,9 +39,29 @@ describe('thermal label print safety gates', () => {
   it('requires one physical thermal page for every expected label before printing', () => {
     expect(pageSource).toContain('thermalPages.length === expectedLabelCount')
     expect(previewSource).toContain('className="thermal-label-page"')
+    expect(previewSource).toContain('@page { size: ${printPageSize}; margin: 0; }')
     expect(cssSource).toContain('height: var(--thermal-label-height, 50mm)')
     expect(cssSource).toContain('break-after: page !important')
+    expect(cssSource).toContain('page-break-after: always !important')
+    expect(cssSource).toContain('.labels-print-thermal .thermal-label-page:last-child')
+    expect(cssSource).toContain('page-break-after: auto !important')
     expect(cssSource).not.toContain('height: auto;\n    min-height: 0;\n    max-height: none;')
+  })
+
+  it('removes layout ancestors and scroll clipping from the Chromium print formatting context', () => {
+    expect(cssSource).toContain('body *:not(:has(.labels-print-surface)):not(.labels-print-surface):not(.labels-print-surface *)')
+    expect(cssSource).toContain('body *:has(.labels-print-surface)')
+    expect(cssSource).toContain('overflow: visible !important')
+    expect(cssSource).toContain('position: static !important')
+    expect(cssSource).toContain('display: block !important')
+    expect(cssSource).toContain('contain: none !important')
+    expect(cssSource).not.toContain('.labels-preview-root {\n    position: absolute;')
+  })
+
+  it('forces the thermal print container to be fragmentable instead of flex/grid constrained', () => {
+    expect(cssSource).toContain('.labels-print-thermal {\n    display: block !important;')
+    expect(cssSource).toContain('break-inside: auto !important')
+    expect(cssSource).toContain('page-break-inside: auto !important')
   })
 
   it('keeps explicit printer setup guidance next to thermal batch printing', () => {
