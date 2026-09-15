@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createElement, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   Ban,
@@ -55,7 +55,7 @@ const resolveOrderCompanySlug = (order = {}, companies = []) => {
   return normalizeText(match?.slug)
 }
 
-const AlertMetric = ({ icon: Icon, label, value, description, tone = 'slate' }) => {
+const AlertMetric = ({ icon, label, value, description, tone = 'slate' }) => {
   const tones = {
     amber: 'border-amber-200 bg-amber-50 text-amber-950',
     blue: 'border-blue-200 bg-blue-50 text-blue-950',
@@ -72,7 +72,10 @@ const AlertMetric = ({ icon: Icon, label, value, description, tone = 'slate' }) 
           <p className="mt-1 text-3xl font-black leading-none">{value}</p>
           <p className="mt-2 text-xs font-medium leading-5 opacity-80">{description}</p>
         </div>
-        <Icon className="h-5 w-5 shrink-0 opacity-70" aria-hidden="true" />
+        {createElement(icon, {
+          className: 'h-5 w-5 shrink-0 opacity-70',
+          'aria-hidden': true
+        })}
       </div>
     </div>
   )
