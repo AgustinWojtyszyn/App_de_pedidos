@@ -180,12 +180,17 @@ describe('order labels print flow', () => {
     expect(thermalPrintBlock).not.toContain('max-height: none')
   })
 
-  it('forces the page break on the fixed thermal page wrapper', () => {
+  it('forces one physical page per thermal label without adding a blank final page', () => {
     expect(cssSource).toContain(
-      '.labels-print-thermal .thermal-label-page:not(:last-child)'
+      '.labels-print-thermal .thermal-label-page {'
     )
     expect(cssSource).toContain('break-after: page !important')
     expect(cssSource).toContain('page-break-after: always !important')
+    expect(cssSource).toContain(
+      '.labels-print-thermal .thermal-label-page:last-child'
+    )
+    expect(cssSource).toContain('break-after: auto !important')
+    expect(cssSource).toContain('page-break-after: auto !important')
   })
 
   it('fits long label content inside the fixed physical page instead of spilling into the next label', () => {

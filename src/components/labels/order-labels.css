@@ -195,19 +195,55 @@
 @media print {
   html,
   body {
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    overflow: visible !important;
+    position: static !important;
+
     background: #fff !important;
 
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  body * {
-    visibility: hidden !important;
+  /*
+   * Chromium pagina usando el contexto de formato completo de los ancestros.
+   * En /labels ese contexto incluye Layout -> flex -> main -> contenedor con
+   * overflow-y-auto/overflow-hidden. Durante impresión dejamos únicamente la
+   * rama DOM que contiene las etiquetas y neutralizamos todos sus ancestros.
+   * Así ninguna altura de viewport, overflow, flex/grid o posición puede
+   * recortar el lote después de la primera página física.
+   */
+  body *:not(:has(.labels-print-surface)):not(.labels-print-surface):not(.labels-print-surface *) {
+    display: none !important;
   }
 
-  .labels-preview-root,
-  .labels-preview-root * {
-    visibility: visible !important;
+  body *:has(.labels-print-surface) {
+    display: block !important;
+
+    position: static !important;
+    inset: auto !important;
+
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    overflow: visible !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    flex: none !important;
+    transform: none !important;
+    contain: none !important;
+    clip: auto !important;
+    clip-path: none !important;
   }
 
   .print-hide {
@@ -215,11 +251,16 @@
   }
 
   .labels-preview-root {
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: static !important;
 
-    width: 100%;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    overflow: visible !important;
 
     margin: 0 !important;
     padding: 0 !important;
@@ -229,10 +270,17 @@
   }
 
   .labels-print-surface {
+    box-sizing: border-box !important;
+
     border: 0 !important;
     border-radius: 0 !important;
 
     background: white;
+
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
 
     margin: 0 !important;
     padding: 0 !important;
@@ -261,6 +309,14 @@
     width: var(--thermal-label-width, 100mm) !important;
     min-width: var(--thermal-label-width, 100mm) !important;
     max-width: var(--thermal-label-width, 100mm) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    overflow: visible !important;
+
+    break-inside: auto !important;
+    page-break-inside: auto !important;
 
     margin: 0 !important;
     padding: 0 !important;
@@ -277,8 +333,12 @@
     min-height: var(--thermal-label-height, 50mm) !important;
     max-height: var(--thermal-label-height, 50mm) !important;
 
+    break-before: auto !important;
+    page-break-before: auto !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+    break-after: page !important;
+    page-break-after: always !important;
 
     overflow: hidden !important;
 
@@ -286,9 +346,9 @@
     padding: 0 !important;
   }
 
-  .labels-print-thermal .thermal-label-page:not(:last-child) {
-    break-after: page !important;
-    page-break-after: always !important;
+  .labels-print-thermal .thermal-label-page:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
   }
 
   .labels-print-thermal .sf-label-card {
