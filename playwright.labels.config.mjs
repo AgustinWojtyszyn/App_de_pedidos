@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './testing/labels-e2e',
-  testMatch: '**/*.spec.js',
+  testMatch: '**/*.pw.js',
   fullyParallel: false,
   workers: 1,
   retries: 0,
