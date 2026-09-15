@@ -72,11 +72,17 @@ jobs:
       - name: Install application dependencies
         run: npm ci
 
-      - name: Install Playwright test runner without changing the lockfile
-        run: npm install --no-save --package-lock=false @playwright/test@1.55.0
+      - name: Install Playwright in an isolated tool directory
+        run: |
+          mkdir -p /tmp/labels-playwright
+          npm install --prefix /tmp/labels-playwright --no-package-lock --no-save @playwright/test@1.63.0
+          ln -s /tmp/labels-playwright/node_modules/@playwright node_modules/@playwright
+          ln -s /tmp/labels-playwright/node_modules/playwright node_modules/playwright
+          ln -s /tmp/labels-playwright/node_modules/playwright-core node_modules/playwright-core
+          ln -s /tmp/labels-playwright/node_modules/.bin/playwright node_modules/.bin/playwright
 
       - name: Install Chromium and system dependencies
-        run: npx playwright install --with-deps chromium
+        run: /tmp/labels-playwright/node_modules/.bin/playwright install --with-deps chromium
 
       - name: Install PDF inspection tools
         run: |
