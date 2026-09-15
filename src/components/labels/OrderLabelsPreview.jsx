@@ -138,11 +138,6 @@ const OrderLabelsPreview = ({
     THERMAL_LIMITS.height
   )
 
-  const approxSheets =
-    printFormat === 'a4'
-      ? estimateA4Sheets(labels.length, a4Columns)
-      : labels.length
-
   const previewModeClass =
     printFormat === 'thermal'
       ? 'labels-preview-thermal'
