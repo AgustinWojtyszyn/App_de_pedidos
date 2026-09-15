@@ -9,12 +9,15 @@ import './labels/order-labels.css'
 
 // Regresión histórica: "Seleccionar todos visibles" ya no alcanza cuando hay más de una página.
 
-const requestPrintSuccessConfirmation = (count) => new Promise((resolve) => {
+const requestPrintSuccessConfirmation = (
+  count,
+  contextLabel = 'Lote de etiquetas'
+) => new Promise((resolve) => {
   window.dispatchEvent(new CustomEvent('app-confirm', {
     detail: {
       title: 'Confirmar impresión de etiquetas',
-      message: `Se abrió el diálogo de impresión para ${count} etiqueta${count === 1 ? '' : 's'}.\nConfirmá solo si las etiquetas salieron correctamente.`,
-      confirmText: 'Marcar como impresas',
+      message: `${contextLabel}: se abrió el diálogo para ${count} etiqueta${count === 1 ? '' : 's'}.\nConfirmá únicamente si este lote salió completo y correctamente.`,
+      confirmText: 'Confirmar lote correcto',
       cancelText: 'No marcar',
       tone: 'warning',
       resolve
@@ -22,14 +25,56 @@ const requestPrintSuccessConfirmation = (count) => new Promise((resolve) => {
   }))
 })
 
-const waitForPrintFrame = () => new Promise((resolve) => {
+const nextAnimationFrame = () => new Promise((resolve) => {
   window.requestAnimationFrame(resolve)
 })
+
+const waitForPrintDocumentReady = async (expectedLabelCount) => {
+  if (document.fonts?.ready) {
+    await document.fonts.ready
+  }
+
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const pendingFits = document.querySelectorAll(
+      '.labels-preview-thermal [data-label-fit-fixed="true"][data-label-fit-ready="false"]'
+    )
+
+    const renderedLabels = document.querySelectorAll(
+      '.labels-print-surface .sf-label-card'
+    )
+
+    if (
+      pendingFits.length === 0 &&
+      renderedLabels.length === expectedLabelCount
+    ) {
+      await nextAnimationFrame()
+      await nextAnimationFrame()
+      return
+    }
+
+    await nextAnimationFrame()
+  }
+
+  throw new Error('label_print_layout_not_ready')
+}
+
+const getUniqueOrdersForPrint = (orders = []) => {
+  const seenIds = new Set()
+  const safeOrders = []
+
+  ;(Array.isArray(orders) ? orders : []).forEach((order) => {
+    const orderId = String(order?.id || '').trim()
+    if (!orderId || seenIds.has(orderId)) return
+    seenIds.add(orderId)
+    safeOrders.push(order)
+  })
+
+  return safeOrders
+}
 
 const OrderLabelsPage = () => {
   const { isAdmin, isCompanyAdmin, adminCompanies } = useAuthContext()
 
-  // Configuración histórica del 05/08.
   const [printFormat, setPrintFormat] = useState('a4')
   const [a4Columns, setA4Columns] = useState(2)
   const [thermalPreset, setThermalPreset] = useState('100x50')
@@ -39,6 +84,7 @@ const OrderLabelsPage = () => {
   })
 
   const [printing, setPrinting] = useState(false)
+  const [printSessionOrders, setPrintSessionOrders] = useState([])
 
   const labels = useOrderLabels({
     isAdmin,
@@ -47,58 +93,144 @@ const OrderLabelsPage = () => {
   })
 
   const openPreview = useCallback((order = null) => {
-    labels.enterPreview(order)
-  }, [labels])
+    const sessionOrders = order?.id
+      ? [order]
+      : getUniqueOrdersForPrint(labels.selectedOrders)
 
-  const printOrders = useCallback(async (
-    ordersToPrint = [],
-    printedLabelCount = null
-  ) => {
-    const safeOrders = Array.isArray(ordersToPrint)
-      ? ordersToPrint.filter(order => order?.id)
-      : []
-
-    if (safeOrders.length === 0) {
+    if (sessionOrders.length === 0) {
       labels.setPrintWarning(
         'Seleccioná al menos un pedido para imprimir etiquetas.'
       )
       return
     }
 
+    setPrintSessionOrders(sessionOrders)
+    labels.enterPreview(order)
+  }, [labels])
+
+  const closePreview = useCallback(() => {
+    setPrintSessionOrders([])
+    labels.cancelPreview()
+  }, [labels])
+
+  const registerPrintedOrders = useCallback(async (ordersToRegister = []) => {
+    const safeOrders = getUniqueOrdersForPrint(ordersToRegister)
+    if (safeOrders.length === 0) {
+      return {
+        tracked: false,
+        error: new Error('empty_label_batch')
+      }
+    }
+
+    const result = await labels.markPrinted(
+      safeOrders.map(order => order.id)
+    )
+
+    return {
+      tracked: !result?.error,
+      error: result?.error || null
+    }
+  }, [labels])
+
+  const printOrders = useCallback(async (
+    ordersToPrint = [],
+    {
+      markAsPrinted = true,
+      printedLabelCount = null,
+      contextLabel = 'Lote de etiquetas'
+    } = {}
+  ) => {
+    const safeOrders = getUniqueOrdersForPrint(ordersToPrint)
+
+    if (safeOrders.length === 0) {
+      labels.setPrintWarning(
+        'No hay etiquetas válidas en este lote.'
+      )
+      return {
+        printed: false,
+        confirmed: false,
+        tracked: false
+      }
+    }
+
+    const expectedLabelCount = Number(printedLabelCount)
+    if (
+      Number.isFinite(expectedLabelCount) &&
+      expectedLabelCount !== safeOrders.length
+    ) {
+      labels.setPrintWarning(
+        'La cantidad preparada no coincide con el lote. La impresión fue bloqueada para evitar etiquetas faltantes o duplicadas.'
+      )
+      return {
+        printed: false,
+        confirmed: false,
+        tracked: false
+      }
+    }
+
     setPrinting(true)
     labels.setPrintWarning('')
 
     try {
-      // Igual que el flujo funcional del 05/08:
-      // esperar el frame y abrir impresión del navegador.
-      await waitForPrintFrame()
+      await waitForPrintDocumentReady(safeOrders.length)
       window.print()
+    } catch (_error) {
+      labels.setPrintWarning(
+        'El lote no terminó de prepararse de forma segura. No se envió nada a imprimir. Intentá nuevamente.'
+      )
+      return {
+        printed: false,
+        confirmed: false,
+        tracked: false
+      }
     } finally {
       setPrinting(false)
     }
 
-    const confirmed = await requestPrintSuccessConfirmation(
-      printedLabelCount || safeOrders.length
-    )
-
-    if (confirmed) {
-      await labels.markPrinted(
-        safeOrders.map(order => order.id)
-      )
-      return
+    if (!markAsPrinted) {
+      return {
+        printed: true,
+        confirmed: false,
+        tracked: false,
+        testPrint: true
+      }
     }
 
-    labels.setPrintWarning(
-      'La impresión no se marcó como completada. Podés reimprimir o confirmar manualmente si salió correctamente.'
+    const confirmed = await requestPrintSuccessConfirmation(
+      safeOrders.length,
+      contextLabel
     )
-  }, [labels])
 
-  const printSelectedLabels = useCallback((printedLabelCount) => {
-    printOrders(
-      labels.selectedOrders,
-      printedLabelCount
-    )
-  }, [labels.selectedOrders, printOrders])
+    if (!confirmed) {
+      labels.setPrintWarning(
+        'El lote no se marcó como completado. Podés revisarlo y volver a imprimirlo si hace falta.'
+      )
+      return {
+        printed: true,
+        confirmed: false,
+        tracked: false
+      }
+    }
+
+    const trackingResult = await registerPrintedOrders(safeOrders)
+    if (!trackingResult.tracked) {
+      labels.setPrintWarning(
+        'El lote salió, pero no se pudo guardar su estado. No lo vuelvas a imprimir: usá “Reintentar registrar lote”.'
+      )
+      return {
+        printed: true,
+        confirmed: true,
+        tracked: false,
+        error: trackingResult.error
+      }
+    }
+
+    return {
+      printed: true,
+      confirmed: true,
+      tracked: true
+    }
+  }, [labels, registerPrintedOrders])
 
   return (
     <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
@@ -256,7 +388,7 @@ const OrderLabelsPage = () => {
         </div>
       ) : (
         <OrderLabelsPreview
-          selectedOrders={labels.selectedOrders}
+          selectedOrders={printSessionOrders}
           printing={printing}
           printFormat={printFormat}
           setPrintFormat={setPrintFormat}
@@ -266,9 +398,10 @@ const OrderLabelsPage = () => {
           setThermalPreset={setThermalPreset}
           customThermalSize={customThermalSize}
           setCustomThermalSize={setCustomThermalSize}
-          onBack={labels.cancelPreview}
-          onCancel={labels.cancelPreview}
-          onPrint={printSelectedLabels}
+          onBack={closePreview}
+          onCancel={closePreview}
+          onPrint={printOrders}
+          onRegisterPrinted={registerPrintedOrders}
         />
       )}
     </div>
