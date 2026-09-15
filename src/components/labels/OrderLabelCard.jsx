@@ -4,6 +4,8 @@ const useSafeLayoutEffect = typeof window === 'undefined'
   ? useEffect
   : useLayoutEffect
 
+const MIN_FIXED_PAGE_SCALE = 0.65
+
 const formatDate = (value) => {
   const raw = String(value || '').slice(0, 10)
 
@@ -60,11 +62,13 @@ const OrderLabelCard = ({ label, fitToFixedPage = false }) => {
   const contentRef = useRef(null)
   const [fitScale, setFitScale] = useState(1)
   const [fitReady, setFitReady] = useState(!fitToFixedPage)
+  const [fitValid, setFitValid] = useState(true)
 
   useSafeLayoutEffect(() => {
     if (!fitToFixedPage) {
       setFitScale(1)
       setFitReady(true)
+      setFitValid(true)
       return undefined
     }
 
@@ -80,6 +84,7 @@ const OrderLabelCard = ({ label, fitToFixedPage = false }) => {
       const content = contentRef.current
       if (!area || !content || area.clientWidth <= 0 || area.clientHeight <= 0) {
         setFitReady(false)
+        setFitValid(false)
         return
       }
 
@@ -93,20 +98,24 @@ const OrderLabelCard = ({ label, fitToFixedPage = false }) => {
       const widthScale = area.clientWidth / naturalWidth
       const heightScale = area.clientHeight / naturalHeight
       const measuredScale = Math.min(1, widthScale, heightScale)
-      const safeScale = Math.max(0.05, Math.min(1, measuredScale * 0.985))
+      const safeScale = Math.min(1, measuredScale * 0.985)
+      const valid = safeScale >= MIN_FIXED_PAGE_SCALE
+      const appliedScale = Math.max(MIN_FIXED_PAGE_SCALE, safeScale)
 
       content.style.transform = previousTransform
       content.style.width = previousWidth
 
       setFitScale(previous => (
-        Math.abs(previous - safeScale) < 0.002
+        Math.abs(previous - appliedScale) < 0.002
           ? previous
-          : safeScale
+          : appliedScale
       ))
+      setFitValid(valid)
       setFitReady(true)
     }
 
     setFitReady(false)
+    setFitValid(true)
     firstFrame = window.requestAnimationFrame(measure)
 
     if (document.fonts?.ready) {
@@ -142,6 +151,7 @@ const OrderLabelCard = ({ label, fitToFixedPage = false }) => {
       className={`sf-label-card${densityClass}`}
       data-label-fit-fixed={fitToFixedPage ? 'true' : 'false'}
       data-label-fit-ready={fitReady ? 'true' : 'false'}
+      data-label-fit-valid={fitValid ? 'true' : 'false'}
       data-label-fit-scale={fitScale.toFixed(4)}
     >
       <div ref={fitAreaRef} className="sf-label-fit-area">
