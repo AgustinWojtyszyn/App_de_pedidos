@@ -34,9 +34,12 @@ describe('user services anti-regression guards', () => {
     expect(userServiceSources).not.toMatch(/\.update\(\s*\{[^}]*\brole\b/)
   })
 
-  it('el facade legacy solo conserva el lookup puntual de usuario', () => {
+  it('mantiene el lookup puntual y el contexto de acceso resiliente en el facade legacy', () => {
     expect(legacyUsersSource).toContain(".select('id, email, full_name, role, created_at, email_confirmed_at')")
-    expect(legacyUsersSource).toContain('db.getAdminAccessContext(...args)')
+    expect(legacyUsersSource).toContain('const getAdminAccessContext = async () =>')
+    expect(legacyUsersSource).toContain('const result = await db.getAdminAccessContext()')
+    expect(legacyUsersSource).toContain('ACCESS_RETRY_ATTEMPTS = 4')
+    expect(legacyUsersSource).toContain('getCachedAccessContext(userId)')
     expect(legacyUsersSource).toContain('db.deleteUser(...args)')
     expect(legacyUsersSource).not.toContain('supabaseService')
     expect(legacyUsersSource).not.toContain(".select('*')")
