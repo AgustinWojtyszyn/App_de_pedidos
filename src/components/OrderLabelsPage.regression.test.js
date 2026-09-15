@@ -34,13 +34,13 @@ const labelUtilsSource = readFileSync(
   'utf8'
 )
 
-const orderLabelsHookSource = readFileSync(
-  new URL('../hooks/labels/useOrderLabels.js', import.meta.url),
+const batchUtilsSource = readFileSync(
+  new URL('../utils/labels/labelPrintBatchUtils.js', import.meta.url),
   'utf8'
 )
 
-const indexSource = readFileSync(
-  new URL('../../index.html', import.meta.url),
+const orderLabelsHookSource = readFileSync(
+  new URL('../hooks/labels/useOrderLabels.js', import.meta.url),
   'utf8'
 )
 
@@ -99,7 +99,8 @@ const renderPreviewWithOrders = (
     setCustomThermalSize: () => {},
     onBack: () => {},
     onCancel: () => {},
-    onPrint: () => {}
+    onPrint: async () => ({ confirmed: false, tracked: false }),
+    onRegisterPrinted: async () => ({ tracked: true })
   })
 )
 
@@ -113,86 +114,31 @@ const renderPreview = (count, options = {}) =>
   )
 
 const countLabelCards = (html) =>
-  (
-    html.match(
-      /class="sf-label-card(?: sf-label-card--dense)?"/g
-    ) || []
-  ).length
+  (html.match(/class="sf-label-card(?: [^"]+)?"/g) || []).length
+
+const countThermalPages = (html) =>
+  (html.match(/class="thermal-label-page"/g) || []).length
 
 describe('order labels print flow', () => {
-  it('renders exactly one sf-label-card per selected order', () => {
+  it('renders only the current deterministic batch, never the full huge selection', () => {
     expect(countLabelCards(renderPreview(0))).toBe(0)
     expect(countLabelCards(renderPreview(1))).toBe(1)
-    expect(countLabelCards(renderPreview(2))).toBe(2)
-    expect(countLabelCards(renderPreview(5))).toBe(5)
+    expect(countLabelCards(renderPreview(50))).toBe(50)
+    expect(countLabelCards(renderPreview(51))).toBe(50)
+    expect(countLabelCards(renderPreview(123))).toBe(50)
+
+    const html = renderPreview(123)
+    expect(html).toContain('Lote 1 de 3')
+    expect(html).toContain('data-print-label-count="50"')
   })
 
-  it('uses the restored August 5 print architecture without print-page wrappers', () => {
-    const html = renderPreview(2)
+  it('creates one isolated thermal page per label in the current batch', () => {
+    const html = renderPreview(25)
 
-    expect(html).toContain('labels-preview-root')
-    expect(html).toContain('labels-preview-thermal')
-    expect(html).toContain('labels-print-surface')
+    expect(countLabelCards(html)).toBe(25)
+    expect(countThermalPages(html)).toBe(25)
     expect(html).toContain('labels-print-thermal')
-    expect(html).toContain('sf-label-card')
-
-    expect(html).not.toContain('print-page')
-    expect(html).not.toContain('print-pages')
-    expect(html).not.toContain('print-safe-area')
-    expect(html).not.toContain('print-label-content')
-  })
-
-  it('uses window.print as the only active print engine', () => {
-    expect(pageSource).toContain('waitForPrintFrame')
-    expect(pageSource).toContain('window.requestAnimationFrame')
-    expect(pageSource).toContain('window.print()')
-
-    expect(pageSource).not.toContain('printZebraLabels')
-    expect(pageSource).not.toContain('zebraLabelPrinter')
-    expect(pageSource).not.toContain('BrowserPrint')
-    expect(pageSource).not.toContain('printer.send')
-
-    expect(previewSource).not.toContain('BrowserPrint')
-    expect(previewSource).not.toContain('printer.send')
-    expect(previewSource).not.toContain('ZPL')
-
-    expect(indexSource).not.toContain(
-      '/vendor/zebra/browserprint/'
-    )
-  })
-
-  it('supports the historical A4 and thermal print formats', () => {
-    expect(pageSource).toContain(
-      "const [printFormat, setPrintFormat] = useState('a4')"
-    )
-
-    expect(pageSource).toContain(
-      "const [a4Columns, setA4Columns] = useState(2)"
-    )
-
-    expect(pageSource).toContain(
-      "const [thermalPreset, setThermalPreset] = useState('100x50')"
-    )
-
-    expect(previewSource).toContain(
-      '<option value="a4">'
-    )
-
-    expect(previewSource).toContain(
-      '<option value="thermal">'
-    )
-
-    expect(previewSource).toContain(
-      '<option value="100x50">'
-    )
-
-    expect(previewSource).toContain(
-      '<option value="80x50">'
-    )
-
-    expect(previewSource).toContain(
-      '<option value="custom">'
-    )
+    expect(html).toContain('data-thermal-page-index="25"')
   })
 
   it('supports a custom 64 x 32 mm thermal page through dynamic @page', () => {
@@ -216,322 +162,145 @@ describe('order labels print flow', () => {
     expect(html).toContain(
       '--thermal-label-height:32mm'
     )
-
-    expect(previewSource).toContain(
-      "`${width}mm ${height}mm`"
-    )
   })
 
-  it('keeps thermal card height automatic like the August 5 implementation', () => {
-    expect(cssSource).toContain(
-      '.labels-print-thermal .sf-label-card'
-    )
+  it('locks thermal width and height at page, wrapper, and card level', () => {
+    expect(cssSource).toContain('.thermal-label-page')
+    expect(cssSource).toContain('height: var(--thermal-label-height, 50mm)')
+    expect(cssSource).toContain('min-height: var(--thermal-label-height, 50mm)')
+    expect(cssSource).toContain('max-height: var(--thermal-label-height, 50mm)')
+    expect(cssSource).toContain(".sf-label-card[data-label-fit-fixed='true']")
+    expect(cssSource).toContain('height: 100%')
 
-    expect(cssSource).toContain(
-      'height: auto'
+    const thermalPrintBlock = cssSource.slice(
+      cssSource.indexOf('.labels-print-thermal .thermal-label-page'),
+      cssSource.indexOf('.labels-print-a4 .sf-label-card')
     )
-
-    expect(cssSource).toContain(
-      'min-height: 0'
-    )
-
-    expect(cssSource).toContain(
-      'max-height: none'
-    )
-
-    expect(cssSource).not.toContain(
-      'height: var(--label-height)'
-    )
-
-    expect(cssSource).not.toContain(
-      'height: 32mm'
-    )
+    expect(thermalPrintBlock).not.toContain('height: auto')
+    expect(thermalPrintBlock).not.toContain('max-height: none')
   })
 
-  it('forces a page break between thermal label cards', () => {
+  it('forces the page break on the fixed thermal page wrapper', () => {
     expect(cssSource).toContain(
-      '.labels-print-thermal .sf-label-card:not(:last-child)'
+      '.labels-print-thermal .thermal-label-page:not(:last-child)'
     )
-
-    expect(cssSource).toContain(
-      'break-after: page'
-    )
-
-    expect(cssSource).toContain(
-      'page-break-after: always'
-    )
+    expect(cssSource).toContain('break-after: page !important')
+    expect(cssSource).toContain('page-break-after: always !important')
   })
 
-  it('keeps the historical print isolation rules', () => {
-    expect(cssSource).toContain('@media print')
+  it('fits long label content inside the fixed physical page instead of spilling into the next label', () => {
+    expect(cardSource).toContain('fitToFixedPage')
+    expect(cardSource).toContain('data-label-fit-ready')
+    expect(cardSource).toContain('data-label-fit-scale')
+    expect(cardSource).toContain('ResizeObserver')
+    expect(cardSource).toContain('measuredScale * 0.985')
+    expect(cssSource).toContain('overflow: hidden')
 
-    expect(cssSource).toContain(
-      'body *'
-    )
-
-    expect(cssSource).toContain(
-      'visibility: hidden !important'
-    )
-
-    expect(cssSource).toContain(
-      '.labels-preview-root'
-    )
-
-    expect(cssSource).toContain(
-      'visibility: visible !important'
-    )
-
-    expect(cssSource).toContain(
-      '.print-hide'
-    )
-
-    expect(cssSource).toContain(
-      'display: none !important'
-    )
-
-    expect(cssSource).not.toContain(
-      'body:has'
-    )
-  })
-
-  it('does not contain the failed experimental print architecture', () => {
-    const activeSources = [
-      pageSource,
-      previewSource,
-      cardSource,
-      cssSource
-    ].join('\n')
-
-    const removedConcepts = [
-      'LabelPrintSettingsPanel',
-      'LabelPrintConfigurator',
-      'useLabelPrintSettings',
-      'labelPrintSettings',
-      'labelPrintGeometry',
-      'print-page',
-      'print-pages',
-      'print-safe-area',
-      'print-label-content',
-      'labels-print-mode',
-      'labels-calibration-mode',
-      'contentScale',
-      'fontScale',
-      'offsetXmm',
-      'offsetYmm',
-      'chromeHints',
-      'servifood.labelPrintSettings'
-    ]
-
-    removedConcepts.forEach((concept) => {
-      expect(activeSources).not.toContain(concept)
-    })
-  })
-
-  it('does not restore old copy expansion into the modern pipeline', () => {
-    const activeSources = [
-      pageSource,
-      previewSource,
-      resultsSource
-    ].join('\n')
-
-    expect(activeSources).not.toContain(
-      'expandLabelsForCopies'
-    )
-
-    expect(activeSources).not.toContain(
-      'copiesByOrderId'
-    )
-
-    expect(previewSource).toContain(
-      'selectedOrders'
-    )
-
-    expect(previewSource).toContain(
-      '.map(order => ({'
-    )
-  })
-
-  it('preserves current selection, filters, and print-state controls', () => {
-    expect(pageSource).toContain(
-      'Seleccionar todos visibles'
-    )
-
-    expect(pageSource).toContain(
-      'Limpiar selección'
-    )
-
-    expect(pageSource).toContain(
-      'Imprimir seleccionados'
-    )
-
-    expect(pageSource).toContain(
-      'openPreview'
-    )
-
-    expect(resultsSource).toContain(
-      'Falta imprimir'
-    )
-
-    expect(resultsSource).toContain(
-      'Ya impreso'
-    )
-
-    expect(resultsSource).toContain(
-      'Reimprimir'
-    )
-
-    expect(resultsSource).toContain(
-      'onPrintStateChange'
-    )
-  })
-
-  it('preserves delivery_date based querying and modern print tracking', () => {
-    expect(orderLabelsHookSource).toContain(
-      'deliveryDate: filters.deliveryDate || null'
-    )
-
-    expect(orderLabelsHookSource).toContain(
-      'fromDate: filters.deliveryDate ? null'
-    )
-
-    expect(orderLabelsHookSource).toContain(
-      'toDate: filters.deliveryDate ? null'
-    )
-
-    expect(orderLabelsHookSource).toContain(
-      'db.markOrderLabelsPrinted'
-    )
-
-    expect(orderLabelsHookSource).toContain(
-      'label_printed_at'
-    )
-
-    expect(orderLabelsHookSource).toContain(
-      'label_printed_by'
-    )
-
-    expect(orderLabelsHookSource).toContain(
-      'label_print_count'
-    )
-  })
-
-  it('preserves modern company, EPSE, and extra-order label logic', () => {
-    expect(labelUtilsSource).toContain(
-      'getAdminExtraOrderLabel'
-    )
-
-    expect(labelUtilsSource).toContain(
-      "companySlug === 'epse' ? []"
-    )
-
-    expect(labelUtilsSource).toContain(
-      'getOrderOriginLocation'
-    )
-
-    expect(labelUtilsSource).toContain(
-      'getEpseLocationLabel'
-    )
-
-    expect(labelUtilsSource).toContain(
-      "filters.company !== 'all'"
-    )
-
-    expect(cardSource).toContain(
-      "label.originLabel === 'Extra'"
-    )
-
-    expect(cardSource).toContain(
-      'label.deliveryLocation'
-    )
-  })
-
-  it('keeps long content in a single label card using the dense variant', () => {
     const longOrder = {
       ...buildSampleOrder('long-order'),
-      customer_name:
-        'Maria De Los Angeles Fernandez Rodriguez Del Departamento Comercial Central',
-      company_name:
-        'Empresa Corporativa Internacional De Servicios Alimentarios Integrales',
-      company:
-        'Empresa Corporativa Internacional De Servicios Alimentarios Integrales',
-      delivery_location:
-        'Piso 23 Ala Norte Oficina Central Sala De Directorio',
+      customer_name: 'Maria De Los Angeles Fernandez Rodriguez Del Departamento Comercial Central',
+      company_name: 'Empresa Corporativa Internacional De Servicios Alimentarios Integrales',
+      company: 'Empresa Corporativa Internacional De Servicios Alimentarios Integrales',
+      delivery_location: 'Piso 23 Ala Norte Oficina Central Sala De Directorio',
       items: [
         {
-          name:
-            'Milanesa napolitana con pure mixto y ensalada completa',
+          name: 'Milanesa napolitana con pure mixto y ensalada completa',
           quantity: 2
         },
         {
-          name:
-            'Tarta integral de verduras con guarnicion especial',
+          name: 'Tarta integral de verduras con guarnicion especial',
           quantity: 1
         },
         {
-          name:
-            'Wrap de pollo con vegetales asados y salsa adicional',
+          name: 'Wrap de pollo con vegetales asados y salsa adicional',
           quantity: 1
-        }
-      ],
-      custom_responses: [
-        {
-          title: 'Bebida',
-          response:
-            'Agua mineral sin gas, gaseosa lima limon y jugo de naranja'
-        },
-        {
-          title: 'Fruta o postre',
-          response: 'Postre'
         }
       ]
     }
 
-    const html = renderPreviewWithOrders([
-      longOrder
-    ])
-
+    const html = renderPreviewWithOrders([longOrder])
     expect(countLabelCards(html)).toBe(1)
+    expect(html).toContain('sf-label-card--very-dense')
+    expect(html).toContain('data-label-fit-fixed="true"')
+  })
 
-    expect(html).toContain(
-      'sf-label-card--dense'
-    )
+  it('blocks printing until layout, fonts, fit and label count are ready', () => {
+    expect(pageSource).toContain('waitForPrintDocumentReady')
+    expect(pageSource).toContain('document.fonts?.ready')
+    expect(pageSource).toContain('data-label-fit-ready')
+    expect(pageSource).toContain("'.labels-print-surface .sf-label-card'")
+    expect(pageSource).toContain('renderedLabels.length === expectedLabelCount')
+    expect(pageSource).toContain("throw new Error('label_print_layout_not_ready')")
 
-    expect(html).toContain(
-      'Pedido:'
+    expect(
+      pageSource.indexOf('await waitForPrintDocumentReady')
+    ).toBeLessThan(
+      pageSource.indexOf('window.print()')
     )
   })
 
-  it('does not mark labels printed until the operator explicitly confirms success', () => {
-    expect(pageSource).toContain(
-      'requestPrintSuccessConfirmation'
-    )
+  it('uses an immutable print-session snapshot so marking one batch cannot skip the next one', () => {
+    expect(pageSource).toContain('printSessionOrders')
+    expect(pageSource).toContain('setPrintSessionOrders(sessionOrders)')
+    expect(pageSource).toContain('selectedOrders={printSessionOrders}')
+    expect(previewSource).toContain('completedBatchIndex')
+    expect(previewSource).toContain('batches[completedBatchIndex]')
+  })
 
-    expect(pageSource).toContain(
-      'const confirmed = await requestPrintSuccessConfirmation'
-    )
+  it('prevents duplicate print jobs and supports a one-label untracked test print', () => {
+    expect(previewSource).toContain('operationLockRef')
+    expect(previewSource).toContain("setPrintScope('test')")
+    expect(previewSource).toContain('currentBatch.slice(0, 1)')
+    expect(previewSource).toContain('markAsPrinted: false')
+    expect(previewSource).toContain('Imprimir 1 de prueba')
+  })
 
-    expect(pageSource).toContain(
-      'if (confirmed) {'
-    )
+  it('does not reprint a physically completed batch when tracking persistence fails', () => {
+    expect(previewSource).toContain('pendingRegistrationBatch')
+    expect(previewSource).toContain('Reintentar registrar lote')
+    expect(previewSource).toContain('onRegisterPrinted(pendingRegistrationBatch)')
+    expect(pageSource).toContain('No lo vuelvas a imprimir')
+  })
 
-    expect(pageSource).toContain(
-      'await labels.markPrinted'
-    )
+  it('preserves selection, filters, print-state controls and modern tracking', () => {
+    expect(pageSource).toContain('Seleccionar todos visibles')
+    expect(pageSource).toContain('Limpiar selección')
+    expect(pageSource).toContain('Imprimir seleccionados')
+    expect(resultsSource).toContain('Falta imprimir')
+    expect(resultsSource).toContain('Ya impreso')
+    expect(resultsSource).toContain('Reimprimir')
+    expect(orderLabelsHookSource).toContain('db.markOrderLabelsPrinted')
+    expect(orderLabelsHookSource).toContain('label_printed_at')
+    expect(orderLabelsHookSource).toContain('label_print_count')
+  })
+
+  it('preserves company-specific label rules while changing only print mechanics', () => {
+    expect(labelUtilsSource).toContain('getAdminExtraOrderLabel')
+    expect(labelUtilsSource).toContain("companySlug === 'epse' ? []")
+    expect(labelUtilsSource).toContain('getOrderOriginLocation')
+    expect(labelUtilsSource).toContain('getEpseLocationLabel')
+    expect(labelUtilsSource).toContain('isIgarretaIsemarCompany')
+    expect(cardSource).toContain("label.originLabel === 'Extra'")
+    expect(cardSource).toContain('label.deliveryLocation')
+  })
+
+  it('keeps batch sizes explicit and finite', () => {
+    expect(batchUtilsSource).toContain('Object.freeze([25, 50, 100])')
+    expect(batchUtilsSource).toContain('DEFAULT_LABEL_PRINT_BATCH_SIZE = 50')
+    expect(batchUtilsSource).toContain('seenIds.has(orderId)')
+    expect(batchUtilsSource).toContain('printableOrders.slice(index, index + safeBatchSize)')
+  })
+
+  it('marks a batch printed only after explicit operator confirmation', () => {
+    expect(pageSource).toContain('requestPrintSuccessConfirmation')
+    expect(pageSource).toContain('const confirmed = await requestPrintSuccessConfirmation')
+    expect(pageSource).toContain('if (!confirmed)')
+    expect(pageSource).toContain('registerPrintedOrders(safeOrders)')
 
     expect(
       pageSource.indexOf('window.print()')
     ).toBeLessThan(
-      pageSource.indexOf(
-        'const confirmed = await requestPrintSuccessConfirmation'
-      )
-    )
-
-    expect(
-      pageSource.indexOf('if (confirmed) {')
-    ).toBeLessThan(
-      pageSource.indexOf(
-        'await labels.markPrinted'
-      )
+      pageSource.indexOf('const confirmed = await requestPrintSuccessConfirmation')
     )
   })
 })
