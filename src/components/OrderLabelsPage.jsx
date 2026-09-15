@@ -5,7 +5,7 @@ import OrderLabelsFilters from './labels/OrderLabelsFilters'
 import OrderLabelsPreview from './labels/OrderLabelsPreview'
 import OrderLabelsResults from './labels/OrderLabelsResults'
 import { useOrderLabels } from '../hooks/labels/useOrderLabels'
-import { printLabelsInIsolatedFrame } from '../utils/labels/labelPrintFrame'
+import { printLabelsDirectly } from '../utils/labels/labelPrintFrame'
 import './labels/order-labels.css'
 
 // Regresión histórica: "Seleccionar todos visibles" ya no alcanza cuando hay más de una página.
@@ -218,7 +218,7 @@ const OrderLabelsPage = () => {
 
     try {
       await waitForPrintDocumentReady(safeOrders.length)
-      await printLabelsInIsolatedFrame(safeOrders.length)
+      await printLabelsDirectly(safeOrders.length)
     } catch (error) {
       const contentTooDense = error?.message === 'label_print_content_too_dense'
       const invalidPrintSnapshot = [
@@ -227,12 +227,12 @@ const OrderLabelsPage = () => {
         'label_print_source_blank',
         'label_print_source_page_count_mismatch',
         'label_print_preview_root_missing',
-        'label_print_frame_missing',
-        'label_print_frame_count_mismatch',
-        'label_print_frame_content_mismatch',
-        'label_print_frame_page_count_mismatch',
-        'label_print_frame_blank',
-        'label_print_frame_unavailable'
+        'label_print_mount_missing',
+        'label_print_mount_count_mismatch',
+        'label_print_mount_content_mismatch',
+        'label_print_mount_page_count_mismatch',
+        'label_print_mount_blank',
+        'label_print_invalid_expected_count'
       ].includes(error?.message)
 
       labels.setPrintWarning(
