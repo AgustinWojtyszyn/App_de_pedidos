@@ -55,7 +55,7 @@ describe('thermal label print safety gates', () => {
   it('isolates printing from the application layout instead of rewriting Layout ancestors', () => {
     expect(pageSource).toContain('printLabelsInIsolatedFrame')
     expect(printFrameSource).toContain("document.createElement('iframe')")
-    expect(printFrameSource).toContain("frameDocument.body.className = 'labels-print-frame'")
+    expect(printFrameSource).toContain('<body class="labels-print-frame"></body>')
     expect(printFrameSource).toContain('sourceSurface.cloneNode(true)')
     expect(cssSource).toContain('body.labels-print-frame')
     expect(cssSource).not.toContain(':has(.labels-print-surface)')
