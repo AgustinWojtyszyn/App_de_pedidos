@@ -193,62 +193,83 @@
 }
 
 /*
- * La impresión real de etiquetas vive en un iframe aislado cuyo body usa
- * .labels-print-frame. La vista previa de /labels nunca vuelve a imprimir el
- * árbol completo de Layout, evitando que overflow/flex/position de la app
- * puedan ocultar, recortar o dejar en blanco el lote en Chromium.
+ * El documento que llega a Chromium se monta como hijo directo de body.
+ * En pantalla permanece oculto; bajo @media print es el único contenido
+ * visible. Esto evita iframes offscreen y cualquier dependencia del Layout.
  */
+#label-print-mount {
+  display: none;
+}
+
 @media print {
+  body.is-printing-labels > *:not(#label-print-mount) {
+    display: none !important;
+  }
+
   html,
-  body.labels-print-frame {
+  body.is-printing-labels {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
     width: auto !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
     overflow: visible !important;
     position: static !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
-    color: #000 !important;
   }
 
-  body.labels-print-frame .labels-print-export-root,
-  body.labels-print-frame .labels-print-surface,
-  body.labels-print-frame .labels-print-surface * {
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-
-  body.labels-print-frame .labels-print-export-root {
+  #label-print-mount {
     display: block !important;
     position: static !important;
     inset: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
     overflow: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     transform: none !important;
     contain: none !important;
     background: #fff !important;
+    color: #000 !important;
   }
 
-  body.labels-print-frame .labels-print-surface {
+  #label-print-mount.label-print-mount--thermal {
+    width: var(--thermal-label-width, 100mm) !important;
+    min-width: var(--thermal-label-width, 100mm) !important;
+    max-width: var(--thermal-label-width, 100mm) !important;
+  }
+
+  #label-print-mount.label-print-mount--a4 {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  #label-print-mount .labels-print-surface,
+  #label-print-mount .labels-print-surface * {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  #label-print-mount .labels-print-surface {
     box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
     overflow: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
     background: #fff !important;
   }
 
-  body.labels-print-frame .labels-print-a4 {
+  #label-print-mount .labels-print-a4 {
     display: grid !important;
     grid-template-columns: repeat(
       var(--label-a4-columns, 2),
@@ -258,12 +279,12 @@
     padding: 8mm !important;
   }
 
-  body.labels-print-frame .labels-print-a4 .sf-label-card {
+  #label-print-mount .labels-print-a4 .sf-label-card {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  body.labels-print-frame .labels-print-thermal {
+  #label-print-mount .labels-print-thermal {
     display: block !important;
     width: var(--thermal-label-width, 100mm) !important;
     min-width: var(--thermal-label-width, 100mm) !important;
@@ -278,7 +299,7 @@
     padding: 0 !important;
   }
 
-  body.labels-print-frame .labels-print-thermal .thermal-label-page {
+  #label-print-mount .thermal-label-page {
     display: block !important;
     box-sizing: border-box !important;
     width: var(--thermal-label-width, 100mm) !important;
@@ -287,24 +308,25 @@
     height: var(--thermal-label-height, 50mm) !important;
     min-height: var(--thermal-label-height, 50mm) !important;
     max-height: var(--thermal-label-height, 50mm) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff !important;
+    color: #000 !important;
     break-before: auto !important;
     page-break-before: auto !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     break-after: page !important;
     page-break-after: always !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
   }
 
-  body.labels-print-frame .labels-print-thermal .thermal-label-page:last-child {
+  #label-print-mount .thermal-label-page:last-child {
     break-after: auto !important;
     page-break-after: auto !important;
   }
 
-  body.labels-print-frame .labels-print-thermal .sf-label-card {
+  #label-print-mount .labels-print-thermal .sf-label-card {
     display: flex !important;
     box-sizing: border-box !important;
     width: 100% !important;
@@ -313,18 +335,18 @@
     height: 100% !important;
     min-height: 100% !important;
     max-height: 100% !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
+    margin: 0 !important;
     overflow: hidden !important;
     border-radius: 0 !important;
-    margin: 0 !important;
     background: #fff !important;
     color: #000 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  body.labels-print-frame .labels-print-thermal .sf-label-fit-area {
+  #label-print-mount .labels-print-thermal .sf-label-fit-area {
     overflow: hidden !important;
   }
 }
