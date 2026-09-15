@@ -4,6 +4,7 @@ import {
   LABEL_PRINT_BATCH_SIZE_OPTIONS,
   createLabelPrintBatches,
   getUniquePrintableOrders,
+  hasCompleteLabelTracking,
   normalizeLabelPrintBatchSize
 } from './labelPrintBatchUtils'
 
@@ -58,5 +59,25 @@ describe('label print batch planning', () => {
     expect(createLabelPrintBatches([], 50)).toEqual([])
     expect(createLabelPrintBatches(buildOrders(50), 50).map(batch => batch.length)).toEqual([50])
     expect(createLabelPrintBatches(buildOrders(100), 100).map(batch => batch.length)).toEqual([100])
+  })
+
+  it('advances only when every requested label was persisted as printed', () => {
+    const requestedIds = ['order-1', 'order-2', 'order-3']
+    const completeRows = requestedIds.map(id => ({
+      id,
+      label_printed_at: '2026-09-15T15:00:00.000Z'
+    }))
+
+    expect(hasCompleteLabelTracking(requestedIds, completeRows)).toBe(true)
+    expect(hasCompleteLabelTracking(requestedIds, completeRows.slice(0, 2))).toBe(false)
+    expect(hasCompleteLabelTracking(requestedIds, [
+      ...completeRows.slice(0, 2),
+      { id: 'order-3', label_printed_at: null }
+    ])).toBe(false)
+    expect(hasCompleteLabelTracking(requestedIds, [
+      ...completeRows,
+      { id: 'order-extra', label_printed_at: '2026-09-15T15:00:00.000Z' }
+    ])).toBe(false)
+    expect(hasCompleteLabelTracking([], [])).toBe(false)
   })
 })
