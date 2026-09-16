@@ -5,18 +5,11 @@ import { hasDinnerOverrideInResponses } from './orderBusinessRules'
 import { normalizeOrderItemsForService } from './orderItemNormalization'
 import { hasHiddenOrderMenuSelection, hasSyntheticFallbackMenuSelection } from './menuDisplay'
 
-const ACTIVE_ORDER_STATUSES = new Set(['pending'])
 const DUPLICATE_ORDER_MESSAGE = 'Ya tenés un pedido registrado para esta fecha y servicio.'
 const INVALID_MENU_MESSAGE = 'El menú quedó desactualizado o no está disponible. Recargá la página e intentá nuevamente.'
 
-const hasActiveOrderForDelivery = (orders = [], deliveryDate, service) =>
-  orders.some(order => {
-    const orderService = (order?.service || 'lunch').toLowerCase()
-    const orderStatus = (order?.status || '').toLowerCase()
-    return order?.delivery_date === deliveryDate &&
-      orderService === service &&
-      ACTIVE_ORDER_STATUSES.has(orderStatus)
-  })
+// Keep retries stable even when browser storage is unavailable.
+const memoryKeys = new Map()
 
 const submitOrders = async ({
   turnosSeleccionados,
@@ -31,32 +24,16 @@ const submitOrders = async ({
   deliveryDates,
   companySlug = ''
 }) => {
-  const createdOrderIds = []
-  const { data: existingOrders, error: existingOrdersError } = await ordersService.getOrders(user.id, {
-    force: true,
-    limit: 200,
-    status: 'pending'
-  })
-
-  if (existingOrdersError) {
-    return {
-      ok: false,
-      errorMessage: 'No pudimos validar si ya tenés un pedido para esta fecha. Intentá nuevamente.',
-      forceLunchOnly: false
-    }
+  const prepared = []
+  if (!Array.isArray(turnosSeleccionados) || turnosSeleccionados.length === 0 ||
+      turnosSeleccionados.some(service => !['lunch', 'dinner'].includes(service)) ||
+      new Set(turnosSeleccionados).size !== turnosSeleccionados.length) {
+    return { ok: false, errorMessage: 'Seleccioná un servicio válido.', forceLunchOnly: false }
   }
 
   for (const service of turnosSeleccionados) {
     const isDinner = service === 'dinner'
     const serviceDeliveryDate = deliveryDates?.[service] || deliveryDate
-
-    if (hasActiveOrderForDelivery(existingOrders || [], serviceDeliveryDate, service)) {
-      return {
-        ok: false,
-        errorMessage: DUPLICATE_ORDER_MESSAGE,
-        forceLunchOnly: false
-      }
-    }
 
     const overrideChoice = isDinner ? dinnerOverrideChoice : null
     const rawItemsForService = isDinner ? selectedItemsListDinner : selectedItemsList
@@ -112,6 +89,10 @@ const submitOrders = async ({
       companySlug
     })
 
+    if (orderData.items.length === 0) {
+      return { ok: false, errorMessage: 'Seleccioná una comida para cada servicio.', forceLunchOnly: false }
+    }
+
     const idempotencyStorageKey = buildIdempotencyStorageKey(
       itemsForService,
       formData.location,
@@ -120,79 +101,83 @@ const submitOrders = async ({
       user?.id || 'anon'
     )
 
-    let idempotencyKey = null
-    if (typeof window !== 'undefined') {
-      const existingKey = sessionStorage.getItem(idempotencyStorageKey)
-      idempotencyKey = existingKey || generateIdempotencyKey()
-      sessionStorage.setItem(idempotencyStorageKey, idempotencyKey)
-    } else {
-      idempotencyKey = generateIdempotencyKey()
-    }
+    prepared.push({ orderData, idempotencyStorageKey })
+  }
 
-    orderData.idempotency_key = idempotencyKey
+  // Include the entire batch identity so a changed companion order cannot reuse
+  // a key from an earlier batch or from the individual creation flow.
+  const batchIdentity = prepared.length > 1
+    ? JSON.stringify(prepared.map(({ orderData }) => orderData).sort((a, b) => a.service.localeCompare(b.service)))
+    : null
+  const payloads = prepared.map(({ orderData, idempotencyStorageKey }) => {
+    const storageKey = batchIdentity ? `${idempotencyStorageKey}:batch:${batchIdentity}` : idempotencyStorageKey
+    let key = memoryKeys.get(storageKey)
+    try {
+      key = sessionStorage.getItem(storageKey) || key
+    } catch { /* Storage may be disabled. Keep the in-memory retry identity. */ }
+    key ||= generateIdempotencyKey()
+    memoryKeys.set(storageKey, key)
+    try {
+      sessionStorage.setItem(storageKey, key)
+    } catch { /* The same page can still retry safely. */ }
+    return { ...orderData, idempotency_key: key }
+  })
 
-    const { data, error } = await ordersService.createOrder(orderData)
+  // PostgreSQL is authoritative for duplicates and idempotent recovery. A
+  // frontend pending-order check would reject a retry after a lost response.
+  const { data, error } = payloads.length > 1
+    ? await ordersService.createOrdersAtomic(payloads)
+    : await ordersService.createOrder(payloads[0])
 
-    if (error) {
-      const msg = typeof error === 'string' ? error : (error.message || JSON.stringify(error))
-      if (msg.includes('duplicate_active_order') || msg.includes('orders_active_user_delivery_service_uniq')) {
-        return {
-          ok: false,
-          errorMessage: DUPLICATE_ORDER_MESSAGE,
-          forceLunchOnly: false
-        }
-      }
-      if (msg.includes('location_not_allowed') || msg.includes('location_required')) {
-        return {
-          ok: false,
-          errorMessage: 'No tenés autorización para pedir en esa locación.',
-          forceLunchOnly: false
-        }
-      }
-      if (msg.toLowerCase().includes('order_window_closed')) {
-        return {
-          ok: false,
-          errorMessage: 'Pedidos cerrados para tu sede. Revisá el horario indicado e intentá dentro de la ventana habilitada.',
-          forceLunchOnly: false
-        }
-      }
-      if (msg.includes('dinner') || msg.toLowerCase().includes('service') || msg.includes('feature')) {
-        return {
-          ok: false,
-          errorMessage: 'No tenés habilitada la cena. Deja solo almuerzo o pedí alta a un admin.',
-          forceLunchOnly: true
-        }
-      }
-      if (msg.includes('violates row-level security policy') || msg.includes('new row violates row-level security')) {
-        return {
-          ok: false,
-          errorMessage: 'Ya tienes un pedido pendiente. Espera hasta que se archive para crear uno nuevo.',
-          forceLunchOnly: false
-        }
-      }
+  if (error) {
+    const msg = typeof error === 'string' ? error : (error.message || JSON.stringify(error))
+    if (msg.includes('duplicate_active_order') || msg.includes('orders_active_user_delivery_service_uniq')) {
       return {
         ok: false,
-        errorMessage: 'No pudimos crear el pedido. Intentá nuevamente.',
+        errorMessage: DUPLICATE_ORDER_MESSAGE,
         forceLunchOnly: false
       }
     }
-
-    const createdId = (() => {
-      if (!data) return null
-      if (Array.isArray(data)) {
-        const first = data[0]
-        return first?.id || first?.order_id || null
+    if (msg.includes('location_not_allowed') || msg.includes('location_required')) {
+      return {
+        ok: false,
+        errorMessage: 'No tenés autorización para pedir en esa locación.',
+        forceLunchOnly: false
       }
-      if (typeof data === 'object') {
-        return data.id || data.order_id || data?.order?.id || null
+    }
+    if (msg.toLowerCase().includes('order_window_closed')) {
+      return {
+        ok: false,
+        errorMessage: 'Pedidos cerrados para tu sede. Revisá el horario indicado e intentá dentro de la ventana habilitada.',
+        forceLunchOnly: false
       }
-      return null
-    })()
-    if (createdId) {
-      createdOrderIds.push(createdId)
+    }
+    if (msg.includes('dinner') || msg.toLowerCase().includes('service') || msg.includes('feature')) {
+      return {
+        ok: false,
+        errorMessage: 'No tenés habilitada la cena. Deja solo almuerzo o pedí alta a un admin.',
+        forceLunchOnly: true
+      }
+    }
+    if (msg.includes('violates row-level security policy') || msg.includes('new row violates row-level security')) {
+      return {
+        ok: false,
+        errorMessage: 'Ya tienes un pedido pendiente. Espera hasta que se archive para crear uno nuevo.',
+        forceLunchOnly: false
+      }
+    }
+    return {
+      ok: false,
+      errorMessage: 'No pudimos crear el pedido. Intentá nuevamente.',
+      forceLunchOnly: false
     }
   }
 
+  const rows = Array.isArray(data) ? data : [data]
+  const createdOrderIds = rows.map(row => row?.id || row?.order_id || row?.order?.id).filter(Boolean)
+  if (createdOrderIds.length !== payloads.length) {
+    return { ok: false, errorMessage: 'No pudimos confirmar el pedido. Intentá nuevamente.', forceLunchOnly: false }
+  }
   return { ok: true, createdOrderIds }
 }
 

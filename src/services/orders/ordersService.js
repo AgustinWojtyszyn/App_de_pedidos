@@ -168,6 +168,16 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
       return { data, error }
     },
 
+    createOrdersAtomic: async (orders) => {
+      invalidateCache()
+      // No fallback to individual inserts: missing migration must fail closed.
+      const { data, error } = await supabase.rpc('create_orders_atomic', {
+        p_user_id: orders?.[0]?.user_id,
+        p_orders: orders
+      })
+      return { data, error }
+    },
+
     createAdminExtraOrder: async (payload) => {
       invalidateCache()
       const idempotencyKey = payload?.idempotency_key || createRequestId('admin-extra-order')

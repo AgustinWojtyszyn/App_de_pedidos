@@ -190,6 +190,7 @@ export const ordersService = {
   searchOrders,
   bulkUpdateStatus,
   updateOrder,
+  createOrdersAtomic: (...args) => db.createOrdersAtomic(...args),
   createOrder: (...args) => db.createOrder(...args),
   updateOrderStatus: (...args) => db.updateOrderStatus(...args),
   deleteOrder: (...args) => db.deleteOrder(...args),
