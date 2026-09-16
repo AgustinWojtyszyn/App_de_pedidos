@@ -1,40 +1,31 @@
-import { supabase, supabaseService } from './supabase'
+import { supabase } from './supabase'
 import { handleError, sanitizeInput } from '../utils'
 
 class AuditService {
   async getAuditLogs(options = {}) {
     const {
       limit = 200,
-      actions = null,
-      force = false
+      actions = null
     } = options
 
     try {
-      const cacheKey = `audit_logs_${limit}_${actions ? actions.join('-') : 'all'}`
+      let query = supabase
+        .from('audit_logs')
+        .select('id, action, details, actor_id, actor_email, actor_name, target_id, target_email, target_name, metadata, created_at, request_id')
+        .order('created_at', { ascending: false })
+        .limit(limit)
 
-      const queryFn = async () => {
-        let query = supabase
-          .from('audit_logs')
-          .select('id, action, details, actor_id, actor_email, actor_name, target_id, target_email, target_name, metadata, created_at, request_id')
-          .order('created_at', { ascending: false })
-          .limit(limit)
-
-        if (Array.isArray(actions) && actions.length) {
-          query = query.in('action', actions.map((a) => sanitizeInput(a)))
-        }
-
-        const { data, error } = await query
-
-        if (error) throw error
-
-        return data || []
+      if (Array.isArray(actions) && actions.length) {
+        query = query.in('action', actions.map((a) => sanitizeInput(a)))
       }
 
-      const data = await supabaseService.cachedQuery(cacheKey, queryFn, 15000, force)
+      const { data, error } = await query
+
+      if (error) throw error
 
       const deduped = []
       const seen = new Set()
-      for (const row of data) {
+      for (const row of data || []) {
         const key = row.request_id ? `${row.request_id}-${row.action}` : `${row.id}`
         if (seen.has(key)) continue
         seen.add(key)
