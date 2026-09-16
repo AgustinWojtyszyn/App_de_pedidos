@@ -1,6 +1,5 @@
 export const createMenuService = ({
   supabase,
-  cache = null,
   invalidateCache = () => {},
   logAudit = null
 } = {}) => {
@@ -33,11 +32,10 @@ export const createMenuService = ({
     return { data: unique, error: null }
   }
 
+  // Menú compartido: lectura siempre fresca desde Supabase para que dos admins
+  // no puedan ver versiones distintas por un TTL local del navegador.
   const getMenuItemsByDate = async (menuDate, companySlug = 'global') => {
     const normalizedCompanySlug = normalizeCompanySlug(companySlug)
-    const cacheKey = `menu-items:${normalizedCompanySlug}:${menuDate}`
-    const cached = cache?.get?.(cacheKey)
-    if (cached) return { data: cached, error: null }
 
     const { data, error } = await supabase
       .from('menu_items')
@@ -46,17 +44,13 @@ export const createMenuService = ({
       .eq('company_slug', normalizedCompanySlug)
       .order('created_at', { ascending: false })
 
-    if (!error && data && cache?.set) {
-      cache.set(cacheKey, data, 300000)
-    }
-
     return { data, error }
   }
 
   const updateMenuItemsByDate = async (menuDate, menuItems, requestId = null, companySlug = 'global') => {
     try {
       const normalizedCompanySlug = normalizeCompanySlug(companySlug)
-      invalidateCache() // Limpiar cache al actualizar menú
+      invalidateCache()
 
       const { data: existingItems, error: fetchError } = await supabase
         .from('menu_items')
