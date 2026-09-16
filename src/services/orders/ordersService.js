@@ -456,7 +456,7 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
       return withSupabaseRetry(async () => {
         let query = supabase
           .from('orders_with_person_key')
-          .select('*', { count: 'exact' })
+          .select('*')
 
         if (deliveryDate) {
           query = query.eq('delivery_date', deliveryDate)
