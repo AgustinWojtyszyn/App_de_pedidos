@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Clock, Save } from 'lucide-react'
 import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
 import RequireUser from './RequireUser'
-import { COMPANY_CATALOG, getVisibleCompanyList } from '../constants/companyConfig'
 import { db } from '../supabaseClient'
 import EditOrderCustomOptionsSection from './edit-order/EditOrderCustomOptionsSection'
 import EditOrderPersonalInfoSection from './edit-order/EditOrderPersonalInfoSection'
@@ -20,9 +19,6 @@ import {
   resolveEditOrderLocation
 } from '../utils/orderEdit/editOrderCompany'
 
-const TOTAL_ADMIN_EMAIL = 'agustinwojtyszyn99@gmail.com'
-const ADMIN_SERVIFOOD_SLUG = 'administracion_servifood'
-
 export default function EditOrderForm({ user, loading }) {
   const navigate = useNavigate()
   const routerLocation = useLocation()
@@ -30,27 +26,17 @@ export default function EditOrderForm({ user, loading }) {
   const { isAdmin } = useAuthContext()
 
   const [authorizedCompanyLocationRows, setAuthorizedCompanyLocationRows] = useState([])
-  const [canUseAdminServifoodInEdit, setCanUseAdminServifoodInEdit] = useState(false)
   const originalCompany = useMemo(() => resolveEditOrderCompany(order), [order])
   const originalLocation = useMemo(() => resolveEditOrderLocation(order), [order])
   const requiresCompanyLocations = Boolean(originalCompany?.requiresAuthorizedLocations)
-  const isTotalAdminUser = String(user?.email || '').trim().toLowerCase() === TOTAL_ADMIN_EMAIL
   const authorizedCompanyLocations = useMemo(
     () => authorizedCompanyLocationRows.map((row) => row.name).filter(Boolean),
     [authorizedCompanyLocationRows]
   )
-  const visibleCompanyLocations = useMemo(() => {
-    const companies = getVisibleCompanyList({ includeAdminOnly: false })
-    const adminServifood = COMPANY_CATALOG[ADMIN_SERVIFOOD_SLUG]
-    if (
-      (canUseAdminServifoodInEdit || originalCompany?.slug === ADMIN_SERVIFOOD_SLUG) &&
-      adminServifood &&
-      !companies.some((company) => company.slug === ADMIN_SERVIFOOD_SLUG)
-    ) {
-      companies.push(adminServifood)
-    }
-    return companies.flatMap((company) => company.locations || [])
-  }, [canUseAdminServifoodInEdit, originalCompany?.slug])
+  const visibleCompanyLocations = useMemo(
+    () => Array.isArray(originalCompany?.locations) ? originalCompany.locations : [],
+    [originalCompany]
+  )
   const locations = useMemo(() => {
     const baseLocations = requiresCompanyLocations ? authorizedCompanyLocations : visibleCompanyLocations
     return appendOriginalLocation(baseLocations, originalLocation)
@@ -76,6 +62,13 @@ export default function EditOrderForm({ user, loading }) {
   })
 
   const selectedItemsList = getSelectedItemsList()
+  const hasDinnerOverrideChoice = useMemo(() => {
+    if ((order?.service || '').toLowerCase() !== 'dinner') return false
+    const value = customResponses?.['dinner-special']
+    if (Array.isArray(value)) return value.some(Boolean)
+    if (value === null || value === undefined) return false
+    return String(value).trim() !== ''
+  }, [customResponses, order?.service])
   const deliveryLocationForEdit = useMemo(() => {
     if (!requiresCompanyLocations) return order?.delivery_location || formData?.location || originalLocation || ''
     const row = authorizedCompanyLocationRows.find((item) => item.name === formData?.location)
@@ -98,44 +91,6 @@ export default function EditOrderForm({ user, loading }) {
       mounted = false
     }
   }, [originalCompany?.slug, requiresCompanyLocations])
-
-  useEffect(() => {
-    let mounted = true
-
-    const loadAdminServifoodEligibility = async () => {
-      if (isTotalAdminUser) {
-        setCanUseAdminServifoodInEdit(true)
-        return
-      }
-
-      if (!user?.id) {
-        setCanUseAdminServifoodInEdit(false)
-        return
-      }
-
-      const { data, error } = await db.hasArchivedOrderForLocation({
-        userId: user.id,
-        locations: [
-          'Administración ServiFood',
-          'Administracion ServiFood',
-          ADMIN_SERVIFOOD_SLUG
-        ]
-      })
-
-      if (!mounted) return
-      if (error) {
-        setCanUseAdminServifoodInEdit(false)
-        return
-      }
-      setCanUseAdminServifoodInEdit(Boolean(data))
-    }
-
-    loadAdminServifoodEligibility()
-
-    return () => {
-      mounted = false
-    }
-  }, [isTotalAdminUser, user?.id])
 
   const { handleSubmit, error, success } = useEditOrderSubmit({
     order,
@@ -336,7 +291,7 @@ export default function EditOrderForm({ user, loading }) {
               </button>
               <button
                 type="submit"
-                disabled={loading || selectedItemsList.length === 0}
+                disabled={loading || (selectedItemsList.length === 0 && !hasDinnerOverrideChoice)}
                 style={{
                   backgroundColor: '#16a34a',
                   color: '#ffffff',
