@@ -1,4 +1,14 @@
 import { hasHiddenOrderMenuSelection, hasSyntheticFallbackMenuSelection } from '../order/menuDisplay'
+import { isBeverageOrDessertOption } from '../order/orderBusinessRules'
+import { resolveEditOrderCompany } from './editOrderCompany'
+
+const hasValidResponse = (value) => {
+  if (value === null || value === undefined) return false
+  if (Array.isArray(value)) return value.some(hasValidResponse)
+  if (typeof value === 'string') return value.trim() !== ''
+  if (typeof value === 'object') return Object.values(value).some(hasValidResponse)
+  return Boolean(value)
+}
 
 export const validateEditOrderForm = ({
   user,
@@ -17,11 +27,22 @@ export const validateEditOrderForm = ({
     return { ok: false, error: 'Por favor selecciona un lugar de trabajo' }
   }
 
+  const originalCompany = resolveEditOrderCompany(originalOrder)
+  const selectedLocationCompany = resolveEditOrderCompany({}, formData.location)
+  if (
+    originalCompany?.slug &&
+    selectedLocationCompany?.slug &&
+    originalCompany.slug !== selectedLocationCompany.slug
+  ) {
+    return {
+      ok: false,
+      error: 'La sede seleccionada no pertenece a la empresa original del pedido.'
+    }
+  }
+
   const normalizedService = (service || 'lunch').toLowerCase()
   const dinnerOverrideChoice = customResponses?.['dinner-special']
-  const hasDinnerOverrideChoice = dinnerOverrideChoice !== null
-    && dinnerOverrideChoice !== undefined
-    && (typeof dinnerOverrideChoice !== 'string' || dinnerOverrideChoice.trim() !== '')
+  const hasDinnerOverrideChoice = hasValidResponse(dinnerOverrideChoice)
 
   const originalItems = Array.isArray(originalOrder?.items) ? originalOrder.items : []
   const preservesHiddenHistoricalItem = selectedItemsList?.length === 0 && hasHiddenOrderMenuSelection(originalItems)
@@ -31,29 +52,38 @@ export const validateEditOrderForm = ({
   }
 
   if (!selectedItemsList || selectedItemsList.length === 0) {
-    if (preservesHiddenHistoricalItem) return { ok: true, error: null }
-    if (normalizedService === 'dinner') {
-      if (hasDinnerOverrideChoice) return { ok: true, error: null }
-      return { ok: false, error: 'Selecciona al menos un plato para cena o una opción de cena.' }
+    const hasValidEmptyItemCase = preservesHiddenHistoricalItem || (
+      normalizedService === 'dinner' && hasDinnerOverrideChoice
+    )
+    if (!hasValidEmptyItemCase) {
+      if (normalizedService === 'dinner') {
+        return { ok: false, error: 'Selecciona al menos un plato para cena o una opción de cena.' }
+      }
+      return { ok: false, error: 'Por favor selecciona al menos un plato del menú' }
     }
-    return { ok: false, error: 'Por favor selecciona al menos un plato del menú' }
   }
 
-  if ((normalizedService === 'lunch' || normalizedService === 'dinner') && selectedItemsList.length > 1) {
+  if ((normalizedService === 'lunch' || normalizedService === 'dinner') && (selectedItemsList || []).length > 1) {
     return { ok: false, error: 'Solo podés seleccionar 1 comida principal por persona para almuerzo o cena.' }
   }
 
-  if (hasHiddenOrderMenuSelection(selectedItemsList)) {
+  if ((selectedItemsList || []).length > 0 && hasHiddenOrderMenuSelection(selectedItemsList)) {
     return { ok: false, error: 'Esa opción de menú no está disponible para pedidos.' }
   }
 
-  // Validar opciones requeridas (solo las que están activas)
-  if (normalizedService === 'dinner' && hasDinnerOverrideChoice) {
-    return { ok: true, error: null }
-  }
-
   const missingRequiredOptions = (customOptions || [])
-    .filter(opt => opt?.active && opt?.required && !customResponses?.[opt.id])
+    .filter((opt) => {
+      if (!opt?.active || !opt?.required) return false
+      if (
+        normalizedService === 'dinner' &&
+        hasDinnerOverrideChoice &&
+        opt?.id !== 'dinner-special' &&
+        !isBeverageOrDessertOption(opt)
+      ) {
+        return false
+      }
+      return !hasValidResponse(customResponses?.[opt.id])
+    })
     .map(opt => opt.title)
 
   if (missingRequiredOptions.length > 0) {
