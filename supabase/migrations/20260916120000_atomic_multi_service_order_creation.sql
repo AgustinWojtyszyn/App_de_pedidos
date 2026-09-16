@@ -1,11 +1,10 @@
 -- Atomic multi-service order creation.
--- Keep the proven single-order RPC authoritative for all business rules and
--- call it twice inside one PostgreSQL statement/transaction. If either member
--- fails, PostgreSQL rolls back the entire batch automatically.
+-- Reuse the proven single-order RPC inside one PostgreSQL statement/transaction.
+-- If either member fails, PostgreSQL rolls back the entire batch automatically.
 
 begin;
 
--- Private wrapper kept intentionally small. It lets the batch RPC reuse the
+-- Private wrapper kept intentionally small so the batch RPC can reuse the
 -- existing create_order_idempotent implementation without duplicating its
 -- schedule, location, company, feature, snapshot, trigger or constraint logic.
 create or replace function public.prepare_or_create_order(
@@ -62,9 +61,7 @@ begin
     raise exception 'invalid_order_batch';
   end if;
 
-  -- Serialize batch retries for the same user before inspecting idempotency
-  -- keys. The existing active-order unique index remains the final concurrency
-  -- guard against competing requests.
+  -- Serialize retries for the same user before inspecting idempotency keys.
   perform pg_advisory_xact_lock(
     hashtextextended('order-create:' || p_user_id::text, 0)
   );
@@ -90,7 +87,8 @@ begin
   if exists (
     select 1
     from jsonb_array_elements(p_orders) as batch(payload)
-    where batch.payload->>'service' not in ('lunch', 'dinner')
+    where batch.payload->>'service' is null
+       or batch.payload->>'service' not in ('lunch', 'dinner')
   ) then
     raise exception 'invalid_service';
   end if;
@@ -144,9 +142,9 @@ begin
     raise exception 'invalid_delivery_date';
   end if;
 
-  -- A completed retry must resolve to the same user/service/date. One recovered
-  -- member and one missing member is rejected rather than reconstructing a
-  -- partially deleted historical batch.
+  -- Completed retries must resolve to the same user/service/date. One recovered
+  -- member and one missing member is rejected instead of reconstructing a
+  -- partially deleted batch.
   if exists (
     select 1
     from jsonb_array_elements(p_orders) as batch(payload)
@@ -170,59 +168,11 @@ begin
     raise exception 'incomplete_order_batch';
   end if;
 
-  -- Cheap business preflight that can be checked without inserting. The
-  -- existing single-order RPC remains authoritative and rechecks these rules.
-  if exists (
-    select 1
-    from jsonb_array_elements(p_orders) as batch(payload)
-    cross join lateral public.get_order_schedule_context(
-      batch.payload->>'location',
-      now()
-    ) as schedule
-    where not coalesce(schedule.is_open, false)
-  ) then
-    raise exception 'ORDER_WINDOW_CLOSED';
-  end if;
-
-  if not public.is_admin()
-     and exists (
-       select 1
-       from jsonb_array_elements(p_orders) as batch(payload)
-       where batch.payload->>'service' = 'dinner'
-     )
-     and not exists (
-       select 1
-       from public.user_features uf
-       where uf.user_id = p_user_id
-         and uf.feature = 'dinner'
-         and uf.enabled = true
-     ) then
-    raise exception 'dinner_not_enabled';
-  end if;
-
-  if exists (
-    select 1
-    from jsonb_array_elements(p_orders) as batch(payload)
-    where not exists (
-      select 1
-      from public.orders existing_key
-      where existing_key.idempotency_key = batch.payload->>'idempotency_key'
-    )
-      and exists (
-        select 1
-        from public.orders active_order
-        where active_order.user_id = p_user_id
-          and active_order.delivery_date = (batch.payload->>'delivery_date')::date
-          and coalesce(nullif(lower(active_order.service), ''), 'lunch') = batch.payload->>'service'
-          and active_order.status = 'pending'
-      )
-  ) then
-    raise exception 'duplicate_active_order';
-  end if;
-
-  -- Both calls execute inside this single RPC statement. RETURN QUERY does not
-  -- commit member rows individually: any exception from either call, trigger or
-  -- constraint aborts and rolls back the full transaction.
+  -- Business rules remain authoritative in create_order_idempotent. Both calls
+  -- execute inside this single RPC statement, so any failure from either call,
+  -- trigger or constraint rolls back the full batch. A completed retry is
+  -- recovered before schedule/feature checks by the existing RPC, preserving
+  -- current idempotency semantics.
   return query
   select created.*
   from jsonb_array_elements(p_orders) with ordinality as batch(payload, ordinal)
