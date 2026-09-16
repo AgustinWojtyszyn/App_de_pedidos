@@ -9,7 +9,6 @@ const normalizeSearchText = (value = '') =>
 
 export const createUsersService = ({
   supabase,
-  cache = null,
   invalidateCache = () => {},
   logAudit = null
 } = {}) => {
@@ -115,40 +114,23 @@ export const createUsersService = ({
       }
     },
 
-    // Usuarios
-    getUsers: async (force = false) => {
-      // Usar cache para reducir consultas repetidas
-      const cacheKey = 'users-list'
-      if (!force) {
-        const cached = cache?.get?.(cacheKey)
-        if (cached) return { data: cached, error: null }
-      }
+    // Usuarios compartidos: siempre leer desde Supabase. El parámetro force se
+    // conserva por compatibilidad, pero ya no existe una respuesta local reutilizable.
+    getUsers: async (_force = false) => {
       const { data, error } = await supabase
         .from('users')
-        .select('id, email, full_name, role, created_at') // Solo campos necesarios
+        .select('id, email, full_name, role, created_at')
         .order('created_at', { ascending: false })
-      if (!error && data && cache?.set) {
-        cache.set(cacheKey, data, 60000) // Cache por 1 minuto
-      }
       return { data, error }
     },
 
-    // Personas admin (usuarios agrupados + sueltos, sin duplicados)
-    getAdminPeopleUnified: async (force = false) => {
-      const cacheKey = 'admin-people-unified'
-      if (!force) {
-        const cached = cache?.get?.(cacheKey)
-        if (cached) return { data: cached, error: null }
-      }
-
+    // Personas admin (usuarios agrupados + sueltos, sin duplicados).
+    // Lectura fresca para que dos sesiones admin no dependan de TTLs distintos.
+    getAdminPeopleUnified: async (_force = false) => {
       const { data, error } = await supabase
         .from('admin_people_unified')
         .select('person_id, group_id, display_name, emails, user_ids, members_count, first_created, last_created, is_grouped')
         .order('display_name', { ascending: true })
-
-      if (!error && data && cache?.set) {
-        cache.set(cacheKey, data, 60000)
-      }
 
       return { data, error }
     },
@@ -256,12 +238,8 @@ export const createUsersService = ({
       }
     },
 
-    // Pedidos
+    // Features/permisos del usuario: siempre frescos desde Supabase.
     getUserFeatures: async (userId = null) => {
-      const normalizedUserId = (userId || '').toString().trim().toLowerCase() || 'me'
-      const cacheKey = `user-features:${normalizedUserId}`
-      const cached = cache?.get?.(cacheKey)
-      if (cached) return { data: cached, error: null }
       let query = supabase
         .from('user_features')
         .select('feature, enabled')
@@ -269,9 +247,6 @@ export const createUsersService = ({
         query = query.eq('user_id', userId)
       }
       const { data, error } = await query
-      if (!error && data && cache?.set) {
-        cache.set(cacheKey, data, 60_000)
-      }
       return { data, error }
     }
   }
