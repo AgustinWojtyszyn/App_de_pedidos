@@ -1,24 +1,19 @@
 export const createCustomOptionsService = ({
   supabase,
-  cache = null,
   invalidateCache = () => {}
 } = {}) => {
   if (!supabase) {
     throw new Error('createCustomOptionsService requires a supabase client')
   }
 
-  // Opciones personalizables (admin listing sin filtros)
+  // Opciones personalizables (admin listing sin filtros).
+  // Se leen siempre desde Supabase para evitar divergencias entre sesiones admin.
   const getCustomOptions = async () => {
-    const cacheKey = 'custom-options'
-    const cached = cache?.get?.(cacheKey)
-    if (cached) return { data: cached, error: null }
-
     const { data, error } = await supabase
       .from('custom_options')
       .select('*')
       .order('order_position', { ascending: true })
 
-    if (!error && data && cache?.set) cache.set(cacheKey, data, 120000)
     return { data, error }
   }
 
