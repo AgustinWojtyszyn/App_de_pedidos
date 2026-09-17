@@ -11,14 +11,15 @@ const DailySummary = ({
   selectedLocation,
   locationCards
 }) => {
-  const locationKey = locationCards
-    .map(card => `${card.location}:${card.total}`)
+  const safeLocationCards = Array.isArray(locationCards) ? locationCards.filter(Boolean) : []
+  const locationKey = safeLocationCards
+    .map(card => `${card.location || 'Sin ubicación'}:${card.total || 0}`)
     .join('|')
   const [locationDisclosure, setLocationDisclosure] = useState({ key: '', expanded: [] })
   const expandedLocations = locationDisclosure.key === locationKey
     ? locationDisclosure.expanded
     : []
-  const allLocationsExpanded = locationCards.length > 0 && locationCards.every(card => expandedLocations.includes(card.location))
+  const allLocationsExpanded = safeLocationCards.length > 0 && safeLocationCards.every(card => expandedLocations.includes(card.location || 'Sin ubicación'))
 
   const toggleLocation = (location) => {
     setLocationDisclosure(current => {
@@ -35,7 +36,7 @@ const DailySummary = ({
   const toggleAllLocations = () => {
     setLocationDisclosure({
       key: locationKey,
-      expanded: allLocationsExpanded ? [] : locationCards.map(card => card.location)
+      expanded: allLocationsExpanded ? [] : safeLocationCards.map(card => card.location || 'Sin ubicación')
     })
   }
 
@@ -203,9 +204,9 @@ const DailySummary = ({
               <p className="daily-section-kicker">Distribución</p>
               <h2>Resumen por ubicación</h2>
             </div>
-            {locationCards.length > 0 && (
+            {safeLocationCards.length > 0 && (
               <div className="flex flex-wrap items-center justify-end gap-2">
-                <span className="daily-scope">{locationCards.length} ubicaciones · detalle replegado</span>
+                <span className="daily-scope">{safeLocationCards.length} ubicaciones · detalle replegado</span>
                 <button
                   type="button"
                   onClick={toggleAllLocations}
@@ -218,21 +219,24 @@ const DailySummary = ({
             )}
           </div>
 
-          {locationCards.length === 0 ? <p className="daily-empty-summary">No hay pedidos para mostrar.</p> : (
+          {safeLocationCards.length === 0 ? <p className="daily-empty-summary">No hay pedidos para mostrar.</p> : (
             <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
-              {locationCards.map((card, index) => {
-                const expanded = expandedLocations.includes(card.location)
-                const previewDishes = card.topDishes.slice(0, 2)
+              {safeLocationCards.map((card, index) => {
+                const location = card.location || 'Sin ubicación'
+                const topDishes = Array.isArray(card.topDishes) ? card.topDishes : []
+                const topSides = Array.isArray(card.topSides) ? card.topSides : []
+                const expanded = expandedLocations.includes(location)
+                const previewDishes = topDishes.slice(0, 2)
                 const detailId = `daily-location-detail-${index}`
 
                 return (
                   <article
-                    key={card.location}
+                    key={`${location}-${index}`}
                     className={`overflow-hidden rounded-lg border bg-white transition ${expanded ? 'border-indigo-200 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}
                   >
                     <button
                       type="button"
-                      onClick={() => toggleLocation(card.location)}
+                      onClick={() => toggleLocation(location)}
                       aria-expanded={expanded}
                       aria-controls={detailId}
                       className="flex w-full items-center gap-3 px-4 py-3 text-left"
@@ -242,7 +246,7 @@ const DailySummary = ({
                       </span>
 
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-extrabold text-slate-900">{card.location}</span>
+                        <span className="block truncate text-sm font-extrabold text-slate-900">{location}</span>
                         <span className="mt-0.5 block truncate text-[11px] text-slate-500">
                           {previewDishes.length
                             ? previewDishes.map(([name, count]) => `${name} · ${count}`).join('  ·  ')
@@ -252,7 +256,7 @@ const DailySummary = ({
 
                       <span className="flex shrink-0 items-center gap-2">
                         <span className="text-right">
-                          <strong className="block text-xl font-black leading-none text-indigo-900">{card.total}</strong>
+                          <strong className="block text-xl font-black leading-none text-indigo-900">{card.total || 0}</strong>
                           <span className="text-[9px] font-medium text-slate-500">pedidos</span>
                         </span>
                         <span className="text-slate-400">
@@ -266,7 +270,7 @@ const DailySummary = ({
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
                           <div className="min-w-0">
                             <p className="mb-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">Platillos principales</p>
-                            {card.topDishes.length ? card.topDishes.map(([name, count]) => (
+                            {topDishes.length ? topDishes.map(([name, count]) => (
                               <div key={name} className="flex items-start justify-between gap-3 py-1 text-xs text-slate-700">
                                 <span className="min-w-0 flex-1">{name}</span>
                                 <strong className="shrink-0 tabular-nums text-slate-900">{count}</strong>
@@ -276,7 +280,7 @@ const DailySummary = ({
 
                           <div className="min-w-0 sm:border-l sm:border-slate-200 sm:pl-4 lg:border-l-0 lg:pl-0 2xl:border-l 2xl:pl-4">
                             <p className="mb-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">Guarniciones</p>
-                            {card.topSides.length ? card.topSides.map(([name, count]) => (
+                            {topSides.length ? topSides.map(([name, count]) => (
                               <div key={name} className="flex items-start justify-between gap-3 py-1 text-xs text-slate-600">
                                 <span className="min-w-0 flex-1">{name}</span>
                                 <strong className="shrink-0 tabular-nums text-slate-800">{count}</strong>
