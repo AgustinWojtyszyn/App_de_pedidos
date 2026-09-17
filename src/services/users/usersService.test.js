@@ -23,77 +23,6 @@ const createSupabaseMock = (rpcResult = { data: [{ id: 'user-1', role: 'admin' }
   }
 }
 
-const createAdminPeopleFallbackSupabaseMock = () => {
-  const calls = []
-  const tableResults = {
-    admin_people_unified: {
-      data: [
-        {
-          person_id: 'global-admin',
-          display_name: 'Administración Álvarez',
-          emails: ['admin.alvarez@example.com'],
-          user_ids: ['global-admin'],
-          members_count: 1,
-          first_created: '2026-08-01T00:00:00.000Z',
-          last_created: '2026-08-01T00:00:00.000Z',
-          is_grouped: false
-        },
-        {
-          person_id: 'regular-user',
-          display_name: 'Usuario Normal',
-          emails: ['user@example.com'],
-          user_ids: ['regular-user'],
-          members_count: 1,
-          first_created: '2026-08-02T00:00:00.000Z',
-          last_created: '2026-08-02T00:00:00.000Z',
-          is_grouped: false
-        }
-      ],
-      error: null
-    },
-    users: {
-      data: [
-        {
-          id: 'global-admin',
-          email: 'admin.alvarez@example.com',
-          full_name: 'Administración Álvarez',
-          role: 'admin',
-          created_at: '2026-08-01T00:00:00.000Z'
-        },
-        {
-          id: 'regular-user',
-          email: 'user@example.com',
-          full_name: 'Usuario Normal',
-          role: 'user',
-          created_at: '2026-08-02T00:00:00.000Z'
-        }
-      ],
-      error: null
-    }
-  }
-  return {
-    calls,
-    supabase: {
-      rpc(name, args) {
-        calls.push(['rpc', name, args])
-        return Promise.resolve({
-          data: null,
-          error: { code: 'PGRST202', message: 'Could not find get_admin_people_page' }
-        })
-      },
-      from(table) {
-        calls.push(['from', table])
-        return {
-          select(columns) {
-            calls.push(['select', table, columns])
-            return Promise.resolve(tableResults[table] || { data: [], error: null })
-          }
-        }
-      }
-    }
-  }
-}
-
 describe('usersService role updates', () => {
   it('obtiene sedes activas de empresa por RPC', async () => {
     const calls = []
@@ -256,26 +185,71 @@ describe('usersService role updates', () => {
     expect(calls).toEqual([])
   })
 
-  it('usa fallback real y busca admins sin distinguir tildes si falta get_admin_people_page', async () => {
-    const { supabase, calls } = createAdminPeopleFallbackSupabaseMock()
+  it('pagina personas administrativas solo mediante la RPC segura', async () => {
+    const calls = []
+    const supabase = {
+      rpc(name, args) {
+        calls.push(['rpc', name, args])
+        if (args.p_page === 1) {
+          return Promise.resolve({
+            data: {
+              items: [{ person_id: 'user-1', display_name: 'Ana' }],
+              total_count: 2,
+              total_pages: 2,
+              page: 1,
+              page_size: 200
+            },
+            error: null
+          })
+        }
+        return Promise.resolve({
+          data: {
+            items: [{ person_id: 'user-2', display_name: 'Bruno' }],
+            total_count: 2,
+            total_pages: 2,
+            page: 2,
+            page_size: 200
+          },
+          error: null
+        })
+      },
+      from: vi.fn()
+    }
     const service = createUsersService({ supabase })
 
-    const result = await service.getAdminPeoplePage({
-      search: 'administracion alv',
-      role: 'admin',
-      page: 1,
-      pageSize: 40
+    const result = await service.getAdminPeopleUnified()
+
+    expect(result).toEqual({
+      data: [
+        { person_id: 'user-1', display_name: 'Ana' },
+        { person_id: 'user-2', display_name: 'Bruno' }
+      ],
+      error: null
+    })
+    expect(calls).toHaveLength(2)
+    expect(calls[0]).toEqual(['rpc', 'get_admin_people_page', expect.objectContaining({ p_page: 1, p_page_size: 200 })])
+    expect(calls[1]).toEqual(['rpc', 'get_admin_people_page', expect.objectContaining({ p_page: 2, p_page_size: 200 })])
+    expect(supabase.from).not.toHaveBeenCalled()
+  })
+
+  it('falla cerrado si no existe la RPC de personas administrativas', async () => {
+    const from = vi.fn()
+    const service = createUsersService({
+      supabase: {
+        rpc() {
+          return Promise.resolve({
+            data: null,
+            error: { code: 'PGRST202', message: 'Could not find get_admin_people_page' }
+          })
+        },
+        from
+      }
     })
 
-    expect(result.error).toBeNull()
-    expect(result.data.total_count).toBe(1)
-    expect(result.data.items[0]).toMatchObject({
-      person_id: 'global-admin',
-      email: 'admin.alvarez@example.com',
-      role: 'admin',
-      primary_user_id: 'global-admin'
-    })
-    expect(calls).toContainEqual(['from', 'admin_people_unified'])
-    expect(calls).toContainEqual(['from', 'users'])
+    const result = await service.getAdminPeoplePage({ search: 'ana' })
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('PGRST202')
+    expect(from).not.toHaveBeenCalled()
   })
 })
