@@ -1,11 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
-
-const source = readFileSync(new URL('./EditOrderForm.jsx', import.meta.url), 'utf8')
+import {
+  appendOriginalLocation,
+  resolveEditOrderCompany,
+  resolveEditOrderLocation
+} from '../utils/orderEdit/editOrderCompany'
 
 describe('EditOrderForm regression guards', () => {
   it('preserva Administración ServiFood cuando es la empresa original del pedido', () => {
-    expect(source).toContain('originalCompany?.slug === ADMIN_SERVIFOOD_SLUG')
-    expect(source).toContain('appendOriginalLocation(baseLocations, originalLocation)')
+    const order = {
+      company_slug: 'administracion_servifood',
+      company_name: 'Administración ServiFood',
+      location: 'Administración ServiFood'
+    }
+
+    const company = resolveEditOrderCompany(order)
+    const location = resolveEditOrderLocation(order)
+    const locations = appendOriginalLocation([], location)
+
+    expect(company?.slug).toBe('administracion_servifood')
+    expect(location).toBe('Administración ServiFood')
+    expect(locations).toContain('Administración ServiFood')
   })
 })
