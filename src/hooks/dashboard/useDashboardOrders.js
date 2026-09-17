@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+const DASHBOARD_ORDER_LIMIT = 200
+
 const isVisibleDashboardOrder = (order = {}) =>
   String(order?.displayStatus || order?.status || '').toLowerCase() !== 'cancelled'
 
@@ -42,40 +44,23 @@ export const useDashboardOrders = ({ user, db, usersService } = {}) => {
         setOrdersLoading(true)
       }
 
-      // TODOS (admins y usuarios) solo ven sus propios pedidos en el Dashboard
-      const { data, error } = await db.getOrdersWithPersonKey({ userId: user.id })
+      // El Dashboard es personal: leer solamente pedidos del usuario autenticado.
+      // No necesita consultar la vista administrativa de personas para resolver su nombre.
+      const { data, error } = await db.getOrders(user.id, { limit: DASHBOARD_ORDER_LIMIT })
 
       if (error) {
         console.error('Error fetching orders:', error)
       } else {
-        // Resolver nombre/email por persona unificada (grupo o usuario suelto)
-        const { data: peopleData } = await db.getAdminPeopleUnified()
-        const personById = new Map(
-          (Array.isArray(peopleData) ? peopleData : []).map(person => [person.person_id, person])
-        )
+        const fallbackUserName = user?.user_metadata?.full_name ||
+          user?.email?.split('@')[0] ||
+          'Usuario'
 
-        const ordersWithUserNames = (data || []).filter(isVisibleDashboardOrder).map(order => {
-          const displayStatus = order.status
-          const personId = order.person_key || (order.user_id ? String(order.user_id) : null)
-          const person = personId ? personById.get(personId) : null
-          const emails = Array.isArray(person?.emails) ? person.emails.filter(Boolean) : []
-          let userName = 'Usuario'
-          if (person) {
-            userName = person.display_name ||
-              emails[0]?.split('@')[0] ||
-              order.customer_name ||
-              'Usuario'
-          } else if (order.customer_name) {
-            userName = order.customer_name
-          }
-
-          return {
-            ...order,
-            displayStatus,
-            user_name: userName,
-            user_email: order.customer_email || emails[0] || ''
-          }
-        })
+        const ordersWithUserNames = (data || []).filter(isVisibleDashboardOrder).map(order => ({
+          ...order,
+          displayStatus: order.status,
+          user_name: order.customer_name || fallbackUserName,
+          user_email: order.customer_email || user?.email || ''
+        }))
 
         setOrders(ordersWithUserNames)
         calculateStats(ordersWithUserNames)
@@ -88,7 +73,7 @@ export const useDashboardOrders = ({ user, db, usersService } = {}) => {
         setOrdersLoading(false)
       }
     }
-  }, [calculateStats, db, user?.id])
+  }, [calculateStats, db, user?.email, user?.id, user?.user_metadata?.full_name])
 
   const checkIfAdmin = useCallback(async () => {
     if (!user?.id) return
@@ -108,18 +93,17 @@ export const useDashboardOrders = ({ user, db, usersService } = {}) => {
   }, [checkIfAdmin, user?.id])
 
   useEffect(() => {
-    if (!user?.id || isAdmin === null) return
-    if (isAdmin !== null) {
-      fetchOrders()
+    if (!user?.id) return undefined
 
-      // Auto-refresh cada 30 segundos
-      const interval = setInterval(() => {
-        fetchOrders(true) // true = silent refresh
-      }, 30000)
+    fetchOrders()
 
-      return () => clearInterval(interval)
-    }
-  }, [fetchOrders, isAdmin, user?.id])
+    // Mantener el Dashboard actualizado sin volver a descargar datos administrativos.
+    const interval = setInterval(() => {
+      fetchOrders(true)
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [fetchOrders, user?.id])
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
