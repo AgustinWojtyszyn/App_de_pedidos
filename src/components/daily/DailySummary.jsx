@@ -1,5 +1,4 @@
-import { MapPin } from 'lucide-react'
-import orderImg from '../../assets/order.png'
+import { MapPin, Utensils, Salad, GlassWater } from 'lucide-react'
 
 const DailySummary = ({
   mode,
@@ -132,105 +131,71 @@ const DailySummary = ({
 
   return (
     <>
-      <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-3 print-hide">
-        {[
-          { title: 'Resumen de platillos', items: operationalSummary.dishes, empty: 'Sin platillos' },
-          { title: 'Resumen de guarniciones', items: operationalSummary.sides, empty: 'Sin guarniciones' },
-          { title: 'Resumen de bebidas', items: operationalSummary.beverages, empty: 'Sin bebidas' }
-        ].map(section => {
-          const maxItems = 6
-          const visibleItems = section.items.slice(0, maxItems)
-          const remaining = Math.max(section.items.length - visibleItems.length, 0)
-          const totalCount = section.items.reduce((sum, [, count]) => sum + Number(count || 0), 0)
-
-          return (
-            <div key={section.title} className="rounded-xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/40">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">{section.title}</h3>
-                  <p className="text-xs text-slate-500">Total: {totalCount}</p>
-                </div>
-                <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
-                  {sortedOrdersLength} pedidos
-                </span>
+      <section className="daily-analytics print-hide" aria-label="Resumen operativo">
+        <div className="daily-section-heading">
+          <div><p className="daily-section-kicker">Producción del día</p><h2>Qué sale de cocina</h2></div>
+          <span className="daily-scope">{sortedOrdersLength} pedidos · filtros actuales</span>
+        </div>
+        <div className="daily-analytics-grid">
+          {[
+            { title: 'Platillos', Icon: Utensils, items: operationalSummary.dishes, empty: 'Sin platillos' },
+            { title: 'Guarniciones', Icon: Salad, items: operationalSummary.sides, empty: 'Sin guarniciones' },
+            { title: 'Bebidas', Icon: GlassWater, items: operationalSummary.beverages, empty: 'Sin bebidas' }
+          ].map(section => {
+            const { title, Icon, items, empty } = section
+            const maxItems = 6
+            const visibleItems = items.slice(0, maxItems)
+            const remaining = Math.max(items.length - visibleItems.length, 0)
+            const totalCount = items.reduce((sum, [, count]) => sum + Number(count || 0), 0)
+            return (
+              <div key={title} className="daily-analysis-column">
+                <div className="daily-analysis-title"><h3><Icon size={17} />{title}</h3><span>{totalCount}<small> total</small></span></div>
+                {visibleItems.length === 0 ? <p className="daily-empty-summary">{empty}</p> : (
+                  <div className="daily-ranking">
+                    {visibleItems.map(([label, count]) => (
+                      <div key={label} className="daily-ranking-item">
+                        <div><span>{label}</span><strong>{count}</strong></div>
+                        <span className="daily-ranking-track" aria-hidden="true"><span style={{ width: `${totalCount > 0 ? Number(count) / totalCount * 100 : 0}%` }} /></span>
+                      </div>
+                    ))}
+                    {remaining > 0 && <p className="daily-remaining">+{remaining} más</p>}
+                  </div>
+                )}
               </div>
-
-              {visibleItems.length === 0 ? (
-                <p className="text-sm text-slate-500">{section.empty}</p>
-              ) : (
-                <div className="space-y-2">
-                  {visibleItems.map(([label, count]) => (
-                    <div key={label} className="flex items-center justify-between rounded-lg bg-slate-100/70 px-3 py-2 text-sm">
-                      <span className="font-semibold text-slate-800">{label}</span>
-                      <span className="text-sm font-bold text-slate-700">{count}</span>
-                    </div>
-                  ))}
-                  {remaining > 0 && (
-                    <p className="text-xs font-semibold text-slate-500">+{remaining} más</p>
-                  )}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      </section>
 
       {selectedLocation === 'all' && stats.pending > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50 print-hide">
-          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-6 py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
-                <img src={orderImg} alt="" className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-100">Resumen por ubicación</h3>
-                <p className="text-xs font-semibold text-slate-300">Solo ubicaciones con pedidos del día</p>
-              </div>
+        <section className="daily-locations print-hide" aria-label="Resumen por ubicación">
+          <div className="daily-section-heading">
+            <div><p className="daily-section-kicker">Distribución</p><h2>Resumen por ubicación</h2></div>
+            <span className="daily-scope">Solo ubicaciones con pedidos del día</span>
+          </div>
+          {locationCards.length === 0 ? <p className="daily-empty-summary">No hay pedidos para mostrar.</p> : (
+            <div className="daily-location-grid">
+              {locationCards.map(card => (
+                <article key={card.location} className="daily-location">
+                  <div className="daily-location-top">
+                    <div><MapPin size={16} aria-hidden="true" /><h3>{card.location}</h3></div>
+                    <div className="daily-location-count"><strong>{card.total}</strong><span>pedidos</span></div>
+                  </div>
+                  <div className="daily-location-details">
+                    <p className="daily-section-kicker">Platillos principales</p>
+                    {card.topDishes.length ? card.topDishes.map(([name, count]) => (
+                      <div key={name} className="daily-location-line"><span>{name}</span><strong>{count}</strong></div>
+                    )) : <p className="daily-empty-summary">Sin detalle de platillos</p>}
+                    <p className="daily-section-kicker daily-side-label">Guarniciones</p>
+                    {card.topSides.length ? card.topSides.map(([name, count]) => (
+                      <div key={name} className="daily-location-line daily-location-side"><span>{name}</span><strong>{count}</strong></div>
+                    )) : <p className="daily-empty-summary">Sin guarniciones</p>}
+                  </div>
+                </article>
+              ))}
             </div>
-          </div>
-          <div className="p-6">
-            {locationCards.length === 0 ? (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                No hay pedidos para mostrar.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {locationCards.map((card) => {
-                  const topDishesText = card.topDishes.length
-                    ? card.topDishes.map(([name, count]) => `${name} (${count})`).join(' · ')
-                    : 'Sin detalle de platillos'
-                  const topSidesText = card.topSides.length
-                    ? card.topSides.map(([name, count]) => `${name} (${count})`).join(' · ')
-                    : 'Sin guarniciones'
-
-                  return (
-                    <div
-                      key={card.location}
-                      className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/40"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ubicación</p>
-                          <h4 className="text-lg font-bold text-slate-900">{card.location}</h4>
-                        </div>
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-lg font-black text-slate-800">
-                          {card.total}
-                        </div>
-                      </div>
-                      <div className="mt-3 text-xs font-semibold text-slate-600">Top platillos</div>
-                      <p className="text-xs text-slate-700">{topDishesText}</p>
-                      <div className="mt-2 text-xs font-semibold text-slate-600">Guarniciones</div>
-                      <p className="text-xs text-slate-700">{topSidesText}</p>
-                      <div className="absolute -right-6 -bottom-6 opacity-5">
-                        <MapPin className="h-20 w-20 text-primary-600" />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+          )}
+        </section>
       )}
     </>
   )

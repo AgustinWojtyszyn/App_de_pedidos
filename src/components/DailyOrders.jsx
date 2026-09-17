@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import '../styles/daily-orders.css'
 import { useNavigate } from 'react-router-dom'
 import { Shield } from 'lucide-react'
 import RequireUser from './RequireUser'
@@ -208,7 +209,7 @@ const DailyOrders = ({ user, loading }) => {
   return (
     <RequireUser user={user} loading={loading}>
       <DailyPrintStyles />
-      <div className="mx-auto max-w-screen-2xl rounded-3xl bg-slate-50/70 p-4 md:p-6 2xl:p-10 print-wrap print-content">
+      <div className="daily-workspace print-wrap print-content">
         <DailySummary
           mode="print"
           stats={stats}
@@ -217,6 +218,7 @@ const DailyOrders = ({ user, loading }) => {
         />
 
         <DailyHeader
+          dailyCloseStatus={dailyCloseStatus}
           stats={statsForFilters}
           activeLocationsCount={activeLocationsCount}
           tomorrowLabel={deliveryDateLabel}
@@ -285,7 +287,7 @@ const DailyOrders = ({ user, loading }) => {
 
         <SystemHealthPanel enabled={isGlobalAdmin} />
 
-        <div className="mb-4 flex max-w-full gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 print-hide">
+        <nav aria-label="Secciones de pedidos diarios" className="daily-workspace-nav print-hide">
           {[
             ['orders', 'Pedidos'],
             ['remitos', 'Remitos'],
@@ -296,12 +298,13 @@ const DailyOrders = ({ user, loading }) => {
               key={value}
               type="button"
               onClick={() => setActiveSubtab(value)}
-              className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-sm font-black ${activeSubtab === value ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+              aria-current={activeSubtab === value ? 'page' : undefined}
+              className={`daily-workspace-tab ${activeSubtab === value ? 'is-active' : ''}`}
             >
               {label}
             </button>
           ))}
-        </div>
+        </nav>
 
         {activeSubtab === 'orders' && (
           <>

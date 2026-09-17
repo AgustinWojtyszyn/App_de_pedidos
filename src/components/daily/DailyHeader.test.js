@@ -55,6 +55,16 @@ const getQuickButton = (tree, label) => {
 }
 
 describe('DailyHeader delivery date selector', () => {
+  it('refreshes with the existing callback and disables refresh while loading', () => {
+    const onRefresh = vi.fn()
+    const tree = DailyHeader({ ...baseProps, onRefresh })
+    getQuickButton(tree, 'Actualizar datos').props.onClick()
+    expect(onRefresh).toHaveBeenCalledOnce()
+
+    const refreshingTree = DailyHeader({ ...baseProps, onRefresh, refreshing: true })
+    expect(getQuickButton(refreshingTree, 'Actualizando...').props.disabled).toBe(true)
+  })
+
   it.each([
     ['Día anterior', addDaysToISO(baseProps.operationalDate, -1)],
     ['Hoy', getTodayISOInTimeZone()],

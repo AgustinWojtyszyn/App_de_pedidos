@@ -14,18 +14,19 @@ const DailyFilters = ({
   sortBy,
   onSortChange
 }) => (
-  <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/50 print-hide">
+  <div className="daily-filters print-hide">
     <div className="mb-3 flex items-center justify-between">
       <h3 className="text-sm font-bold uppercase tracking-wide text-slate-700">Filtros rápidos</h3>
       <span className="text-xs text-slate-500">Aplican al listado y al resumen operativo</span>
     </div>
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="daily-filter-fields">
       <div>
         <label htmlFor="filter-location" className="mb-2 block text-xs font-semibold text-slate-600">
           Ubicación
         </label>
         <select
           id="filter-location"
+          data-active={selectedLocation !== 'all'}
           value={selectedLocation}
           onChange={(e) => onLocationChange(e.target.value)}
           className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -45,6 +46,7 @@ const DailyFilters = ({
         </label>
         <select
           id="filter-status"
+          data-active={selectedStatus !== 'all'}
           value={selectedStatus}
           onChange={(e) => onStatusChange(e.target.value)}
           className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -62,6 +64,7 @@ const DailyFilters = ({
         </label>
         <select
           id="filter-dish"
+          data-active={selectedDish !== 'all'}
           value={selectedDish}
           onChange={(e) => onDishChange(e.target.value)}
           className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -81,6 +84,7 @@ const DailyFilters = ({
         </label>
         <select
           id="filter-side"
+          data-active={selectedSide !== 'all'}
           value={selectedSide}
           onChange={(e) => onSideChange(e.target.value)}
           className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -98,6 +102,7 @@ const DailyFilters = ({
         </label>
         <select
           id="filter-sort"
+          data-active={sortBy !== 'recent'}
           value={sortBy}
           onChange={(e) => onSortChange(e.target.value)}
           className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"

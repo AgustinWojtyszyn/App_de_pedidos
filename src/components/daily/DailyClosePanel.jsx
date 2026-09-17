@@ -99,8 +99,8 @@ const DailyClosePanel = ({ status }) => {
   const checklist = (Array.isArray(safeStatus.checklist) ? safeStatus.checklist : []).filter(Boolean)
 
   return (
-    <section className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm print-hide">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <section className="daily-close print-hide">
+      <div className="daily-close-content">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`inline-flex min-h-[32px] items-center gap-2 rounded-full border px-3 py-1 text-sm font-black ${toneClasses[overallStatus.tone] || toneClasses.warning}`}>
@@ -132,6 +132,7 @@ const DailyClosePanel = ({ status }) => {
             onClick={() => setExpanded((current) => !current)}
             className="inline-flex min-h-[32px] items-center rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             aria-expanded={expanded}
+            aria-controls="daily-close-checklist"
           >
             {expanded ? (
               <>
@@ -156,7 +157,7 @@ const DailyClosePanel = ({ status }) => {
       )}
 
       {expanded && (
-        <div className="mt-3 border-t border-slate-100 pt-3">
+        <div id="daily-close-checklist" className="mt-3 border-t border-slate-100 pt-3">
           <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
             {checklist.map((item, index) => (
               <ChecklistItem

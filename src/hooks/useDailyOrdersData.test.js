@@ -80,8 +80,7 @@ describe('useDailyOrdersData daily orders loading', () => {
 
   it('routes the refresh button through the filtered daily orders loader', () => {
     expect(dailyOrdersSource).toContain('onRefresh={handleRefresh}')
-    expect(dailyHeaderSource).toContain('onRefresh={onRefresh}')
-    expect(dailyExportActionsSource).toContain('onClick={onRefresh}')
+    expect(dailyHeaderSource).toContain('onClick={onRefresh}')
     expect(dailyOrdersSource).not.toContain('getOrdersWithPersonKey(')
     expect(dailyHeaderSource).not.toContain('getOrdersWithPersonKey(')
     expect(dailyExportActionsSource).not.toContain('getOrdersWithPersonKey(')

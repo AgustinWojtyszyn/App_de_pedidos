@@ -1,4 +1,4 @@
-import dinnerImg from '../../assets/dinner.png'
+import { CalendarDays, RefreshCw } from 'lucide-react'
 import { addDaysToISO, getTodayISOInTimeZone, getTomorrowISOInTimeZone } from '../../utils/dateUtils'
 import DailyExportActions from './DailyExportActions'
 
@@ -24,7 +24,8 @@ const DailyHeader = ({
   onDiscountOrders,
   sortedOrdersLength,
   pendingOrdersCount,
-  isAdmin
+  isAdmin,
+  dailyCloseStatus
 }) => {
   const today = getTodayISOInTimeZone()
   const tomorrow = getTomorrowISOInTimeZone()
@@ -39,92 +40,66 @@ const DailyHeader = ({
   ]
 
   return (
-    <div className="mb-4 rounded-2xl border border-slate-200 bg-linear-to-br from-white via-white to-slate-50 shadow-lg shadow-slate-200/60 print-hide">
-      <div className="flex flex-col gap-6 p-5">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <img src={dinnerImg} alt="" className="h-10 w-10" aria-hidden="true" />
-              <div>
-                <h1 className="text-3xl font-black text-slate-900">Pedidos diarios</h1>
-                <p className="text-sm font-semibold text-slate-600">
-                  Entrega: {tomorrowLabel}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-end gap-2">
-              <div>
-                <label htmlFor="daily-delivery-date" className="text-xs font-semibold text-slate-600">
-                  Fecha de entrega
-                </label>
-                <input
-                  id="daily-delivery-date"
-                  type="date"
-                  value={operationalDate}
-                  onChange={(event) => onDeliveryDateChange(event.target.value)}
-                  className="mt-1 h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-1.5">
-                {quickDates.map(item => (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={() => onDeliveryDateChange(item.value)}
-                    className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-default disabled:border-primary-200 disabled:bg-primary-50 disabled:text-primary-700"
-                    disabled={item.value === operationalDate}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-              {[
-                { label: 'Total del día', value: stats.total },
-                { label: 'Pendientes', value: stats.pending },
-                { label: 'Extras post reporte', value: stats.postReportExtra || 0 },
-                { label: 'Archivados', value: stats.archived },
-                { label: 'Ubicaciones activas', value: activeLocationsCount }
-              ].map(metric => (
-                <div
-                  key={metric.label}
-                  className="rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-sm"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {metric.label}
-                  </p>
-                  <p className="text-2xl font-black text-slate-900">{metric.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <DailyExportActions
-            exportCompany={exportCompany}
-            onExportCompanyChange={onExportCompanyChange}
-            locations={locations}
-            exportableOrdersCount={exportableOrdersCount}
-            onExportExcel={onExportExcel}
-            onGenerateNotaPedido={onGenerateNotaPedido}
-            onShareWhatsApp={onShareWhatsApp}
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            onExportPdf={onExportPdf}
-            onArchiveAll={onArchiveAll}
-            onAddExtraOrder={onAddExtraOrder}
-            onAddLateExtraOrder={onAddLateExtraOrder}
-            onDiscountOrders={onDiscountOrders}
-            sortedOrdersLength={sortedOrdersLength}
-            pendingOrdersCount={pendingOrdersCount}
-            isAdmin={isAdmin}
-          />
+    <header className="daily-command print-hide">
+      <div className="daily-command-top">
+        <div>
+          <p className="daily-eyebrow">ServiFood <span>/</span> Centro operativo</p>
+          <h1>Pedidos diarios<span className="daily-title-dot">.</span></h1>
+          <p className="daily-delivery-label">Entrega · {tomorrowLabel}</p>
+        </div>
+        <div className="daily-command-live">
+          <span className={`daily-day-status daily-day-status--${dailyCloseStatus?.overallStatus?.tone || 'neutral'}`}>
+            <span aria-hidden="true" /> Cierre: {dailyCloseStatus?.overallStatus?.label || 'Sin información'}
+          </span>
+          <span className="daily-update-label">Última actualización · {dailyCloseStatus?.lastUpdatedLabel || 'Sin actualización'}</span>
+          <button type="button" onClick={onRefresh} disabled={refreshing} className="daily-refresh">
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            {refreshing ? 'Actualizando...' : 'Actualizar datos'}
+          </button>
         </div>
       </div>
-    </div>
+      <div className="daily-datebar">
+        <label htmlFor="daily-delivery-date"><CalendarDays size={16} /> Fecha de entrega</label>
+        <input id="daily-delivery-date" type="date" value={operationalDate}
+          onChange={(event) => onDeliveryDateChange(event.target.value)} />
+        <div className="daily-quickdates">
+          {quickDates.map(item => (
+            <button key={item.label} type="button" onClick={() => onDeliveryDateChange(item.value)}
+              disabled={item.value === operationalDate}>{item.label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="daily-metrics">
+        {[
+          { label: 'Total del día', value: stats.total, kind: 'total', detail: 'pedidos' },
+          { label: 'Pendientes', value: stats.pending, kind: 'pending', detail: 'por archivar' },
+          { label: 'Extras post reporte', value: stats.postReportExtra || 0, kind: 'extra', detail: 'posteriores al envío' },
+          { label: 'Archivados', value: stats.archived, kind: 'archived', detail: 'pedidos archivados' },
+          { label: 'Ubicaciones activas', value: activeLocationsCount, kind: 'locations', detail: 'puntos de entrega' }
+        ].map(metric => (
+          <div key={metric.label} className={`daily-metric daily-metric--${metric.kind}`}>
+            <p>{metric.label}</p><strong>{metric.value}</strong><span>{metric.detail}</span>
+          </div>
+        ))}
+      </div>
+      <DailyExportActions
+        exportCompany={exportCompany}
+        onExportCompanyChange={onExportCompanyChange}
+        locations={locations}
+        exportableOrdersCount={exportableOrdersCount}
+        onExportExcel={onExportExcel}
+        onGenerateNotaPedido={onGenerateNotaPedido}
+        onShareWhatsApp={onShareWhatsApp}
+        onExportPdf={onExportPdf}
+        onArchiveAll={onArchiveAll}
+        onAddExtraOrder={onAddExtraOrder}
+        onAddLateExtraOrder={onAddLateExtraOrder}
+        onDiscountOrders={onDiscountOrders}
+        sortedOrdersLength={sortedOrdersLength}
+        pendingOrdersCount={pendingOrdersCount}
+        isAdmin={isAdmin}
+      />
+    </header>
   )
 }
 

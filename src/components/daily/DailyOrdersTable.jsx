@@ -14,8 +14,8 @@ const DailyOrdersTable = ({
   const safeSortedOrders = (Array.isArray(sortedOrders) ? sortedOrders : []).filter(Boolean)
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50 print-hide">
-    <div className="border-b border-slate-200 px-6 py-4 sm:px-8 xl:px-9">
+    <div className="daily-orders-list print-hide">
+    <div className="daily-table-heading">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-xl font-black text-slate-900">
@@ -50,35 +50,36 @@ const DailyOrdersTable = ({
       </div>
     ) : (
       <>
-        <div className="overflow-x-auto hidden md:block">
-          <table className="w-full table-auto">
+        <div className="daily-table-scroll">
+          <table className="daily-data-table">
+            <caption className="sr-only">Pedidos del día: clientes, menús, estados y acciones</caption>
             <thead>
-              <tr className="bg-slate-900 text-left border-b border-slate-800">
-                <th className="min-w-[220px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100 xl:pl-11">
+              <tr className="daily-table-labels">
+                <th scope="col">
                   Cliente
                 </th>
-                <th className="min-w-40 px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                <th scope="col">
                   Ubicación / entrega
                 </th>
-                <th className="min-w-[100px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                <th scope="col">
                   Items
                 </th>
-                <th className="min-w-[220px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                <th scope="col">
                   Platillos
                 </th>
-                <th className="min-w-[140px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
-                  Bebida
+                <th scope="col">
+                  Bebida / opciones
                 </th>
-                <th className="min-w-[110px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                <th scope="col">
                   Turno
                 </th>
-                <th className="min-w-[110px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                <th scope="col">
                   Hora
                 </th>
-                <th className="min-w-[120px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                <th scope="col">
                   Estado
                 </th>
-                <th className="min-w-[120px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                <th scope="col">
                   Acción
                 </th>
               </tr>
@@ -97,7 +98,7 @@ const DailyOrdersTable = ({
           </table>
         </div>
 
-        <div className="md:hidden px-4 pb-6 space-y-4">
+        <div className="daily-mobile-orders">
           {safeSortedOrders.map((order, index) => (
             <DailyOrderRow
               key={order.id || `order-card-${index}`}
