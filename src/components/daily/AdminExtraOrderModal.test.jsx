@@ -24,8 +24,9 @@ describe('AdminExtraOrderModal person autocomplete', () => {
     expect(personAutocompleteSource).toContain('El menú no se copia')
   })
 
-  it('uses historical orders to suggest context without copying menu choices', () => {
-    expect(personAutocompleteSource).toContain('db.getOrders(userId, { limit: 80 })')
+  it('uses bounded historical orders to suggest context without copying menu choices', () => {
+    expect(personAutocompleteSource).toContain('const ADMIN_EXTRA_HISTORY_LIMIT = 24')
+    expect(personAutocompleteSource).toContain('db.getOrders(userId, { limit: ADMIN_EXTRA_HISTORY_LIMIT })')
     expect(personAutocompleteSource).toContain('buildAdminExtraHabitProfile')
     expect(source).toContain('setCompanySlug(profile.companySlug)')
     expect(source).toContain('setService(profile.service)')
