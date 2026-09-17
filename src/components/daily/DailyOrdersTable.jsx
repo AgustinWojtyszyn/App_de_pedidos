@@ -3,7 +3,8 @@ import { ChevronLeft, ChevronRight, Package } from 'lucide-react'
 import DailyOrderRow from './DailyOrderRow'
 import { getStatusText } from '../../utils/daily/dailyOrderFormatters'
 
-const PAGE_SIZE = 20
+const DEFAULT_PAGE_SIZE = 10
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
 const DailyOrdersTable = ({
   sortedOrders,
@@ -19,18 +20,36 @@ const DailyOrdersTable = ({
     .map((order, index) => order.id || `order-${index}`)
     .join('|')
 
-  const [pagination, setPagination] = useState({ resultKey: '', page: 1 })
-  const totalPages = Math.max(1, Math.ceil(safeSortedOrders.length / PAGE_SIZE))
+  const [pagination, setPagination] = useState({
+    resultKey: '',
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE
+  })
+
+  const pageSize = pagination.pageSize || DEFAULT_PAGE_SIZE
+  const totalPages = Math.max(1, Math.ceil(safeSortedOrders.length / pageSize))
   const requestedPage = pagination.resultKey === resultKey ? pagination.page : 1
   const currentPage = Math.min(Math.max(requestedPage, 1), totalPages)
-  const pageStart = (currentPage - 1) * PAGE_SIZE
-  const pageOrders = safeSortedOrders.slice(pageStart, pageStart + PAGE_SIZE)
+  const pageStart = (currentPage - 1) * pageSize
+  const pageOrders = safeSortedOrders.slice(pageStart, pageStart + pageSize)
   const firstVisible = safeSortedOrders.length === 0 ? 0 : pageStart + 1
-  const lastVisible = Math.min(pageStart + PAGE_SIZE, safeSortedOrders.length)
+  const lastVisible = Math.min(pageStart + pageSize, safeSortedOrders.length)
 
   const goToPage = (nextPage) => {
     const page = Math.min(Math.max(nextPage, 1), totalPages)
-    setPagination({ resultKey, page })
+    setPagination((current) => ({ ...current, resultKey, page }))
+  }
+
+  const handlePageSizeChange = (event) => {
+    const nextPageSize = Number(event.target.value)
+
+    if (!PAGE_SIZE_OPTIONS.includes(nextPageSize)) return
+
+    setPagination({
+      resultKey,
+      page: 1,
+      pageSize: nextPageSize
+    })
   }
 
   return (
@@ -113,12 +132,31 @@ const DailyOrdersTable = ({
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex flex-wrap items-center gap-3">
               <p className="text-xs font-bold text-slate-500">
                 Mostrando {firstVisible}–{lastVisible} de {safeSortedOrders.length} pedidos filtrados
               </p>
 
+              <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-600">
+                Ver
+                <select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  aria-label="Pedidos por página"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                >
+                  {PAGE_SIZE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                por página
+              </label>
+            </div>
+
+            {totalPages > 1 && (
               <nav
                 aria-label="Paginación de pedidos"
                 className="flex items-center justify-between gap-2 sm:justify-end"
@@ -147,8 +185,8 @@ const DailyOrdersTable = ({
                   <ChevronRight className="h-4 w-4" aria-hidden="true" />
                 </button>
               </nav>
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
     </div>
