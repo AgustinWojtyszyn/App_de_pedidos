@@ -10,6 +10,9 @@ import { getTomorrowISOInTimeZone } from '../utils/dateUtils'
 import { withGreifRefrigerioMenuItem } from '../utils/order/greifDefaultSnack'
 import { getMenuBeverageTitle, hasFruitDessertChoiceRules, isIgarretaIsemarCompany, requiresMenuBeverageChoice, shouldHideIgarretaIsemarOption } from '../utils/order/companySpecialRules'
 
+const ORDER_SUGGESTION_HISTORY_LIMIT = 40
+const ACTIVE_ORDER_DATE_LIMIT = 20
+
 const filterByMealScope = (options = [], meal) =>
   (options || []).filter(opt => {
     const scope = opt?.meal_scope || (opt?.dinner_only ? 'dinner' : 'both')
@@ -428,42 +431,59 @@ const useOrderBootstrap = ({
     if (!user?.id) return
     setSuggestionLoading(true)
     try {
-      const { data, error } = await db.getOrders(user.id)
-      if (!error && data) {
-        const lunchDeliveryDate = getTomorrowISOInTimeZone()
-        const dinnerDeliveryDate = selectedDinnerDate || lunchDeliveryDate
+      const lunchDeliveryDate = getTomorrowISOInTimeZone()
+      const dinnerDeliveryDate = selectedDinnerDate || lunchDeliveryDate
+      const deliveryDates = [...new Set([lunchDeliveryDate, dinnerDeliveryDate])]
 
-        const pendingLunch = data.some(order => isActiveOrderForDelivery(order, lunchDeliveryDate, 'lunch'))
-        const pendingDinner = data.some(order => isActiveOrderForDelivery(order, dinnerDeliveryDate, 'dinner'))
+      const [activeResults, historyResult] = await Promise.all([
+        Promise.all(deliveryDates.map((deliveryDate) => db.getOrders(user.id, {
+          status: 'pending',
+          deliveryDate,
+          limit: ACTIVE_ORDER_DATE_LIMIT
+        }))),
+        db.getOrders(user.id, { limit: ORDER_SUGGESTION_HISTORY_LIMIT })
+      ])
 
-        setPendingLunch(pendingLunch)
-        setPendingDinner(pendingDinner)
-        setHasOrderToday(pendingLunch || pendingDinner)
+      const activeError = activeResults.find((result) => result?.error)?.error
+      if (activeError || historyResult?.error) {
+        throw activeError || historyResult.error
+      }
 
-        const yesterday = new Date()
-        yesterday.setHours(0, 0, 0, 0)
-        yesterday.setDate(yesterday.getDate() - 1)
+      const activeOrders = activeResults.flatMap((result) => (
+        Array.isArray(result?.data) ? result.data : []
+      ))
+      const historyOrders = Array.isArray(historyResult?.data) ? historyResult.data : []
 
-        const ordersFromYesterday = data.filter(order => {
-          if (!order?.created_at) return false
-          if ((order?.status || '').toLowerCase() === 'cancelled') return false
-          const d = new Date(order.created_at)
-          d.setHours(0, 0, 0, 0)
-          return d.getTime() === yesterday.getTime()
-        })
+      const pendingLunch = activeOrders.some(order => isActiveOrderForDelivery(order, lunchDeliveryDate, 'lunch'))
+      const pendingDinner = activeOrders.some(order => isActiveOrderForDelivery(order, dinnerDeliveryDate, 'dinner'))
 
-        if (ordersFromYesterday.length > 0) {
-          const latestYesterday = [...ordersFromYesterday].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-          setSuggestion(latestYesterday)
-          setSuggestionMode('last')
-          setSuggestionVisible(true)
-          setSuggestionSummary(buildSuggestionSummary(latestYesterday, hasMainMenuSelected, buildOptionsSummary))
-        } else {
-          setSuggestion(null)
-          setSuggestionMode('last')
-          setSuggestionVisible(false)
-          setSuggestionSummary('')
-        }
+      setPendingLunch(pendingLunch)
+      setPendingDinner(pendingDinner)
+      setHasOrderToday(pendingLunch || pendingDinner)
+
+      const yesterday = new Date()
+      yesterday.setHours(0, 0, 0, 0)
+      yesterday.setDate(yesterday.getDate() - 1)
+
+      const ordersFromYesterday = historyOrders.filter(order => {
+        if (!order?.created_at) return false
+        if ((order?.status || '').toLowerCase() === 'cancelled') return false
+        const d = new Date(order.created_at)
+        d.setHours(0, 0, 0, 0)
+        return d.getTime() === yesterday.getTime()
+      })
+
+      if (ordersFromYesterday.length > 0) {
+        const latestYesterday = [...ordersFromYesterday].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+        setSuggestion(latestYesterday)
+        setSuggestionMode('last')
+        setSuggestionVisible(true)
+        setSuggestionSummary(buildSuggestionSummary(latestYesterday, hasMainMenuSelected, buildOptionsSummary))
+      } else {
+        setSuggestion(null)
+        setSuggestionMode('last')
+        setSuggestionVisible(false)
+        setSuggestionSummary('')
       }
     } catch (err) {
       console.error('Error checking today order:', err)
