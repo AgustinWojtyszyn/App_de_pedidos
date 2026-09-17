@@ -39,10 +39,15 @@ describe('user services anti-regression guards', () => {
     expect(legacyUsersSource).toContain('const getAdminAccessContext = async () =>')
     expect(legacyUsersSource).toContain('const result = await db.getAdminAccessContext()')
     expect(legacyUsersSource).toContain('ACCESS_RETRY_ATTEMPTS = 4')
-    expect(legacyUsersSource).toContain('getCachedAccessContext(userId)')
+    expect(legacyUsersSource).not.toContain('getCachedAccessContext')
     expect(legacyUsersSource).toContain('db.deleteUser(...args)')
     expect(legacyUsersSource).not.toContain('supabaseService')
     expect(legacyUsersSource).not.toContain(".select('*')")
+  })
+
+  it('no expone la vista de personas administrativas desde el servicio canonico', () => {
+    expect(usersServiceSource).toContain("supabase.rpc('get_admin_people_page'")
+    expect(usersServiceSource).not.toContain(".from('admin_people_unified')")
   })
 
   it('no intenta usar auth.admin.listUsers desde servicios frontend', () => {
