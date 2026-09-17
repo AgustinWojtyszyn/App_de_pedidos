@@ -17,10 +17,16 @@ describe('company-specific menu display', () => {
     expect(getMenuDisplay({ name: 'Opción 4', description: 'BIFE DEL DÍA CARNE' }, 4, 'placo').dish).toBe('Dieta')
   })
 
-  it('keeps the original dish for other companies', () => {
-    const item = { name: 'Opción 4', description: 'BIFE DEL DÍA CARNE' }
+  it('keeps unrelated companies unchanged and fixes Opción 4 as Bife de pollo for the four Calidra sites', () => {
+    const item = { name: 'Opción 4', description: 'BIFE DEL DÍA CARNE', slotIndex: 4 }
     expect(getMenuDisplay(item, 4, 'epse').dish).toBe('BIFE DEL DÍA CARNE')
-    expect(getMenuDisplay(item, 4, 'laja').dish).toBe('BIFE DEL DÍA CARNE')
+
+    for (const companySlug of ['ccp', 'laja', 'padrebueno', 'losberros']) {
+      expect(getMenuDisplay(item, 4, companySlug)).toMatchObject({
+        label: 'Opción 4',
+        dish: 'Bife de pollo'
+      })
+    }
   })
 
   it('maps Igarreta to continuous options while removing only the Bife del día slot', () => {
@@ -115,14 +121,22 @@ describe('company-specific menu display', () => {
     })
   })
 
-  it('does not alter regular companies when filtering orderable menu items', () => {
+  it('persists Bife de pollo in Opción 4 for CCP, La Laja, Padre Bueno and Los Berros', () => {
     const menu = [
       { id: 'main', name: 'Menú principal', description: 'Milanesa', slotIndex: 0 },
       { id: 'option-4', name: 'Opción 4', description: 'Bife del día', slotIndex: 4 },
       { id: 'option-5', name: 'Opción 5', description: 'Empanadas', slotIndex: 5 }
     ]
 
-    expect(filterOrderableMenuItems(menu, 'laja')).toEqual(menu)
+    for (const companySlug of ['ccp', 'laja', 'padrebueno', 'losberros']) {
+      const result = filterOrderableMenuItems(menu, companySlug)
+      expect(result.find((item) => item.slotIndex === 4)).toMatchObject({
+        name: 'Opción 4',
+        displayName: 'Opción 4',
+        description: 'Bife de pollo',
+        slotIndex: 4
+      })
+    }
   })
 
   it('maps ISEMAR to the shared salad and Celíaco options without the Bife del día slot', () => {
