@@ -1,238 +1,382 @@
-import { Link } from 'react-router-dom';
-import { Clock, FileText, CheckCircle, Shield, Check } from 'react-feather';
-import headerLogo from '../assets/servifood-logo-header.png';
+import { Link } from "react-router-dom";
+import {
+  ArrowUpRight,
+  ArrowRight,
+  ArrowDown,
+  Check,
+  CheckCircle,
+  Calendar,
+  Clipboard,
+  Clock,
+  Shield,
+  Smartphone,
+  ChevronRight,
+  Coffee,
+  MapPin,
+} from "react-feather";
+import headerLogo from "../assets/servifood-logo-header.png";
+// Locally served editorial photo: images.unsplash.com/photo-1547592180-85f173990554
+import mealPhoto from "../assets/landing-meal.jpg";
+import "../styles/landing.css";
 
-const benefits = [
+const steps = [
   {
-    icon: Clock,
-    title: "Pedí en segundos",
-    description: "Completá tu pedido diario de forma ágil y sin complicaciones.",
+    number: "01",
+    icon: Calendar,
+    title: "Elegí tu menú",
+    text: "Entrá a tu cuenta y consultá las opciones disponibles para tu día.",
   },
   {
-    icon: FileText,
-    title: "Consultá tus pedidos",
-    description: "Revisá el historial y el estado de tus selecciones rápidamente.",
-  },
-  {
+    number: "02",
     icon: CheckCircle,
-    title: "Gestión organizada",
-    description: "Todo en un solo lugar, con una interfaz clara y estructurada.",
+    title: "Confirmá tu pedido",
+    text: "Seleccioná tu comida y revisá los detalles antes de confirmar.",
   },
   {
-    icon: Shield,
-    title: "Acceso seguro",
-    description: "Ingresá de manera confiable con tu cuenta personal.",
+    number: "03",
+    icon: Clipboard,
+    title: "Tené todo a mano",
+    text: "Consultá tus pedidos y su estado desde un mismo lugar.",
   },
 ];
 
+function AccessLinks() {
+  return (
+    <div className="sf-access">
+      <Link className="sf-button sf-button-primary" to="/login">
+        Iniciar sesión <ArrowUpRight size={19} aria-hidden="true" />
+      </Link>
+      <Link className="sf-button sf-button-secondary" to="/register">
+        Registrarse <ArrowRight size={17} aria-hidden="true" />
+      </Link>
+    </div>
+  );
+}
+
+// A visual example only: it never reads or creates an actual order.
+function OrderPreview() {
+  return (
+    <figure
+      className="sf-preview"
+      aria-label="Ejemplo ilustrativo del menú y de un pedido en ServiFood"
+    >
+      <div className="sf-preview-top">
+        <span className="sf-preview-brand">
+          ServiFood<span> / Mi cuenta</span>
+        </span>
+        <span className="sf-avatar">SF</span>
+      </div>
+      <div className="sf-preview-content">
+        <div className="sf-preview-heading">
+          <div>
+            <span className="sf-mini-label">¿QUÉ COMEMOS HOY?</span>
+            <h3>Tu menú del día</h3>
+          </div>
+          <span className="sf-today">
+            <Calendar size={12} /> Hoy
+          </span>
+        </div>
+        <div className="sf-preview-option sf-preview-selected">
+          <span className="sf-radio">
+            <Check size={12} strokeWidth={3} />
+          </span>
+          <div>
+            <strong>Pollo al verdeo con papas</strong>
+            <span>Menú principal</span>
+          </div>
+          <span className="sf-option-number">01</span>
+        </div>
+        <div className="sf-preview-option">
+          <span className="sf-radio" />
+          <div>
+            <strong>Tarta de verdura</strong>
+            <span>Opción vegetariana</span>
+          </div>
+          <span className="sf-option-number">02</span>
+        </div>
+        <div className="sf-order-details">
+          <span>
+            <Coffee size={14} /> Almuerzo
+          </span>
+          <span>
+            <MapPin size={14} /> Tu lugar de entrega
+          </span>
+        </div>
+        <div className="sf-confirmed">
+          <CheckCircle size={17} />
+          <span>Pedido confirmado</span>
+          <Check size={16} />
+        </div>
+        <div className="sf-delivery">
+          <span>Estado de entrega</span>
+          <strong>
+            <i /> Pendiente
+          </strong>
+        </div>
+      </div>
+      <figcaption>
+        Vista ilustrativa · Las opciones dependen de tu menú.
+      </figcaption>
+    </figure>
+  );
+}
+
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-[#1a237e] font-sans selection:bg-[#fb8c00] selection:text-white">
-      <style>{`
-        .landing-logo-wrapper {
-          display: flex;
-          align-items: center;
-          width: 96px;
-        }
-        .landing-header-logo {
-          display: block;
-          width: 100%;
-          height: auto;
-          object-fit: contain;
-          flex-shrink: 0;
-        }
-        @media (min-width: 768px) {
-          .landing-logo-wrapper {
-            width: 118px;
-          }
-        }
-        @media (min-width: 1024px) {
-          .landing-logo-wrapper {
-            width: 135px;
-          }
-        }
-        
-        .landing-hero {
-          padding-top: 28px;
-          padding-bottom: 48px;
-        }
-        @media (min-width: 768px) {
-          .landing-hero {
-            padding-top: 36px;
-            padding-bottom: 64px;
-          }
-        }
-        @media (min-width: 1024px) {
-          .landing-hero {
-            padding-top: 48px;
-            padding-bottom: 80px;
-          }
-        }
-      `}</style>
-
-      {/* HEADER */}
-      <header className="container mx-auto px-6 py-4 md:py-6 flex items-center justify-between relative z-10">
-        <Link to="/" className="landing-logo-wrapper" style={{ flexShrink: 0 }}>
-          <img
-            src={headerLogo}
-            alt="ServiFood Catering Logo"
-            className="landing-header-logo"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = 'https://via.placeholder.com/150?text=ServiFood';
-            }}
-          />
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link
-            to="/register"
-            className="text-white/90 hover:text-white font-medium transition-colors text-sm sm:text-base whitespace-nowrap"
-          >
-            Registrarse
+    <div className="sf-landing">
+      <a href="#contenido" className="sf-skip">
+        Ir al contenido
+      </a>
+      <div className="sf-blue-stage">
+        <header className="sf-header sf-container">
+          <Link to="/" className="sf-logo-link" aria-label="ServiFood, inicio">
+            <img
+              src={headerLogo}
+              alt="ServiFood Catering"
+              width="72"
+              height="99"
+            />
           </Link>
-          <Link
-            to="/login"
-            className="px-4 py-2 sm:px-5 sm:py-2.5 bg-[#fb8c00] hover:bg-[#f57c00] text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 text-sm sm:text-base whitespace-nowrap"
-          >
-            Iniciar sesión
+          <nav className="sf-nav" aria-label="Navegación principal">
+            <a href="#como-funciona">Cómo funciona</a>
+            <a href="#experiencia">La experiencia</a>
+          </nav>
+          <Link to="/login" className="sf-header-login">
+            Iniciar sesión <ArrowUpRight size={17} aria-hidden="true" />
           </Link>
-        </div>
-      </header>
-
-      {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col">
-        {/* HERO SECTION */}
-        <section className="container mx-auto px-6 landing-hero">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Column: Copy */}
-            <div className="text-center lg:text-left space-y-6">
-              <span className="inline-block px-3 py-1 bg-white/10 text-white/90 text-sm font-bold tracking-wider rounded-full uppercase border border-white/20">
-                Gestión de Pedidos
+        </header>
+        <main id="contenido">
+          <section
+            className="sf-hero sf-container"
+            aria-labelledby="sf-hero-title"
+          >
+            <div className="sf-hero-copy">
+              <span className="sf-eyebrow">
+                <span /> BUENA COMIDA. UN DÍA MÁS SIMPLE.
               </span>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
-                Tus pedidos diarios, <br className="hidden lg:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-300 to-[#fb8c00]">
-                  simples y organizados
-                </span>
+              <h1 id="sf-hero-title">
+                Tus pedidos
+                <br />
+                diarios, <span>simples</span>
+                <br />y organizados<span className="sf-period">.</span>
               </h1>
-              <p className="text-lg text-white/80 max-w-xl mx-auto lg:mx-0">
-                Ingresá al portal de ServiFood para elegir tus comidas diarias en segundos y mantener un registro ordenado de todas tus selecciones.
+              <p>
+                Tu comida es parte de tu día.
+                <br />
+                Elegí tu menú, confirmá tu pedido y dejá el resto organizado con
+                ServiFood.
               </p>
-              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start pt-2">
-                <Link
-                  to="/login"
-                  className="w-full sm:w-auto px-8 py-3.5 bg-[#fb8c00] hover:bg-[#f57c00] text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-orange-500/20 active:scale-95 text-center"
-                >
-                  Iniciar sesión
-                </Link>
-                <Link
-                  to="/register"
-                  className="w-full sm:w-auto px-8 py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-lg rounded-xl transition-all border border-white/20 text-center backdrop-blur-sm"
-                >
-                  Crear una cuenta
-                </Link>
+              <AccessLinks />
+              <div className="sf-hero-note">
+                <Shield size={15} aria-hidden="true" />
+                <span>Tu cuenta. Tus pedidos. Todo en un lugar.</span>
               </div>
             </div>
-
-            {/* Right Column: Visual Mockup */}
-            <div className="relative w-full max-w-sm mx-auto lg:ml-auto lg:mr-0 perspective-1000">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-transparent blur-3xl -z-10 rounded-full" />
-              <div className="bg-white rounded-2xl p-6 shadow-2xl border border-gray-100 transform transition-transform hover:-translate-y-1 hover:shadow-3xl duration-300">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
-                  <h3 className="font-bold text-gray-800">Menú del Día</h3>
-                  <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full">
-                    Hoy
+            <div className="sf-hero-visual">
+              <div className="sf-orbit sf-orbit-one" />
+              <div className="sf-orbit sf-orbit-two" />
+              <div className="sf-food-frame">
+                <img
+                  src={mealPhoto}
+                  alt="Plato con vegetales frescos, cereales y salmón"
+                  width="1200"
+                  height="800"
+                  fetchPriority="high"
+                />
+              </div>
+              <div className="sf-visual-tag">
+                <span className="sf-tag-icon">
+                  <Check size={17} />
+                </span>
+                <span>
+                  Menos vueltas.<strong>Más tiempo para disfrutar.</strong>
+                </span>
+              </div>
+              <OrderPreview />
+            </div>
+            <div className="sf-hero-bottom">
+              <a href="#como-funciona">
+                <span className="sf-scroll-icon">
+                  <ArrowDown size={15} />
+                </span>
+                Conocé cómo funciona
+              </a>
+              <span>SERVICIO GASTRONÓMICO + TECNOLOGÍA</span>
+            </div>
+          </section>
+          <section
+            className="sf-process"
+            id="como-funciona"
+            aria-labelledby="sf-process-title"
+          >
+            <div className="sf-container">
+              <div className="sf-section-heading">
+                <div>
+                  <span className="sf-eyebrow sf-eyebrow-dark">
+                    ASÍ DE SIMPLE
+                  </span>
+                  <h2 id="sf-process-title">
+                    Tu próximo pedido.
+                    <br />
+                    <span>Sin complicaciones.</span>
+                  </h2>
+                </div>
+                <p>
+                  Una rutina más fácil, desde la elección
+                  <br className="sf-desktop-break" /> del menú hasta la consulta
+                  de tu pedido.
+                </p>
+              </div>
+              <div className="sf-steps">
+                {steps.map(({ number, icon: _Icon, title, text }) => (
+                  <article className="sf-step" key={number}>
+                    <div className="sf-step-top">
+                      <span>{number}</span>
+                      <_Icon size={25} strokeWidth={1.5} aria-hidden="true" />
+                    </div>
+                    <h3>{title}</h3>
+                    <p>{text}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+          <section
+            className="sf-experience"
+            id="experiencia"
+            aria-labelledby="sf-experience-title"
+          >
+            <div className="sf-container sf-experience-grid">
+              <div
+                className="sf-history-scene"
+                aria-label="Ejemplo ilustrativo de la consulta de pedidos"
+              >
+                <span className="sf-scene-label">
+                  <span /> TU DÍA, EN ORDEN
+                </span>
+                <div className="sf-history-card">
+                  <div className="sf-history-heading">
+                    <span className="sf-history-icon">
+                      <Clipboard size={22} />
+                    </span>
+                    <div>
+                      <h3>Mis pedidos</h3>
+                      <p>Todo queda organizado.</p>
+                    </div>
+                  </div>
+                  <div className="sf-history-row">
+                    <span className="sf-date-tile">
+                      <Calendar size={19} />
+                    </span>
+                    <div>
+                      <strong>Tu almuerzo de hoy</strong>
+                      <span>Pollo al verdeo con papas</span>
+                    </div>
+                    <span className="sf-status">Confirmado</span>
+                  </div>
+                  <div className="sf-history-row">
+                    <span className="sf-date-tile">
+                      <Check size={19} />
+                    </span>
+                    <div>
+                      <strong>Tu pedido anterior</strong>
+                      <span>Consultá el detalle de tu selección</span>
+                    </div>
+                    <ChevronRight size={18} />
+                  </div>
+                  <div className="sf-history-bottom">
+                    <Shield size={14} />
+                    <span>Accedé con tu cuenta personal</span>
+                  </div>
+                </div>
+                <div className="sf-mobile-note">
+                  <Smartphone size={23} />
+                  <span>
+                    Con vos,<strong>donde estés.</strong>
                   </span>
                 </div>
-                <div className="space-y-3">
-                  {/* Selected Option */}
-                  <div className="flex items-center p-3 rounded-xl border-2 border-[#fb8c00] bg-orange-50 cursor-default">
-                    <div className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-[#fb8c00] text-white">
-                      <Check size={12} strokeWidth={3} />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-bold text-gray-900">Pollo al verdeo con papas</p>
-                      <p className="text-xs text-gray-600 font-medium mt-0.5">Menú Principal</p>
-                    </div>
-                  </div>
-                  {/* Unselected Option */}
-                  <div className="flex items-center p-3 rounded-xl border border-gray-200 bg-white cursor-default opacity-60">
-                    <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-gray-300" />
-                    <div className="ml-3">
-                      <p className="text-sm font-semibold text-gray-700">Tarta de verdura</p>
-                      <p className="text-xs text-gray-500 font-medium mt-0.5">Opción Vegetariana</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-6">
-                  <div className="w-full py-3 bg-[#1a237e] text-white text-sm font-bold rounded-xl text-center opacity-90 cursor-default">
-                    Confirmar Selección
-                  </div>
-                </div>
+                <span className="sf-scene-caption">
+                  Vista ilustrativa de la experiencia ServiFood
+                </span>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* BENEFITS SECTION */}
-        <section className="container mx-auto px-6 py-12">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit, index) => {
-              const Icon = benefit.icon;
-              return (
-                <div
-                  key={index}
-                  className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors"
-                >
-                  <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 text-[#fb8c00]">
-                    <Icon size={24} strokeWidth={2} />
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">{benefit.title}</h3>
-                  <p className="text-sm text-white/70 leading-relaxed">
-                    {benefit.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* BOTTOM CTA */}
-        <section className="container mx-auto px-6 py-12 mb-8">
-          <div className="bg-[#283593] border border-[#3949ab] rounded-3xl p-8 sm:p-12 text-center shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-            <div className="relative z-10">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-4">
-                ¿Listo para realizar tu próximo pedido?
-              </h2>
-              <p className="text-white/80 max-w-xl mx-auto mb-8 text-lg">
-                Ingresá a tu cuenta y gestioná tus pedidos de forma rápida y sencilla.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link
-                  to="/login"
-                  className="w-full sm:w-auto px-8 py-3.5 bg-[#fb8c00] hover:bg-[#f57c00] text-white font-bold text-lg rounded-xl transition-all shadow-md active:scale-95"
-                >
-                  Iniciar sesión
-                </Link>
-                <Link
-                  to="/register"
-                  className="w-full sm:w-auto px-8 py-3.5 text-white/90 hover:text-white font-semibold text-lg transition-colors"
-                >
-                  Registrarse
+              <div className="sf-experience-copy">
+                <span className="sf-eyebrow sf-eyebrow-dark">
+                  PENSADO PARA TU RUTINA
+                </span>
+                <h2 id="sf-experience-title">
+                  La tranquilidad de
+                  <br />
+                  tenerlo <span>resuelto.</span>
+                </h2>
+                <p>
+                  Menos tiempo gestionando tu comida. Más claridad para
+                  organizar tu día.
+                </p>
+                <ul className="sf-benefits">
+                  <li>
+                    <Clock size={20} />
+                    <div>
+                      <h3>Simple desde el primer paso</h3>
+                      <p>Elegí entre las opciones disponibles y confirmá.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <Clipboard size={20} />
+                    <div>
+                      <h3>Tus pedidos, siempre a mano</h3>
+                      <p>Revisá tus selecciones y consultá su estado.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <Smartphone size={20} />
+                    <div>
+                      <h3>Desde donde te quede cómodo</h3>
+                      <p>Accedé desde tu celular, tablet o computadora.</p>
+                    </div>
+                  </li>
+                </ul>
+                <Link to="/login" className="sf-text-link">
+                  Entrar a mi cuenta <ArrowUpRight size={18} />
                 </Link>
               </div>
             </div>
-          </div>
-        </section>
-      </main>
-
-      {/* FOOTER */}
-      <footer className="border-t border-white/10 py-6 text-center mt-auto">
-        <p className="text-sm text-white/50 font-medium">
-          © {new Date().getFullYear()} ServiFood. Todos los derechos reservados.
-        </p>
-      </footer>
+          </section>
+          <section className="sf-final" aria-labelledby="sf-final-title">
+            <div className="sf-container sf-final-inner">
+              <div>
+                <span className="sf-eyebrow">TU PRÓXIMA PAUSA EMPIEZA ACÁ</span>
+                <h2 id="sf-final-title">
+                  Buen menú.
+                  <br />
+                  Todo organizado<span>.</span>
+                </h2>
+                <p>Ingresá a ServiFood y resolvé tu próximo pedido.</p>
+              </div>
+              <div className="sf-final-actions">
+                <AccessLinks />
+                <span>¿Es tu primera vez? Creá tu cuenta para empezar.</span>
+              </div>
+            </div>
+          </section>
+        </main>
+        <footer className="sf-footer sf-container">
+          <Link to="/" aria-label="ServiFood, inicio">
+            <img
+              src={headerLogo}
+              alt="ServiFood Catering"
+              width="48"
+              height="66"
+              loading="lazy"
+            />
+          </Link>
+          <p>La comida de cada día. Mejor organizada.</p>
+          <span>
+            © {new Date().getFullYear()} ServiFood.
+            <br />
+            Todos los derechos reservados.
+          </span>
+        </footer>
+      </div>
     </div>
   );
 }
