@@ -3,6 +3,8 @@ import { Loader2, Search, Sparkles, UserRound, X } from 'lucide-react'
 import { db } from '../../supabaseClient'
 import { buildAdminExtraHabitProfile } from '../../utils/order/adminExtraHabitProfile'
 
+const ADMIN_EXTRA_HISTORY_LIMIT = 24
+
 const normalizePerson = (item = {}) => {
   const userIds = Array.isArray(item.user_ids)
     ? item.user_ids.filter(Boolean)
@@ -93,7 +95,7 @@ export default function AdminExtraPersonAutocomplete({
 
     const userIds = [...new Set([...(person.user_ids || []), person.id].filter(Boolean))].slice(0, 6)
     const historyResults = await Promise.all(
-      userIds.map((userId) => db.getOrders(userId, { limit: 80 }))
+      userIds.map((userId) => db.getOrders(userId, { limit: ADMIN_EXTRA_HISTORY_LIMIT }))
     )
     const habit = buildAdminExtraHabitProfile(dedupeOrders(historyResults), companyOptions)
 
