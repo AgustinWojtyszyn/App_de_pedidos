@@ -9,6 +9,9 @@ const IGARRETA_ISEMAR_LAST_MENU_SLOT_INDEX = 5
 const IGARRETA_ISEMAR_SALAD_MENU_SLOT_INDEX = 4
 const IGARRETA_ISEMAR_CELIAC_DISH = 'Celíaco'
 const IGARRETA_ISEMAR_SALAD_DISH = 'Ensalada del día'
+const FIXED_BIFE_POLLO_SLOT_INDEX = 4
+const FIXED_BIFE_POLLO_DISH = 'Bife de pollo'
+const FIXED_BIFE_POLLO_COMPANY_SLUGS = new Set(['ccp', 'laja', 'padrebueno', 'losberros'])
 const DIETA_COMPANY_SLUGS = new Set(['greif', 'placo', 'molinos'])
 const SYNTHETIC_FALLBACK_MENU = new Map([
   [1, 'Delicioso plato principal'],
@@ -129,6 +132,14 @@ const replaceDietaLabel = (value, companySlug) => {
 }
 
 const getCompanyMenuDisplay = (display, companySlug) => {
+  const normalizedCompanySlug = normalizeCompanySlug(companySlug)
+  if (FIXED_BIFE_POLLO_COMPANY_SLUGS.has(normalizedCompanySlug) && display?.slotIndex === FIXED_BIFE_POLLO_SLOT_INDEX) {
+    return {
+      ...display,
+      label: getMenuLabelByIndex(FIXED_BIFE_POLLO_SLOT_INDEX),
+      dish: FIXED_BIFE_POLLO_DISH
+    }
+  }
   if (isIgarretaIsemarCompany(companySlug) && display?.slotIndex === IGARRETA_ISEMAR_SALAD_MENU_SLOT_INDEX) {
     const isBife = /bife\s+del\s+d[ií]a/i.test(normalizeText(display.dish))
     return {
@@ -144,7 +155,7 @@ const getCompanyMenuDisplay = (display, companySlug) => {
       dish: IGARRETA_ISEMAR_CELIAC_DISH
     }
   }
-  if (!DIETA_COMPANY_SLUGS.has(normalizeCompanySlug(companySlug))) return display
+  if (!DIETA_COMPANY_SLUGS.has(normalizedCompanySlug)) return display
   return {
     ...display,
     label: replaceDietaLabel(display.label, companySlug),
@@ -229,9 +240,20 @@ const withIgarretaIsemarMenuItems = (items = []) => {
 }
 
 const withCompanyMenuDisplay = (item = {}, companySlug = '', fallbackIndex = null) => {
-  if (isIgarretaIsemarCompany(companySlug)) return withIgarretaIsemarMenuItem(item, fallbackIndex)
-  if (normalizeCompanySlug(companySlug) !== HIDDEN_ORDER_MENU_COMPANY_SLUG) return item
+  const normalizedCompanySlug = normalizeCompanySlug(companySlug)
   const slotIndex = getMenuSlotIndex(item, fallbackIndex)
+
+  if (FIXED_BIFE_POLLO_COMPANY_SLUGS.has(normalizedCompanySlug) && slotIndex === FIXED_BIFE_POLLO_SLOT_INDEX) {
+    return {
+      ...item,
+      name: getMenuLabelByIndex(FIXED_BIFE_POLLO_SLOT_INDEX),
+      displayName: getMenuLabelByIndex(FIXED_BIFE_POLLO_SLOT_INDEX),
+      description: FIXED_BIFE_POLLO_DISH,
+      slotIndex: FIXED_BIFE_POLLO_SLOT_INDEX
+    }
+  }
+  if (isIgarretaIsemarCompany(companySlug)) return withIgarretaIsemarMenuItem(item, fallbackIndex)
+  if (normalizedCompanySlug !== HIDDEN_ORDER_MENU_COMPANY_SLUG) return item
   if (!Number.isFinite(slotIndex) || slotIndex <= HIDDEN_ORDER_MENU_SLOT_INDEX) return item
 
   const displaySlotIndex = slotIndex - 1
