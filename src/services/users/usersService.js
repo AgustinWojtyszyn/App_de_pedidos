@@ -1,12 +1,5 @@
 import { updateUserRoleWithRpc } from './roleUpdates'
 
-const normalizeSearchText = (value = '') =>
-  String(value || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-
 export const createUsersService = ({
   supabase,
   invalidateCache = () => {},
@@ -14,6 +7,69 @@ export const createUsersService = ({
 } = {}) => {
   if (!supabase) {
     throw new Error('createUsersService requires a supabase client')
+  }
+
+  const getAdminPeoplePage = async ({
+    search = '',
+    role = 'all',
+    sort = 'name_asc',
+    page = 1,
+    pageSize = 40
+  } = {}) => {
+    const normalizedRole = ['all', 'admin', 'user'].includes(role) ? role : 'all'
+    const normalizedSort = ['name_asc', 'name_desc', 'newest', 'oldest'].includes(sort) ? sort : 'name_asc'
+    const normalizedPage = Math.max(1, Number(page) || 1)
+    const normalizedPageSize = Math.min(Math.max(1, Number(pageSize) || 40), 200)
+
+    const { data, error } = await supabase.rpc('get_admin_people_page', {
+      p_search: (search || '').toString().trim(),
+      p_role: normalizedRole,
+      p_sort: normalizedSort,
+      p_page: normalizedPage,
+      p_page_size: normalizedPageSize
+    })
+
+    return { data, error }
+  }
+
+  const getAdminPeopleUnified = async (_force = false) => {
+    const pageSize = 200
+    const firstResult = await getAdminPeoplePage({
+      search: '',
+      role: 'all',
+      sort: 'name_asc',
+      page: 1,
+      pageSize
+    })
+
+    if (firstResult.error) return { data: null, error: firstResult.error }
+
+    const firstItems = Array.isArray(firstResult.data?.items) ? firstResult.data.items : []
+    const totalPages = Math.max(1, Number(firstResult.data?.total_pages) || 1)
+    if (totalPages === 1) return { data: firstItems, error: null }
+
+    const remainingResults = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, index) => getAdminPeoplePage({
+        search: '',
+        role: 'all',
+        sort: 'name_asc',
+        page: index + 2,
+        pageSize
+      }))
+    )
+
+    const failedResult = remainingResults.find((result) => result?.error)
+    if (failedResult?.error) return { data: null, error: failedResult.error }
+
+    return {
+      data: [
+        ...firstItems,
+        ...remainingResults.flatMap((result) => (
+          Array.isArray(result?.data?.items) ? result.data.items : []
+        ))
+      ],
+      error: null
+    }
   }
 
   return {
@@ -124,98 +180,10 @@ export const createUsersService = ({
       return { data, error }
     },
 
-    // Personas admin (usuarios agrupados + sueltos, sin duplicados).
-    // Lectura fresca para que dos sesiones admin no dependan de TTLs distintos.
-    getAdminPeopleUnified: async (_force = false) => {
-      const { data, error } = await supabase
-        .from('admin_people_unified')
-        .select('person_id, group_id, display_name, emails, user_ids, members_count, first_created, last_created, is_grouped')
-        .order('display_name', { ascending: true })
-
-      return { data, error }
-    },
-
-    getAdminPeoplePage: async ({
-      search = '',
-      role = 'all',
-      sort = 'name_asc',
-      page = 1,
-      pageSize = 40
-    } = {}) => {
-      const normalizedRole = ['all', 'admin', 'user'].includes(role) ? role : 'all'
-      const normalizedSort = ['name_asc', 'name_desc', 'newest', 'oldest'].includes(sort) ? sort : 'name_asc'
-      const normalizedPage = Math.max(1, Number(page) || 1)
-      const normalizedPageSize = Math.max(1, Number(pageSize) || 40)
-
-      const { data, error } = await supabase.rpc('get_admin_people_page', {
-        p_search: (search || '').toString().trim(),
-        p_role: normalizedRole,
-        p_sort: normalizedSort,
-        p_page: normalizedPage,
-        p_page_size: normalizedPageSize
-      })
-
-      if (error?.code === 'PGRST202' || /get_admin_people_page/i.test(error?.message || '')) {
-        const [{ data: peopleData, error: peopleError }, { data: accountsData, error: accountsError }] = await Promise.all([
-          supabase
-            .from('admin_people_unified')
-            .select('person_id, group_id, display_name, emails, user_ids, members_count, first_created, last_created, is_grouped'),
-          supabase
-            .from('users')
-            .select('id, email, full_name, role, created_at')
-        ])
-
-        if (peopleError || accountsError) {
-          return { data: null, error: peopleError || accountsError || error }
-        }
-
-        const accountsById = new Map((accountsData || []).map((account) => [account.id, account]))
-        const searchText = normalizeSearchText(search)
-        const items = (peopleData || []).map((person) => {
-          const emails = Array.isArray(person.emails) ? person.emails.filter(Boolean) : []
-          const userIds = Array.isArray(person.user_ids) ? person.user_ids.filter(Boolean) : []
-          const accounts = userIds.map((id) => accountsById.get(id)).filter(Boolean)
-          const role = accounts.some((account) => account.role === 'admin')
-            ? 'admin'
-            : 'user'
-          return {
-            ...person,
-            full_name: person.display_name || emails[0] || 'Sin nombre',
-            email: emails[0] || '',
-            role,
-            primary_user_id: userIds[0] || accounts[0]?.id || null,
-            accounts
-          }
-        }).filter((person) => {
-          if (normalizedRole !== 'all' && person.role !== normalizedRole) return false
-          if (!searchText) return true
-          const haystack = normalizeSearchText([
-            person.full_name,
-            person.email,
-            ...(person.emails || []),
-            ...(person.accounts || []).flatMap((account) => [account.full_name, account.email])
-          ].filter(Boolean).join(' '))
-          return haystack.includes(searchText)
-        }).sort((a, b) => {
-          if (normalizedSort === 'name_desc') return String(b.full_name || '').localeCompare(String(a.full_name || ''), 'es')
-          if (normalizedSort === 'newest') return new Date(b.first_created || b.created_at || 0) - new Date(a.first_created || a.created_at || 0)
-          if (normalizedSort === 'oldest') return new Date(a.first_created || a.created_at || 0) - new Date(b.first_created || b.created_at || 0)
-          return String(a.full_name || '').localeCompare(String(b.full_name || ''), 'es')
-        })
-        const from = (normalizedPage - 1) * normalizedPageSize
-        const pageItems = items.slice(from, from + normalizedPageSize)
-        return {
-          data: {
-            items: pageItems,
-            total_count: items.length,
-            total_pages: Math.max(1, Math.ceil(items.length / normalizedPageSize))
-          },
-          error: null
-        }
-      }
-
-      return { data, error }
-    },
+    // Toda lectura de personas pasa por la RPC con autorización server-side.
+    // Se pagina internamente para mantener compatibilidad con consumidores legacy.
+    getAdminPeopleUnified,
+    getAdminPeoplePage,
 
     updateUserRole: async (userId, role) => {
       return updateUserRoleWithRpc({
