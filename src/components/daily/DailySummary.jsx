@@ -1,4 +1,5 @@
-import { MapPin, Utensils, Salad, GlassWater } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronDown, ChevronUp, GlassWater, MapPin, Salad, Utensils } from 'lucide-react'
 
 const DailySummary = ({
   mode,
@@ -10,6 +11,34 @@ const DailySummary = ({
   selectedLocation,
   locationCards
 }) => {
+  const locationKey = locationCards
+    .map(card => `${card.location}:${card.total}`)
+    .join('|')
+  const [locationDisclosure, setLocationDisclosure] = useState({ key: '', expanded: [] })
+  const expandedLocations = locationDisclosure.key === locationKey
+    ? locationDisclosure.expanded
+    : []
+  const allLocationsExpanded = locationCards.length > 0 && locationCards.every(card => expandedLocations.includes(card.location))
+
+  const toggleLocation = (location) => {
+    setLocationDisclosure(current => {
+      const expanded = current.key === locationKey ? current.expanded : []
+      return {
+        key: locationKey,
+        expanded: expanded.includes(location)
+          ? expanded.filter(item => item !== location)
+          : [...expanded, location]
+      }
+    })
+  }
+
+  const toggleAllLocations = () => {
+    setLocationDisclosure({
+      key: locationKey,
+      expanded: allLocationsExpanded ? [] : locationCards.map(card => card.location)
+    })
+  }
+
   if (mode === 'print') {
     return (
       <div className="print-only mb-4">
@@ -170,29 +199,96 @@ const DailySummary = ({
       {selectedLocation === 'all' && stats.pending > 0 && (
         <section className="daily-locations print-hide" aria-label="Resumen por ubicación">
           <div className="daily-section-heading">
-            <div><p className="daily-section-kicker">Distribución</p><h2>Resumen por ubicación</h2></div>
-            <span className="daily-scope">Solo ubicaciones con pedidos del día</span>
+            <div>
+              <p className="daily-section-kicker">Distribución</p>
+              <h2>Resumen por ubicación</h2>
+            </div>
+            {locationCards.length > 0 && (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <span className="daily-scope">{locationCards.length} ubicaciones · detalle replegado</span>
+                <button
+                  type="button"
+                  onClick={toggleAllLocations}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-[11px] font-bold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  {allLocationsExpanded ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
+                  {allLocationsExpanded ? 'Contraer todas' : 'Expandir todas'}
+                </button>
+              </div>
+            )}
           </div>
+
           {locationCards.length === 0 ? <p className="daily-empty-summary">No hay pedidos para mostrar.</p> : (
-            <div className="daily-location-grid">
-              {locationCards.map(card => (
-                <article key={card.location} className="daily-location">
-                  <div className="daily-location-top">
-                    <div><MapPin size={16} aria-hidden="true" /><h3>{card.location}</h3></div>
-                    <div className="daily-location-count"><strong>{card.total}</strong><span>pedidos</span></div>
-                  </div>
-                  <div className="daily-location-details">
-                    <p className="daily-section-kicker">Platillos principales</p>
-                    {card.topDishes.length ? card.topDishes.map(([name, count]) => (
-                      <div key={name} className="daily-location-line"><span>{name}</span><strong>{count}</strong></div>
-                    )) : <p className="daily-empty-summary">Sin detalle de platillos</p>}
-                    <p className="daily-section-kicker daily-side-label">Guarniciones</p>
-                    {card.topSides.length ? card.topSides.map(([name, count]) => (
-                      <div key={name} className="daily-location-line daily-location-side"><span>{name}</span><strong>{count}</strong></div>
-                    )) : <p className="daily-empty-summary">Sin guarniciones</p>}
-                  </div>
-                </article>
-              ))}
+            <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
+              {locationCards.map((card, index) => {
+                const expanded = expandedLocations.includes(card.location)
+                const previewDishes = card.topDishes.slice(0, 2)
+                const detailId = `daily-location-detail-${index}`
+
+                return (
+                  <article
+                    key={card.location}
+                    className={`overflow-hidden rounded-lg border bg-white transition ${expanded ? 'border-indigo-200 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleLocation(card.location)}
+                      aria-expanded={expanded}
+                      aria-controls={detailId}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500">
+                        <MapPin size={15} aria-hidden="true" />
+                      </span>
+
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-extrabold text-slate-900">{card.location}</span>
+                        <span className="mt-0.5 block truncate text-[11px] text-slate-500">
+                          {previewDishes.length
+                            ? previewDishes.map(([name, count]) => `${name} · ${count}`).join('  ·  ')
+                            : 'Sin detalle de platillos'}
+                        </span>
+                      </span>
+
+                      <span className="flex shrink-0 items-center gap-2">
+                        <span className="text-right">
+                          <strong className="block text-xl font-black leading-none text-indigo-900">{card.total}</strong>
+                          <span className="text-[9px] font-medium text-slate-500">pedidos</span>
+                        </span>
+                        <span className="text-slate-400">
+                          {expanded ? <ChevronUp size={17} aria-hidden="true" /> : <ChevronDown size={17} aria-hidden="true" />}
+                        </span>
+                      </span>
+                    </button>
+
+                    {expanded && (
+                      <div id={detailId} className="border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+                          <div className="min-w-0">
+                            <p className="mb-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">Platillos principales</p>
+                            {card.topDishes.length ? card.topDishes.map(([name, count]) => (
+                              <div key={name} className="flex items-start justify-between gap-3 py-1 text-xs text-slate-700">
+                                <span className="min-w-0 flex-1">{name}</span>
+                                <strong className="shrink-0 tabular-nums text-slate-900">{count}</strong>
+                              </div>
+                            )) : <p className="text-xs text-slate-500">Sin detalle de platillos</p>}
+                          </div>
+
+                          <div className="min-w-0 sm:border-l sm:border-slate-200 sm:pl-4 lg:border-l-0 lg:pl-0 2xl:border-l 2xl:pl-4">
+                            <p className="mb-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">Guarniciones</p>
+                            {card.topSides.length ? card.topSides.map(([name, count]) => (
+                              <div key={name} className="flex items-start justify-between gap-3 py-1 text-xs text-slate-600">
+                                <span className="min-w-0 flex-1">{name}</span>
+                                <strong className="shrink-0 tabular-nums text-slate-800">{count}</strong>
+                              </div>
+                            )) : <p className="text-xs text-slate-500">Sin guarniciones</p>}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                )
+              })}
             </div>
           )}
         </section>
