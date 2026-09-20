@@ -48,7 +48,7 @@ describe('OrderLunchMenuSection', () => {
     expect(html).toContain('bg-orange-500')
     expect(option5).toContain('ENSALADA MIX DE HOJAS')
     expect(option6).toContain('Celíaco')
-    expect((html.match(/Hiperproteica/g) || [])).toHaveLength(1)
+    expect((html.match(/Opción 4 · Hiperproteica/g) || [])).toHaveLength(1)
     expect((html.match(/Celíaco/g) || [])).toHaveLength(1)
     expect(option5).not.toContain('BIFE DE CARNE')
     expect(html.indexOf('Opción 1')).toBeLessThan(html.indexOf('Opción 2'))
