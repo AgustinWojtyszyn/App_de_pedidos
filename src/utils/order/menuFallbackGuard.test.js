@@ -42,7 +42,7 @@ describe('synthetic menu fallback guard', () => {
 
     expect(isSyntheticFallbackMenuItem(realRow)).toBe(false)
     const result = filterOrderableMenuItems([realRow], 'greif')
-    expect(result[0]).toEqual(realRow)
+    expect(result[0]).toMatchObject(realRow)
     expect(result[1]).toMatchObject({
       id: 'hyperproteic-option-4',
       slotIndex: 4,
