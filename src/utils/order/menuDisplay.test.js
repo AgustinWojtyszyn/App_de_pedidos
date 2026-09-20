@@ -90,6 +90,41 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     expect(bifeItems[0].slotIndex).toBe(5)
   })
 
+  it('collapses duplicated option 5 for every company with fixed Bife de pollo', () => {
+    const menuWithDuplicateFive = [
+      { id: 'main', name: 'Menú principal', description: 'Milanesa', slotIndex: 0 },
+      { id: 'one', name: 'Opción 1', description: 'Uno', slotIndex: 1 },
+      { id: 'two', name: 'Opción 2', description: 'Dos', slotIndex: 2 },
+      { id: 'three', name: 'Opción 3', description: 'Tres', slotIndex: 3 },
+      { id: 'hyper', name: 'Opción 4 - Hiperproteica', description: 'Hamburguesa proteica', slotIndex: 4 },
+      { id: 'five-a', name: 'Opción 5', description: 'Bife de pollo', slotIndex: 5 },
+      { id: 'five-b', name: 'Opción 5', description: 'Otro valor heredado', slotIndex: 5 },
+      { id: 'salad', name: 'Opción 6', description: 'Ensalada mix de hojas', slotIndex: 6 },
+      { id: 'celiac', name: 'Opción 7', description: 'Celíaco', slotIndex: 7 }
+    ]
+
+    for (const companySlug of [
+      'genneia',
+      'greif',
+      'administracion_servifood',
+      'laja',
+      'padrebueno',
+      'ccp',
+      'losberros'
+    ]) {
+      const result = filterOrderableMenuItems(menuWithDuplicateFive, companySlug)
+
+      expect(result.filter((item) => item.slotIndex === 5)).toHaveLength(1)
+      expect(result.find((item) => item.slotIndex === 5)).toMatchObject({
+        name: 'Opción 5',
+        displayName: 'Opción 5',
+        description: 'Bife de pollo'
+      })
+      expect(result.find((item) => item.slotIndex === 6)?.description).toMatch(/ensalada/i)
+      expect(result.find((item) => item.slotIndex === 7)?.description).toMatch(/cel[ií]aco/i)
+    }
+  })
+
   it('keeps EPSE capped at option 7 with Celíaco in option 7', () => {
     const result = filterOrderableMenuItems(baseMenu, 'epse')
     const display = displayFor(result, 'epse')
