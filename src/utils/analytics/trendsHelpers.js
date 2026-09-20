@@ -111,7 +111,7 @@ const normalizeMenuLabel = (name = '') => {
   if (!base) return null
   const normalized = normalizeLabel(base)
 
-  const optionMatch = normalized.match(/opcion\s*0?([1-6])\b/)
+  const optionMatch = normalized.match(/opcion\s*0?([1-7])\b/)
   if (optionMatch) return `Opción ${optionMatch[1]}`
 
   if (isOptionName(base)) {
