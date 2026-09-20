@@ -23,7 +23,6 @@ describe('menu contract with fixed hyperproteic option 4', () => {
     const companySlugs = [
       'administracion_servifood',
       'ccp',
-      'distro_cuyo',
       'genneia',
       'greif',
       'laja',
@@ -106,7 +105,7 @@ describe('menu contract with fixed hyperproteic option 4', () => {
     ])
   })
 
-  it('keeps EPSE continuous while preserving the new hyperproteic option and its excluded source slot', () => {
+  it('keeps EPSE at seven numbered options with Celíaco as option 7', () => {
     const result = filterOrderableMenuItems(fullMenu, 'epse')
 
     expect(result.map((item) => item.id)).toEqual([
@@ -115,6 +114,7 @@ describe('menu contract with fixed hyperproteic option 4', () => {
       'option-2',
       'option-3',
       'hyper',
+      'option-4',
       'option-5',
       'option-6'
     ])
@@ -125,8 +125,10 @@ describe('menu contract with fixed hyperproteic option 4', () => {
       'Opción 3',
       'Opción 4',
       'Opción 5',
-      'Opción 6'
+      'Opción 6',
+      'Opción 7'
     ])
+    expect(dishesFor(result, 'epse')[7]).toBe('Celíaco')
   })
 
   it.each(['igarreta', 'isemar'])(
