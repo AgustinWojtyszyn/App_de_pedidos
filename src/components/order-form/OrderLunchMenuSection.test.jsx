@@ -76,6 +76,27 @@ describe('OrderLunchMenuSection', () => {
     expect(html.slice(html.indexOf('Opción 7'))).toContain('CELIACO')
   })
 
+  it('renders the broken EPSE tail as 5 Bife, 6 Ensalada and one 7 Celíaco', () => {
+    const brokenEpseMenu = [
+      { id: 'main', name: 'Menú principal', description: 'MILANESA', slotIndex: 0 },
+      { id: 'one', name: 'Opción 1', description: 'UNO', slotIndex: 1 },
+      { id: 'two', name: 'Opción 2', description: 'DOS', slotIndex: 2 },
+      { id: 'three', name: 'Opción 3', description: 'TRES', slotIndex: 3 },
+      { id: 'hyper', name: 'Opción 4 - Hiperproteica', description: 'HAMBURGUESA PROTEICA', slotIndex: 4 },
+      { id: 'empty-five', name: 'Opción 5', description: '', slotIndex: 5 },
+      { id: 'bife', name: 'Opción 6', description: 'BIFE DE POLLO', slotIndex: 6 },
+      { id: 'salad', name: 'Opción 7', description: 'ENSALADA MIX DE HOJAS', slotIndex: 7 },
+      { id: 'celiac', name: 'Opción 7', description: 'CELIACO', slotIndex: 7 }
+    ]
+
+    const html = renderLunchMenu('epse', filterOrderableMenuItems(brokenEpseMenu, 'epse'))
+
+    expect(textBetween(html, 'Opción 5', 'Opción 6')).toContain('BIFE DE POLLO')
+    expect(textBetween(html, 'Opción 6', 'Opción 7')).toContain('ENSALADA MIX DE HOJAS')
+    expect(html.slice(html.indexOf('Opción 7'))).toContain('CELIACO')
+    expect((html.match(/Opción 7/g) || [])).toHaveLength(1)
+  })
+
   it('renders Hiperproteica as option 4 and shifts Bife to option 5 for a regular company', () => {
     const html = renderLunchMenu('laja')
 
