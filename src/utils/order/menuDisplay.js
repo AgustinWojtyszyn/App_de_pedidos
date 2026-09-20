@@ -88,17 +88,19 @@ const HYPERPROTEIC_OPTION_SLOT_INDEX = 4
 const HYPERPROTEIC_OPTION_ID = 'hyperproteic-option-4'
 
 const isHyperproteicMenuItem = (item = {}) => {
-  const name = normalizeSlotTitle(item?.name)
-  const displayName = normalizeSlotTitle(item?.displayName)
-  return name === 'hiperproteica' ||
-    name === 'opción 4 - hiperproteica' ||
-    name === 'opcion 4 - hiperproteica' ||
-    displayName === 'opción 4 - hiperproteica' ||
-    displayName === 'opcion 4 - hiperproteica'
+  const text = normalizeSlotTitle(`${item?.name || ''} ${item?.displayName || ''} ${item?.description || ''}`)
+  return item?.id === HYPERPROTEIC_OPTION_ID ||
+    Boolean(item?.isSyntheticHyperproteicOption) ||
+    text.includes('hiperprote')
 }
 
 const withHyperproteicOption4 = (items = []) => {
   const indexedItems = withMenuSlotIndex(items)
+  const hasPersistedHyperproteicOption = indexedItems.some(isHyperproteicMenuItem)
+  const hasLegacyNonHyperproteicSlot4 = indexedItems.some((item, index) =>
+    !isHyperproteicMenuItem(item) && getMenuSlotIndex(item, index) === HYPERPROTEIC_OPTION_SLOT_INDEX
+  )
+  const shouldShiftLegacySlots = !hasPersistedHyperproteicOption || hasLegacyNonHyperproteicSlot4
   let hasHyperproteicOption = false
 
   const shiftedItems = indexedItems.map((item, index) => {
@@ -119,6 +121,7 @@ const withHyperproteicOption4 = (items = []) => {
     }
 
     const slotIndex = getMenuSlotIndex(item, index)
+    if (!shouldShiftLegacySlots) return item
     if (!Number.isFinite(slotIndex) || slotIndex < HYPERPROTEIC_OPTION_SLOT_INDEX || slotIndex >= 7) return item
 
     const displaySlotIndex = slotIndex + 1
