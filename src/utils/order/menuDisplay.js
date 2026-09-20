@@ -274,24 +274,33 @@ const isEmptyNumberedMenuItem = (item = {}, fallbackIndex = null) => {
 }
 
 const compactEpseMenuItems = (items = []) => {
-  let nextSlot = HYPERPROTEIC_OPTION_SLOT_INDEX + 1
-  return items
-    .filter((item, index) => !isEmptyNumberedMenuItem(item, index))
-    .map((item, index) => {
-      const slotIndex = getMenuSlotIndex(item, index)
-      if (!Number.isFinite(slotIndex) || slotIndex <= HYPERPROTEIC_OPTION_SLOT_INDEX) return item
-      const compactedSlot = nextSlot++
-      if (compactedSlot > 7) return item
-      const rawName = normalizeText(item?.name)
-      return {
-        ...item,
-        name: rawName
-          ? rawName.replace(/opci[oó]n\s*0?\d+\b/i, getMenuLabelByIndex(compactedSlot))
-          : getMenuLabelByIndex(compactedSlot),
-        displayName: getMenuLabelByIndex(compactedSlot),
-        slotIndex: compactedSlot
-      }
-    })
+  const indexedItems = withMenuSlotIndex(items)
+  const fixedHead = indexedItems.filter((item, index) => {
+    const slotIndex = getMenuSlotIndex(item, index)
+    return Number.isFinite(slotIndex) && slotIndex <= HYPERPROTEIC_OPTION_SLOT_INDEX
+  })
+
+  const tail = indexedItems.filter((item, index) => {
+    const slotIndex = getMenuSlotIndex(item, index)
+    return Number.isFinite(slotIndex) &&
+      slotIndex > HYPERPROTEIC_OPTION_SLOT_INDEX &&
+      !isEmptyNumberedMenuItem(item, index)
+  })
+
+  const itemText = (item = {}) =>
+    normalizeSlotTitle(`${item?.name || ''} ${item?.displayName || ''} ${item?.description || ''}`)
+
+  const celiac = tail.find((item) => /cel[ií]aco/.test(itemText(item)))
+  const salad = tail.find((item) => /ensalada/.test(itemText(item)))
+  const regular = tail.find((item) => item !== celiac && item !== salad)
+
+  const normalizedTail = [
+    regular && { ...regular, name: 'Opción 5', displayName: 'Opción 5', slotIndex: 5 },
+    salad && { ...salad, name: 'Opción 6', displayName: 'Opción 6', slotIndex: 6 },
+    celiac && { ...celiac, name: 'Opción 7', displayName: 'Opción 7', slotIndex: 7 }
+  ].filter(Boolean)
+
+  return [...fixedHead, ...normalizedTail]
 }
 
 const isHiddenIgarretaMenuSlot = (item = {}, fallbackIndex = null) =>
