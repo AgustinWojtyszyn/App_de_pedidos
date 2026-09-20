@@ -112,7 +112,11 @@ const withHyperproteicOption4 = (items = []) => {
   const shiftedItems = indexedItems.map((item, index) => {
     if (isHyperproteicMenuItem(item)) {
       hasHyperproteicOption = true
-      const editableDescription = normalizeText(item?.hyperproteicDescription ?? item?.description)
+      const rawDescription = normalizeText(item?.hyperproteicDescription ?? item?.description)
+      const editableDescription = rawDescription
+        .replace(/^hiperproteica\s*[·:-]\s*/i, '')
+        .replace(/^hiperproteica$/i, '')
+        .trim()
       return {
         ...item,
         id: item?.id || HYPERPROTEIC_OPTION_ID,
