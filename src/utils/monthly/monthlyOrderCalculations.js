@@ -243,7 +243,7 @@ export const getOptionKey = (name = '') => {
   const match = name.trim().match(/^OPC(ION|IÓN)\s*(\d+)/i)
   if (!match) return null
   const optionNumber = Number(match[2])
-  if (!Number.isInteger(optionNumber) || optionNumber < 1 || optionNumber > 6) return null
+  if (!Number.isInteger(optionNumber) || optionNumber < 1 || optionNumber > 7) return null
   return `OPCIÓN ${optionNumber}`
 }
 
@@ -779,6 +779,7 @@ export const buildCompanyRowsFromModel = (model) => {
     'OPCIÓN 4': company.opciones['OPCIÓN 4'] || 0,
     'OPCIÓN 5': company.opciones['OPCIÓN 5'] || 0,
     'OPCIÓN 6': company.opciones['OPCIÓN 6'] || 0,
+    'OPCIÓN 7': company.opciones['OPCIÓN 7'] || 0,
     'Total opciones de almuerzo': company.totalOpciones,
     'Guarniciones reales': bucketsTotal(company.sideBuckets, 'totalGuarniciones'),
     'Bebidas de almuerzo': mealBucketsTotal(company.mealBuckets, 'lunch', 'totalBebidas'),
@@ -805,6 +806,7 @@ export const buildDailyRowsFromModel = (model) => {
     'OPCIÓN 4': day.opciones['OPCIÓN 4'] || 0,
     'OPCIÓN 5': day.opciones['OPCIÓN 5'] || 0,
     'OPCIÓN 6': day.opciones['OPCIÓN 6'] || 0,
+    'OPCIÓN 7': day.opciones['OPCIÓN 7'] || 0,
     'Total opciones de almuerzo': day.totalOpciones,
     'Guarniciones reales': bucketsTotal(day.sideBuckets, 'totalGuarniciones'),
     'Bebidas de almuerzo': mealBucketsTotal(day.mealBuckets, 'lunch', 'totalBebidas'),
