@@ -44,9 +44,11 @@ describe('OrderLunchMenuSection', () => {
     expect(option2).toContain('OMELETTE DE ESPINACA RELLENO CON PURE DE PAPAS')
     expect(option3).toContain('TARTA PASCUALINA')
     expect(option4).toContain('Hiperproteica')
+    expect(html).toContain('Nueva')
+    expect(html).toContain('bg-linear-to-br from-amber-50')
     expect(option5).toContain('ENSALADA MIX DE HOJAS')
     expect(option6).toContain('Celíaco')
-    expect((html.match(/Hiperproteica/g) || [])).toHaveLength(1)
+    expect(html).toContain('Hiperproteica')
     expect((html.match(/Celíaco/g) || [])).toHaveLength(1)
     expect(option5).not.toContain('BIFE DE CARNE')
     expect(html.indexOf('Opción 1')).toBeLessThan(html.indexOf('Opción 2'))
@@ -54,6 +56,24 @@ describe('OrderLunchMenuSection', () => {
     expect(html.indexOf('Opción 3')).toBeLessThan(html.indexOf('Opción 4'))
     expect(html.indexOf('Opción 4')).toBeLessThan(html.indexOf('Opción 5'))
     expect(html.indexOf('Opción 5')).toBeLessThan(html.indexOf('Opción 6'))
+  })
+
+  it('keeps a persisted already-renumbered menu at options 4, 5, 6 and 7', () => {
+    const persistedMenu = [
+      { id: 'main', name: 'Menú principal', description: 'MILANESA', slotIndex: 0 },
+      { id: 'one', name: 'Opción 1', description: 'UNO', slotIndex: 1 },
+      { id: 'two', name: 'Opción 2', description: 'DOS', slotIndex: 2 },
+      { id: 'three', name: 'Opción 3', description: 'TRES', slotIndex: 3 },
+      { id: 'hyper', name: 'Opción 4 - Hiperproteica', description: 'HAMBURGUESA PROTEICA', slotIndex: 4 },
+      { id: 'bife', name: 'Opción 5', description: 'BIFE DE POLLO', slotIndex: 5 },
+      { id: 'salad', name: 'Opción 6', description: 'ENSALADA MIX DE HOJAS', slotIndex: 6 },
+      { id: 'celiac', name: 'Opción 7', description: 'CELIACO', slotIndex: 7 }
+    ]
+    const html = renderLunchMenu('global', filterOrderableMenuItems(persistedMenu, 'global'))
+
+    expect((html.match(/Opción 7/g) || [])).toHaveLength(1)
+    expect(textBetween(html, 'Opción 6', 'Opción 7')).toContain('ENSALADA MIX DE HOJAS')
+    expect(html.slice(html.indexOf('Opción 7'))).toContain('CELIACO')
   })
 
   it('renders Hiperproteica as option 4 and shifts Bife to option 5 for a regular company', () => {
