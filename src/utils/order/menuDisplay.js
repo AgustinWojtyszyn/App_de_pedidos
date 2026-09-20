@@ -105,9 +105,15 @@ const isHyperproteicMenuItem = (item = {}) => {
 const withHyperproteicOption4 = (items = []) => {
   const indexedItems = withMenuSlotIndex(items)
   let hasHyperproteicOption = false
-  const hasAlreadyShiftedTail = indexedItems.some((item, index) =>
-    !isHyperproteicMenuItem(item) && getMenuSlotIndex(item, index) === 7
+  const hasShiftedSalad = indexedItems.some((item, index) =>
+    getMenuSlotIndex(item, index) === 6 &&
+    /ensalada/i.test(normalizeText(`${item?.name || ''} ${item?.description || ''}`))
   )
+  const hasShiftedCeliac = indexedItems.some((item, index) =>
+    getMenuSlotIndex(item, index) === 7 &&
+    /cel[ií]aco/i.test(normalizeText(`${item?.name || ''} ${item?.description || ''}`))
+  )
+  const hasAlreadyShiftedTail = hasShiftedSalad && hasShiftedCeliac
 
   const shiftedItems = indexedItems.map((item, index) => {
     if (isHyperproteicMenuItem(item)) {
