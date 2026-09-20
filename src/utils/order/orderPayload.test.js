@@ -181,10 +181,13 @@ describe('order payload', () => {
     expect(orderData.customer_name).toBe('Test User')
   })
 
-  it('persists Igarreta Opción 4 with the shared salad menu dish', () => {
+  it('persists Igarreta Hiperproteica as Opción 4', () => {
     const selectedItem = filterOrderableMenuItems([
-      { id: 'option-1', name: 'Opción 1', description: 'Bife del día', slotIndex: 1 },
-      { id: 'option-5', name: 'Opción 5', description: 'Ensalada del día', slotIndex: 5 }
+      { id: 'option-1', name: 'Opción 1', description: 'Pollo', slotIndex: 1 },
+      { id: 'hyper', name: 'Hiperproteica', description: 'Pechuga grillada' },
+      { id: 'option-4', name: 'Opción 4', description: 'Bife del día', slotIndex: 4 },
+      { id: 'option-5', name: 'Opción 5', description: 'Ensalada del día', slotIndex: 5 },
+      { id: 'option-6', name: 'Opción 6', description: 'Celíaco', slotIndex: 6 }
     ], 'igarreta').find((item) => item.slotIndex === 4)
 
     const { orderData } = buildOrderPayload({
@@ -199,11 +202,40 @@ describe('order payload', () => {
       responsesForService: [],
       dinnerOverrideChoice: null,
       totalItems: 1,
-      idempotencyKey: 'idem-igarreta'
+      idempotencyKey: 'idem-igarreta-hyper'
     })
 
     expect(orderData.items).toEqual([
-      { id: 'option-5', name: 'Opción 4 - Ensalada del día', quantity: 1, slotIndex: 4 }
+      { id: 'hyper', name: 'Opción 4 - Hiperproteica · Pechuga grillada', quantity: 1, slotIndex: 4 }
+    ])
+  })
+
+  it('persists Igarreta salad after it is shifted to Opción 5', () => {
+    const selectedItem = filterOrderableMenuItems([
+      { id: 'option-1', name: 'Opción 1', description: 'Pollo', slotIndex: 1 },
+      { id: 'hyper', name: 'Hiperproteica', description: '' },
+      { id: 'option-4', name: 'Opción 4', description: 'Bife del día', slotIndex: 4 },
+      { id: 'option-5', name: 'Opción 5', description: 'Ensalada del día', slotIndex: 5 },
+      { id: 'option-6', name: 'Opción 6', description: 'Celíaco', slotIndex: 6 }
+    ], 'igarreta').find((item) => item.slotIndex === 5)
+
+    const { orderData } = buildOrderPayload({
+      service: 'lunch',
+      user,
+      formData: {
+        location: 'Igarreta Maquinas SA',
+        comments: ''
+      },
+      deliveryDate: '2026-08-29',
+      itemsForService: [selectedItem],
+      responsesForService: [],
+      dinnerOverrideChoice: null,
+      totalItems: 1,
+      idempotencyKey: 'idem-igarreta-salad'
+    })
+
+    expect(orderData.items).toEqual([
+      { id: 'option-5', name: 'Opción 5 - Ensalada del día', quantity: 1, slotIndex: 5 }
     ])
     expect(JSON.stringify(orderData)).toMatch(/Ensalada del d[ií]a/i)
     expect(JSON.stringify(orderData)).not.toMatch(/Bife/i)
