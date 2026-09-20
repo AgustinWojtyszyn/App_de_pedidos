@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { db } from '../../supabaseClient'
 import { sortMenuItems } from '../../utils/admin/adminCalculations'
 import { addDaysToISO, getTodayISOInTimeZone } from '../../utils/dateUtils'
+import { getSlotIndexFromTitle, isHyperproteicMenuItem } from '../../utils/order/menuDisplay'
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const EMPTY_SELECTED_DATES = []
@@ -86,16 +87,38 @@ const useAdminMenuData = ({
     return stored === null ? true : stored === 'true'
   })
 
-  const buildDefaultMenuItems = () => sortMenuItems([
-    { name: 'Menú principal', description: '' }
-  ])
-
-  const normalizeMenuItems = (items = []) =>
-    sortMenuItems(items.map(item => ({
+  const insertHyperproteicOption = (items = []) => {
+    const normalized = items.map(item => ({
       id: item.id,
       name: item.name,
       description: item.description || ''
-    })))
+    }))
+
+    if (normalizedCompanySlug !== 'global') return sortMenuItems(normalized)
+
+    const hyperproteicItem = normalized.find(isHyperproteicMenuItem) || {
+      name: 'Hiperproteica',
+      description: ''
+    }
+    const baseItems = sortMenuItems(normalized.filter(item => !isHyperproteicMenuItem(item)))
+    const firstShiftedIndex = baseItems.findIndex(item => {
+      const slot = getSlotIndexFromTitle(item?.name)
+      return Number.isFinite(slot) && slot >= 4
+    })
+    const insertAt = firstShiftedIndex === -1 ? baseItems.length : firstShiftedIndex
+
+    return [
+      ...baseItems.slice(0, insertAt),
+      hyperproteicItem,
+      ...baseItems.slice(insertAt)
+    ]
+  }
+
+  const buildDefaultMenuItems = () => insertHyperproteicOption([
+    { name: 'Menú principal', description: '' }
+  ])
+
+  const normalizeMenuItems = (items = []) => insertHyperproteicOption(items)
 
   const setMenuItemsForDate = (menuDate, items) => {
     setMenuItemsByDate(prev => ({ ...prev, [menuDate]: items }))
@@ -118,7 +141,7 @@ const useAdminMenuData = ({
         return
       }
 
-      const sorted = sortMenuItems(data || [])
+      const sorted = normalizeMenuItems(data || [])
       setMenuItemsForDate(menuDate, sorted)
 
       const shouldUpdateDraft = !editingMenuByDate[menuDate] || !draftMenuItemsByDate[menuDate]
