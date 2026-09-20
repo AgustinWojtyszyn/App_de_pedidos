@@ -5,7 +5,7 @@ import { getTodayISOInTimeZone, getTomorrowISOInTimeZone } from '../../utils/dat
 import { confirmAction } from '../../utils/confirm'
 import { notifyError, notifyInfo, notifySuccess } from '../../utils/notice'
 import { mergeCompanyMenuItems } from '../../utils/order/companyMenuMerge'
-import { getMenuSlotIndex, getSlotIndexFromTitle, getMenuLabelByIndex, withMenuSlotIndex } from '../../utils/order/menuDisplay'
+import { filterOrderableMenuItems, getMenuSlotIndex, getSlotIndexFromTitle, getMenuLabelByIndex, withMenuSlotIndex } from '../../utils/order/menuDisplay'
 import { sortMenuItems } from '../../utils/order/orderMenuHelpers'
 import {
   createMenuPermissionError,
@@ -19,9 +19,9 @@ const SLOT_OPTIONS = [
   { value: 1, label: 'Opción 1' },
   { value: 2, label: 'Opción 2' },
   { value: 3, label: 'Opción 3' },
-  { value: 4, label: 'Opción 4' },
-  { value: 5, label: 'Opción 5' },
-  { value: 6, label: 'Opción 6' },
+  { value: 4, label: 'Opción 5' },
+  { value: 5, label: 'Opción 6' },
+  { value: 6, label: 'Opción 7' },
   { value: -1, label: 'Personalizado' }
 ]
 
@@ -69,7 +69,7 @@ const getItemSlot = (item = {}, fallbackIndex = 0) => {
 const stripSlotPrefix = (name = '') =>
   normalizeText(name)
     .replace(/^men[uú]\s+principal\s*[:-]?\s*/i, '')
-    .replace(/^opci[oó]n\s*0?[1-6]\s*[:-]?\s*/i, '')
+    .replace(/^opci[oó]n\s*0?[1-7]\s*[:-]?\s*/i, '')
 
 const buildNameFromSlot = ({ slot, title }) => {
   const cleanTitle = normalizeText(title)
@@ -181,8 +181,11 @@ const CompanyAdminMenuSection = ({ adminCompanies = [] }) => {
   )
   const normalizedDraftItems = useMemo(() => withMenuSlotIndex(sortMenuItems(currentDraftMenuItems)), [currentDraftMenuItems])
   const finalItems = useMemo(
-    () => withMenuSlotIndex(sortMenuItems(mergeCompanyMenuItems(normalizedGlobalItems, normalizedDraftItems))),
-    [normalizedGlobalItems, normalizedDraftItems]
+    () => filterOrderableMenuItems(
+      withMenuSlotIndex(sortMenuItems(mergeCompanyMenuItems(normalizedGlobalItems, normalizedDraftItems))),
+      selectedCompanySlug
+    ),
+    [normalizedGlobalItems, normalizedDraftItems, selectedCompanySlug]
   )
   const deletedIds = useMemo(() => deletedItems.map((item) => item.id).filter(Boolean), [deletedItems])
   const newMenuItems = useMemo(
