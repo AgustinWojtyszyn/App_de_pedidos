@@ -245,6 +245,7 @@ const AdminMenuSection = ({
             onRemoveMenuItem={onRemoveMenuItem}
             changeSummary={getMenuItemChangeSummary?.(menuDate)}
             onPrimeSuccess={onPrimeSuccess}
+            companySlug={selectedCompanySlug}
           />
         ))}
       </div>
