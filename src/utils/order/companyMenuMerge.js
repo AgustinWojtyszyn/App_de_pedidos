@@ -2,6 +2,15 @@ import { getMenuSlotIndex } from './menuDisplay'
 
 const normalizeCompanySlug = (value = '') => (value || '').toString().trim().toLowerCase()
 
+const normalizeText = (value = '') => (value || '').toString().trim()
+
+const isEmptySlotOverride = (item = {}) => {
+  const name = normalizeText(item?.name)
+  const description = normalizeText(item?.description)
+  if (description) return false
+  return /^opci[oó]n\s*\d+$/i.test(name) || /^men[uú]\s+principal$/i.test(name)
+}
+
 const getMenuMergeKey = (item = {}) => {
   const slotIndex = getMenuSlotIndex(item)
   if (Number.isFinite(slotIndex)) return `slot:${slotIndex}`
@@ -22,9 +31,12 @@ const mergeCompanyMenuItems = (globalItems = [], companyItems = []) => {
   ;(companyItems || []).forEach((item) => {
     const key = getMenuMergeKey(item)
     if (key && indexByKey.has(key)) {
-      merged[indexByKey.get(key)] = item
+      if (!isEmptySlotOverride(item)) {
+        merged[indexByKey.get(key)] = item
+      }
       return
     }
+    if (isEmptySlotOverride(item)) return
     if (key) indexByKey.set(key, merged.length)
     merged.push(item)
   })
@@ -34,6 +46,7 @@ const mergeCompanyMenuItems = (globalItems = [], companyItems = []) => {
 
 export {
   getMenuMergeKey,
+  isEmptySlotOverride,
   mergeCompanyMenuItems,
   normalizeCompanySlug
 }
