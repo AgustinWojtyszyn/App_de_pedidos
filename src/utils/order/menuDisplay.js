@@ -275,16 +275,18 @@ const withIgarretaIsemarMenuItems = (items = []) => {
   const saladSource = indexedItems.find(isIgarretaIsemarSaladMenuItem) ||
     indexedItems.find((item, index) => getMenuSlotIndex(item, index) === IGARRETA_ISEMAR_LAST_MENU_SLOT_INDEX)
   const celiacSource = indexedItems.find(isIgarretaIsemarCeliacMenuItem)
+  const hyperproteicSource = indexedItems.find(isHyperproteicMenuItem)
   const allowedOptions = indexedItems
     .filter((item, index) => {
       const slotIndex = getMenuSlotIndex(item, index)
       return slotIndex !== 0 &&
         item !== saladSource &&
         item !== celiacSource &&
+        item !== hyperproteicSource &&
         !isIgarretaIsemarBifeDayMenuItem(item, index) &&
         !isIgarretaIsemarCeliacMenuItem(item)
     })
-    .slice(0, 4)
+    .slice(0, 3)
     .map((item, index) => ({
       ...item,
       name: getMenuLabelByIndex(index + 1),
@@ -292,6 +294,14 @@ const withIgarretaIsemarMenuItems = (items = []) => {
       slotIndex: index + 1
     }))
 
+  const hyperproteic = {
+    ...(hyperproteicSource || {}),
+    id: hyperproteicSource?.id || HYPERPROTEIC_OPTION_ID,
+    name: getMenuLabelByIndex(HYPERPROTEIC_OPTION_SLOT_INDEX),
+    displayName: getMenuLabelByIndex(HYPERPROTEIC_OPTION_SLOT_INDEX),
+    description: hyperproteicSource?.description || HYPERPROTEIC_OPTION_STORAGE_NAME,
+    slotIndex: HYPERPROTEIC_OPTION_SLOT_INDEX
+  }
   const salad = {
     ...(saladSource || {}),
     id: saladSource?.id || 'igarreta-isemar-salad',
@@ -312,6 +322,7 @@ const withIgarretaIsemarMenuItems = (items = []) => {
   return [
     ...(mainMenu ? [{ ...mainMenu, slotIndex: 0 }] : []),
     ...allowedOptions,
+    hyperproteic,
     salad,
     celiac
   ]
