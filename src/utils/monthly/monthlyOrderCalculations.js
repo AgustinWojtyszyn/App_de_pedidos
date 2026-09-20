@@ -9,7 +9,7 @@ const incrementCount = (map, key, delta = 1) => {
   map[key] = (map[key] || 0) + delta
 }
 
-export const OPTION_KEYS = ['OPCIÓN 1', 'OPCIÓN 2', 'OPCIÓN 3', 'OPCIÓN 4', 'OPCIÓN 5', 'OPCIÓN 6']
+export const OPTION_KEYS = ['OPCIÓN 1', 'OPCIÓN 2', 'OPCIÓN 3', 'OPCIÓN 4', 'OPCIÓN 5', 'OPCIÓN 6', 'OPCIÓN 7']
 
 export const createOptionCounts = () => OPTION_KEYS.reduce((acc, key) => {
   acc[key] = 0
@@ -718,7 +718,7 @@ export const buildSummaryRows = (metricsData, empresasOverride) => {
       .reduce((acc, [, v]) => acc + v, 0)
 
     const opciones = {}
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
       const key = `OPCIÓN ${i}`
       const cantidad = Object.entries(e.tiposMenus).reduce((acc, [nombre, v]) => {
         if (new RegExp(`^OPC(ION|IÓN)\\s*${i}$`, 'i').test(nombre)) return acc + v
@@ -747,6 +747,7 @@ export const buildSummaryRows = (metricsData, empresasOverride) => {
       'OPCIÓN 4': opciones['OPCIÓN 4'] || 0,
       'OPCIÓN 5': opciones['OPCIÓN 5'] || 0,
       'OPCIÓN 6': opciones['OPCIÓN 6'] || 0,
+      'OPCIÓN 7': opciones['OPCIÓN 7'] || 0,
       'Guarniciones': tiposGuarniciones || '—',
       'Bebidas': tiposBebidas || '—',
       'Postres': tiposPostres || '—',
@@ -831,6 +832,7 @@ export const buildDailyRowsFromModel = (model) => {
     'OPCIÓN 4': model?.totals?.opciones?.['OPCIÓN 4'] || 0,
     'OPCIÓN 5': model?.totals?.opciones?.['OPCIÓN 5'] || 0,
     'OPCIÓN 6': model?.totals?.opciones?.['OPCIÓN 6'] || 0,
+    'OPCIÓN 7': model?.totals?.opciones?.['OPCIÓN 7'] || 0,
     'Total opciones de almuerzo': model?.totals?.totalOpciones || 0,
     'Guarniciones reales': bucketsTotal(model?.totals?.sideBuckets, 'totalGuarniciones'),
     'Bebidas de almuerzo': mealBucketsTotal(model?.totals?.mealBuckets, 'lunch', 'totalBebidas'),
@@ -894,6 +896,7 @@ export const buildDailyRows = (daily, byDay) => {
       'OPCIÓN 4': d.opciones?.['OPCIÓN 4'] || 0,
       'OPCIÓN 5': d.opciones?.['OPCIÓN 5'] || 0,
       'OPCIÓN 6': d.opciones?.['OPCIÓN 6'] || 0,
+      'OPCIÓN 7': d.opciones?.['OPCIÓN 7'] || 0,
       'Total opciones': d.total_opciones || 0,
       'Guarniciones (tipo: cantidad)': guarnStr || '—',
       'Total guarniciones': dayBuckets.totalGuarniciones,
@@ -915,6 +918,7 @@ export const buildDailyRows = (daily, byDay) => {
     'OPCIÓN 4': '',
     'OPCIÓN 5': '',
     'OPCIÓN 6': '',
+    'OPCIÓN 7': '',
     'Total opciones': daily.range_totals.total_opciones,
     'Guarniciones (tipo: cantidad)': '',
     'Total guarniciones': rangeBuckets.totalGuarniciones,
