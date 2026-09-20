@@ -273,25 +273,40 @@ const isEmptyNumberedMenuItem = (item = {}, fallbackIndex = null) => {
   return description === '' && /^opci[oó]n\s*0?\d+\s*$/i.test(name)
 }
 
-const compactEpseMenuItems = (items = []) => {
-  let nextSlot = HYPERPROTEIC_OPTION_SLOT_INDEX + 1
-  return items
-    .filter((item, index) => !isEmptyNumberedMenuItem(item, index))
-    .map((item, index) => {
-      const slotIndex = getMenuSlotIndex(item, index)
-      if (!Number.isFinite(slotIndex) || slotIndex <= HYPERPROTEIC_OPTION_SLOT_INDEX) return item
-      const compactedSlot = nextSlot++
-      if (compactedSlot > 7) return item
-      const rawName = normalizeText(item?.name)
-      return {
-        ...item,
-        name: rawName
-          ? rawName.replace(/opci[oó]n\s*0?\d+\b/i, getMenuLabelByIndex(compactedSlot))
-          : getMenuLabelByIndex(compactedSlot),
-        displayName: getMenuLabelByIndex(compactedSlot),
-        slotIndex: compactedSlot
-      }
-    })
+const setMenuItemSlot = (item = {}, slotIndex) => {
+  const rawName = normalizeText(item?.name)
+  return {
+    ...item,
+    name: rawName
+      ? rawName.replace(/opci[oó]n\s*0?\d+\b/i, getMenuLabelByIndex(slotIndex))
+      : getMenuLabelByIndex(slotIndex),
+    displayName: getMenuLabelByIndex(slotIndex),
+    slotIndex
+  }
+}
+
+const normalizeEpseMenuItems = (items = []) => {
+  const nonEmptyItems = items.filter((item, index) => !isEmptyNumberedMenuItem(item, index))
+  const head = nonEmptyItems.filter((item, index) => getMenuSlotIndex(item, index) <= HYPERPROTEIC_OPTION_SLOT_INDEX)
+  const tail = nonEmptyItems.filter((item, index) => getMenuSlotIndex(item, index) > HYPERPROTEIC_OPTION_SLOT_INDEX)
+
+  const celiac = tail.find((item) =>
+    /cel[ií]aco/i.test(normalizeText(`${item?.name || ''} ${item?.description || ''}`))
+  )
+  const salad = tail.find((item) =>
+    /ensalada/i.test(normalizeText(`${item?.name || ''} ${item?.description || ''}`))
+  )
+  const regularTail = tail.filter((item) => item !== salad && item !== celiac)
+
+  const normalizedTail = [
+    ...regularTail,
+    ...(salad ? [salad] : []),
+    ...(celiac ? [celiac] : [])
+  ]
+    .slice(0, 3)
+    .map((item, index) => setMenuItemSlot(item, HYPERPROTEIC_OPTION_SLOT_INDEX + 1 + index))
+
+  return [...head, ...normalizedTail]
 }
 
 const isHiddenIgarretaMenuSlot = (item = {}, fallbackIndex = null) =>
@@ -410,7 +425,7 @@ const filterOrderableMenuItems = (items = [], companySlug = '') => {
   const companyMenuItems = isIgarretaIsemarCompany(companySlug)
     ? withIgarretaIsemarMenuItems(menuWithHyperproteicOption)
     : normalizeCompanySlug(companySlug) === HIDDEN_ORDER_MENU_COMPANY_SLUG
-      ? compactEpseMenuItems(menuWithHyperproteicOption)
+      ? normalizeEpseMenuItems(menuWithHyperproteicOption)
       : menuWithHyperproteicOption
 
   return companyMenuItems
