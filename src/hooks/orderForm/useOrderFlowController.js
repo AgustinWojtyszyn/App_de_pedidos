@@ -20,6 +20,7 @@ import { useOrderFormState } from './useOrderFormState'
 import { useOrderSelectionsState } from './useOrderSelectionsState'
 import { useOrderSchedule } from './useOrderSchedule'
 import { normalizeGenneiaOptionSections } from '../../utils/order/genneiaOptionSections'
+import { filterOrderableMenuItems } from '../../utils/order/menuDisplay'
 import { getTomorrowISOInTimeZone } from '../../utils/dateUtils'
 import {
   isBeverageOrDessertOption,
@@ -76,6 +77,12 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     deliveryLocationsByLocation
   } = useOrderCompany()
 
+  const effectiveLunchMenuItems = useMemo(() => (
+    rawCompanySlug === 'epse'
+      ? filterOrderableMenuItems(menuItems, companyConfig || rawCompanySlug)
+      : menuItems
+  ), [companyConfig, menuItems, rawCompanySlug])
+
   const selectedLocationRow = useMemo(
     () => (authorizedLocationRows || []).find((row) => row?.name === formData.location),
     [authorizedLocationRows, formData.location]
@@ -119,7 +126,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
   } = useCustomSideGuards({
     isGenneia: hasGenneiaRules,
     selectedTurns,
-    menuItems,
+    menuItems: effectiveLunchMenuItems,
     dinnerMenuItems,
     selectedItems,
     selectedItemsDinner,
@@ -202,9 +209,9 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
 
   useOrderRepeatPayload({
     locationState,
-    menuItems,
+    menuItems: effectiveLunchMenuItems,
     dinnerMenuItems,
-    menuItemsLength: menuItems.length,
+    menuItemsLength: effectiveLunchMenuItems.length,
     dinnerMenuItemsLength: dinnerMenuItems.length,
     locations,
     requireExplicitLocationSelection: requiresAuthorizedLocations,
@@ -258,7 +265,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     validateDinnerExclusivity,
     hasAnySelectedItems
   } = useOrderTotals({
-    menuItems,
+    menuItems: effectiveLunchMenuItems,
     dinnerMenuItems,
     selectedItems,
     selectedItemsDinner,
@@ -291,7 +298,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     setSuggestion,
     setSuggestionSummary,
     setSuggestionMode,
-    menuItems,
+    menuItems: effectiveLunchMenuItems,
     dinnerMenuItems,
     locations,
     isGenneia: hasGenneiaRules,
@@ -368,7 +375,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     form: { formData, handleFormChange, hasOrderToday },
     turns: { selectedTurns, toggleLunchTurn, toggleDinnerTurn, dinnerEnabled, dinnerMenuEnabled },
     lunch: {
-      menuItems,
+      menuItems: effectiveLunchMenuItems,
       selectedItems,
       handleItemSelect,
       getSelectedItemsList,
