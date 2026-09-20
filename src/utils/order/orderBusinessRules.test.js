@@ -3,7 +3,7 @@ import {
   hasDinnerOverrideInResponses,
   isDinnerOverrideValue
 } from './orderBusinessRules'
-import { canChooseCustomSide, isMainMenuOption, isSaladOption } from './orderCustomSideRules'
+import { canChooseCustomSide, isHyperproteicOption, isMainMenuOption, isSaladOption } from './orderCustomSideRules'
 
 describe('dinner business rules', () => {
   it('detects dinner override values from response text', () => {
@@ -28,6 +28,8 @@ describe('custom side rules', () => {
     expect(isSaladOption({ name: 'Ensalada completa' })).toBe(true)
     expect(canChooseCustomSide({ slotIndex: 0, name: 'Milanesa' })).toBe(false)
     expect(canChooseCustomSide({ slotIndex: 2, name: 'Ensalada' })).toBe(false)
+    expect(isHyperproteicOption({ slotIndex: 4, name: 'Opción 4 - Hiperproteica' })).toBe(true)
+    expect(canChooseCustomSide({ slotIndex: 4, name: 'Opción 4 - Hiperproteica', description: '46 g de proteína' })).toBe(false)
   })
 
   it('allows custom side for non-main non-salad options', () => {
