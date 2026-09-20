@@ -102,15 +102,32 @@ const AdminMenuDateEditorCard = ({
             {menuItems.map((item, index) => {
               const isHyperproteic = isHyperproteicMenuItem(item)
               return (
-                <div key={item.id || index} className="border-2 border-gray-200 rounded-lg p-4 bg-white hover:border-primary-300 transition-colors">
-                  <h4 className="font-bold text-gray-900 mb-2 text-base">
-                    {isHyperproteic ? 'Opción 4 · Hiperproteica' : item.name}
+                <div
+                  key={item.id || index}
+                  className={`border-2 rounded-xl p-4 transition-all ${isHyperproteic
+                    ? 'border-orange-300 bg-linear-to-br from-amber-50 via-white to-orange-50 shadow-md ring-1 ring-orange-100'
+                    : 'border-gray-200 bg-white hover:border-primary-300'}`}
+                >
+                  {isHyperproteic && (
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-orange-500 px-3 py-1 text-xs font-black uppercase tracking-wide text-white shadow-sm">
+                        ✨ Nueva
+                      </span>
+                      <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-orange-700">
+                        💪 Hiperproteica
+                      </span>
+                    </div>
+                  )}
+                  <h4 className={`font-black mb-2 ${isHyperproteic ? 'text-xl text-orange-950' : 'text-base text-gray-900'}`}>
+                    {isHyperproteic ? '💪 Opción 4 · Hiperproteica' : item.name}
                   </h4>
                   {item.description && (
-                    <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
+                    <p className={`leading-relaxed ${isHyperproteic ? 'text-sm font-semibold text-gray-800' : 'text-sm text-gray-600'}`}>
+                      {item.description}
+                    </p>
                   )}
                   {isHyperproteic && !item.description && (
-                    <p className="text-sm text-gray-500 leading-relaxed">Descripción pendiente.</p>
+                    <p className="text-sm font-semibold text-orange-700 leading-relaxed">Descripción pendiente.</p>
                   )}
                 </div>
               )
@@ -162,15 +179,25 @@ const AdminMenuDateEditorCard = ({
             const descId = `menu-item-description-${menuDate}-${index}`
             const isHyperproteic = isHyperproteicMenuItem(item)
             return (
-              <div key={index} className="border-2 border-gray-200 rounded-xl bg-white p-4">
+              <div
+                key={index}
+                className={`border-2 rounded-xl p-4 ${isHyperproteic
+                  ? 'border-orange-300 bg-linear-to-br from-amber-50 via-white to-orange-50 shadow-md ring-1 ring-orange-100'
+                  : 'border-gray-200 bg-white'}`}
+              >
                 <div className="flex items-center gap-3 mb-3">
                   <div className="shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
                     {index + 1}
                   </div>
                   {isHyperproteic ? (
-                    <span className="ml-auto rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-black text-blue-800">
-                      Opción fija
-                    </span>
+                    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                      <span className="rounded-full bg-orange-500 px-3 py-1 text-xs font-black uppercase tracking-wide text-white shadow-sm">
+                        ✨ Nueva
+                      </span>
+                      <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-black text-orange-800">
+                        💪 Opción fija
+                      </span>
+                    </div>
                   ) : (
                     <button
                       type="button"
@@ -190,7 +217,7 @@ const AdminMenuDateEditorCard = ({
                       className="input-field font-semibold text-base bg-blue-50 text-gray-900 w-full border-blue-200"
                       aria-label="Opción 4 Hiperproteica"
                     >
-                      Opción 4 · Hiperproteica
+                      💪 Opción 4 · Hiperproteica
                     </div>
                   ) : (
                     <input
@@ -215,9 +242,14 @@ const AdminMenuDateEditorCard = ({
                     className="input-field text-sm bg-white text-gray-900 w-full"
                   />
                   {isHyperproteic && (
-                    <p className="text-xs font-semibold text-blue-700">
-                      La descripción es editable; esta opción permanece fija como Opción 4 y desplaza las opciones siguientes.
-                    </p>
+                    <div className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2">
+                      <p className="text-xs font-bold text-orange-800">
+                        ✨ Opción nueva destacada para los usuarios.
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-orange-700">
+                        La descripción es editable; permanece fija como Opción 4 y desplaza las opciones siguientes.
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
