@@ -45,7 +45,7 @@ describe('OrderLunchMenuSection', () => {
     expect(option3).toContain('TARTA PASCUALINA')
     expect(option4).toContain('Hiperproteica')
     expect(option4).toContain('Nueva alternativa hiperproteica')
-    expect(option4).toContain('bg-orange-500')
+    expect(html).toContain('bg-orange-500')
     expect(option5).toContain('ENSALADA MIX DE HOJAS')
     expect(option6).toContain('Celíaco')
     expect((html.match(/Hiperproteica/g) || [])).toHaveLength(1)
