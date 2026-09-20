@@ -5,10 +5,6 @@ const getSlotIndex = (item = {}) =>
 
 const isMainMenuOption = (item = {}) => getSlotIndex(item) === 0
 
-const isOptionFive = (item = {}) => getSlotIndex(item) === 5
-
-const isOptionSix = (item = {}) => getSlotIndex(item) === 6
-
 const isCeliacOption = (text = '') => {
   const normalized = normalizeText(text)
   if (!normalized) return false
@@ -24,12 +20,7 @@ const isHyperproteicOption = (item = {}) => {
 
 const isSaladOption = (item = {}) => {
   const dishText = getDishText(item)
-  return (
-    dishText.includes('ensalada') ||
-    isOptionFive(item) ||
-    isOptionSix(item) ||
-    isCeliacOption(dishText)
-  )
+  return dishText.includes('ensalada') || isCeliacOption(dishText)
 }
 
 const canChooseCustomSide = (item = {}) => !isMainMenuOption(item) && !isSaladOption(item) && !isHyperproteicOption(item)
