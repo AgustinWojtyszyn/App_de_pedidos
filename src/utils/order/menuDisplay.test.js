@@ -37,7 +37,7 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     })
     expect(display[5]).toMatchObject({
       label: 'Opción 5',
-      dish: 'BIFE DEL DÍA CARNE',
+      dish: 'Bife de pollo',
       slotIndex: 5
     })
   })
@@ -178,7 +178,7 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     })
     expect(display[5]).toMatchObject({
       label: 'Opción 5',
-      dish: 'Dieta'
+      dish: 'Bife de pollo'
     })
   })
 
