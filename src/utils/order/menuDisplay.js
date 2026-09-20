@@ -1,15 +1,15 @@
 const normalizeText = (value = '') => (value || '').toString().trim()
 const normalizeSlotTitle = (value = '') => normalizeText(value).toLowerCase()
-const HIDDEN_ORDER_MENU_SLOT_INDEX = 4
+const HIDDEN_ORDER_MENU_SLOT_INDEX = 5
 const HIDDEN_ORDER_MENU_COMPANY_SLUG = 'epse'
 const IGARRETA_COMPANY_SLUG = 'igarreta'
 const ISEMAR_COMPANY_SLUG = 'isemar'
-const IGARRETA_ISEMAR_BIFE_DAY_SOURCE_SLOT_INDEX = 4
-const IGARRETA_ISEMAR_LAST_MENU_SLOT_INDEX = 5
-const IGARRETA_ISEMAR_SALAD_MENU_SLOT_INDEX = 4
+const IGARRETA_ISEMAR_BIFE_DAY_SOURCE_SLOT_INDEX = 5
+const IGARRETA_ISEMAR_LAST_MENU_SLOT_INDEX = 6
+const IGARRETA_ISEMAR_SALAD_MENU_SLOT_INDEX = 5
 const IGARRETA_ISEMAR_CELIAC_DISH = 'Celíaco'
 const IGARRETA_ISEMAR_SALAD_DISH = 'Ensalada del día'
-const FIXED_BIFE_POLLO_SLOT_INDEX = 4
+const FIXED_BIFE_POLLO_SLOT_INDEX = 5
 const FIXED_BIFE_POLLO_DISH = 'Bife de pollo'
 const FIXED_BIFE_POLLO_COMPANY_SLUGS = new Set(['ccp', 'laja', 'padrebueno', 'losberros'])
 const DIETA_COMPANY_SLUGS = new Set(['greif', 'placo', 'molinos'])
@@ -34,7 +34,7 @@ const getSlotIndexFromTitle = (title = '') => {
   ) {
     return 0
   }
-  const optionMatch = normalized.match(/opci[oó]n\s*0?([1-6])\b/)
+  const optionMatch = normalized.match(/opci[oó]n\s*0?([1-7])\b/)
   if (optionMatch) return Number(optionMatch[1])
   return null
 }
@@ -83,6 +83,81 @@ const withMenuSlotIndex = (items = []) => {
 
 const isMainMenuSlot = (item = {}) => (Number.isFinite(item?.slotIndex) ? item.slotIndex === 0 : item?.isMainMenu === true)
 
+const HYPERPROTEIC_OPTION_STORAGE_NAME = 'Hiperproteica'
+const HYPERPROTEIC_OPTION_SLOT_INDEX = 4
+const HYPERPROTEIC_OPTION_ID = 'hyperproteic-option-4'
+
+const isHyperproteicMenuItem = (item = {}) => {
+  const name = normalizeSlotTitle(item?.name)
+  const displayName = normalizeSlotTitle(item?.displayName)
+  return name === 'hiperproteica' ||
+    name === 'opción 4 - hiperproteica' ||
+    name === 'opcion 4 - hiperproteica' ||
+    displayName === 'opción 4 - hiperproteica' ||
+    displayName === 'opcion 4 - hiperproteica'
+}
+
+const withHyperproteicOption4 = (items = []) => {
+  const indexedItems = withMenuSlotIndex(items)
+  let hasHyperproteicOption = false
+
+  const shiftedItems = indexedItems.map((item, index) => {
+    if (isHyperproteicMenuItem(item)) {
+      hasHyperproteicOption = true
+      const editableDescription = normalizeText(item?.hyperproteicDescription ?? item?.description)
+      return {
+        ...item,
+        id: item?.id || HYPERPROTEIC_OPTION_ID,
+        name: 'Opción 4 - Hiperproteica',
+        displayName: getMenuLabelByIndex(HYPERPROTEIC_OPTION_SLOT_INDEX),
+        description: editableDescription
+          ? `Hiperproteica · ${editableDescription}`
+          : HYPERPROTEIC_OPTION_STORAGE_NAME,
+        hyperproteicDescription: editableDescription,
+        slotIndex: HYPERPROTEIC_OPTION_SLOT_INDEX
+      }
+    }
+
+    const slotIndex = getMenuSlotIndex(item, index)
+    if (!Number.isFinite(slotIndex) || slotIndex < HYPERPROTEIC_OPTION_SLOT_INDEX) return item
+
+    const displaySlotIndex = slotIndex + 1
+    const rawName = normalizeText(item?.name)
+    const shiftedName = rawName
+      ? rawName.replace(/opci[oó]n\s*0?[4-7]\b/i, getMenuLabelByIndex(displaySlotIndex))
+      : getMenuLabelByIndex(displaySlotIndex)
+
+    return {
+      ...item,
+      name: shiftedName,
+      displayName: getMenuLabelByIndex(displaySlotIndex),
+      slotIndex: displaySlotIndex
+    }
+  })
+
+  if (!hasHyperproteicOption) {
+    shiftedItems.push({
+      id: HYPERPROTEIC_OPTION_ID,
+      name: 'Opción 4 - Hiperproteica',
+      displayName: getMenuLabelByIndex(HYPERPROTEIC_OPTION_SLOT_INDEX),
+      description: HYPERPROTEIC_OPTION_STORAGE_NAME,
+      hyperproteicDescription: '',
+      slotIndex: HYPERPROTEIC_OPTION_SLOT_INDEX,
+      isSyntheticHyperproteicOption: true
+    })
+  }
+
+  return shiftedItems
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const aSlot = getMenuSlotIndex(a.item, a.index)
+      const bSlot = getMenuSlotIndex(b.item, b.index)
+      if (Number.isFinite(aSlot) && Number.isFinite(bSlot) && aSlot !== bSlot) return aSlot - bSlot
+      return a.index - b.index
+    })
+    .map(({ item }) => item)
+}
+
 const getMenuSlotIndex = (item = {}, fallbackIndex = null) => {
   if (Number.isFinite(item?.slotIndex)) return item.slotIndex
   const inferred = getSlotIndexFromTitle(item?.name)
@@ -107,7 +182,7 @@ const getConfiguredMenuItems = (companyOrSlug) =>
 const getMenuItemKey = (item = {}, fallbackIndex = null) => {
   const slotIndex = getMenuSlotIndex(item, fallbackIndex)
   if (slotIndex === 0) return 'menu_principal'
-  if (slotIndex >= 1 && slotIndex <= 6) return `opcion_${slotIndex}`
+  if (slotIndex >= 1 && slotIndex <= 7) return `opcion_${slotIndex}`
   const text = normalizeSlotTitle(`${item?.name || ''} ${item?.description || ''}`)
   if (text.includes('dieta')) return 'dieta'
   if (text.includes('celiac')) return 'celiacos'
@@ -163,9 +238,12 @@ const getCompanyMenuDisplay = (display, companySlug) => {
   }
 }
 
-const isHiddenOrderMenuSlot = (item = {}, companySlug = '') =>
-  normalizeCompanySlug(companySlug) === HIDDEN_ORDER_MENU_COMPANY_SLUG &&
-  getMenuSlotIndex(item) === HIDDEN_ORDER_MENU_SLOT_INDEX
+const isHiddenOrderMenuSlot = (item = {}, companySlug = '') => {
+  if (normalizeCompanySlug(companySlug) !== HIDDEN_ORDER_MENU_COMPANY_SLUG) return false
+  const slotIndex = getMenuSlotIndex(item)
+  return slotIndex === HIDDEN_ORDER_MENU_SLOT_INDEX ||
+    (slotIndex === HYPERPROTEIC_OPTION_SLOT_INDEX && !isHyperproteicMenuItem(item))
+}
 
 const isHiddenIgarretaMenuSlot = (item = {}, fallbackIndex = null) =>
   getMenuSlotIndex(item, fallbackIndex) > IGARRETA_ISEMAR_LAST_MENU_SLOT_INDEX
@@ -206,7 +284,7 @@ const withIgarretaIsemarMenuItems = (items = []) => {
         !isIgarretaIsemarBifeDayMenuItem(item, index) &&
         !isIgarretaIsemarCeliacMenuItem(item)
     })
-    .slice(0, 3)
+    .slice(0, 4)
     .map((item, index) => ({
       ...item,
       name: getMenuLabelByIndex(index + 1),
@@ -259,7 +337,7 @@ const withCompanyMenuDisplay = (item = {}, companySlug = '', fallbackIndex = nul
   const displaySlotIndex = slotIndex - 1
   const name = normalizeText(item?.name)
   const displayName = name
-    ? name.replace(/opci[oó]n\s*0?[1-6]\b/i, `Opción ${displaySlotIndex}`)
+    ? name.replace(/opci[oó]n\s*0?[1-7]\b/i, `Opción ${displaySlotIndex}`)
     : getMenuLabelByIndex(displaySlotIndex)
 
   return {
@@ -273,7 +351,9 @@ const filterOrderableMenuItems = (items = [], companySlug = '') => {
   const safeItems = (items || []).filter((item) => !isSyntheticFallbackMenuItem(item))
   if (safeItems.length === 0) return []
 
-  return (isIgarretaIsemarCompany(companySlug) ? withIgarretaIsemarMenuItems(withMenuSlotIndex(safeItems)) : safeItems)
+  const menuWithHyperproteicOption = withHyperproteicOption4(safeItems)
+
+  return (isIgarretaIsemarCompany(companySlug) ? withIgarretaIsemarMenuItems(menuWithHyperproteicOption) : menuWithHyperproteicOption)
     .filter((item, index) => {
       if (isIgarretaIsemarCompany(companySlug)) return !isHiddenIgarretaMenuSlot(item, index) && isMenuItemEnabledForCompany(item, companySlug, index)
       return !isHiddenOrderMenuSlot(item, companySlug) && isMenuItemEnabledForCompany(item, companySlug, index)
@@ -296,6 +376,8 @@ export {
   hasSyntheticFallbackMenuSelection,
   isSyntheticFallbackMenuItem,
   isHiddenOrderMenuSlot,
+  isHyperproteicMenuItem,
+  withHyperproteicOption4,
   withMenuSlotIndex,
   isMainMenuSlot
 }
