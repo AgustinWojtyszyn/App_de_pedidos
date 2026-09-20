@@ -97,6 +97,30 @@ describe('OrderLunchMenuSection', () => {
     expect((html.match(/Opción 7/g) || [])).toHaveLength(1)
   })
 
+  it.each(['genneia', 'greif', 'administracion_servifood', 'laja', 'padrebueno', 'ccp', 'losberros'])(
+    'renders %s with a single option 5 Bife de pollo',
+    (companySlug) => {
+      const duplicatedFiveMenu = [
+        { id: 'main', name: 'Menú principal', description: 'MILANESA', slotIndex: 0 },
+        { id: 'one', name: 'Opción 1', description: 'UNO', slotIndex: 1 },
+        { id: 'two', name: 'Opción 2', description: 'DOS', slotIndex: 2 },
+        { id: 'three', name: 'Opción 3', description: 'TRES', slotIndex: 3 },
+        { id: 'hyper', name: 'Opción 4 - Hiperproteica', description: 'HAMBURGUESA PROTEICA', slotIndex: 4 },
+        { id: 'five-a', name: 'Opción 5', description: 'BIFE DE POLLO', slotIndex: 5 },
+        { id: 'five-b', name: 'Opción 5', description: 'VALOR DUPLICADO', slotIndex: 5 },
+        { id: 'salad', name: 'Opción 6', description: 'ENSALADA MIX DE HOJAS', slotIndex: 6 },
+        { id: 'celiac', name: 'Opción 7', description: 'CELIACO', slotIndex: 7 }
+      ]
+
+      const html = renderLunchMenu(companySlug, filterOrderableMenuItems(duplicatedFiveMenu, companySlug))
+
+      expect((html.match(/Opción 5/g) || [])).toHaveLength(1)
+      expect(textBetween(html, 'Opción 5', 'Opción 6')).toContain('Bife de pollo')
+      expect(textBetween(html, 'Opción 6', 'Opción 7')).toContain('ENSALADA MIX DE HOJAS')
+      expect(html.slice(html.indexOf('Opción 7'))).toContain('CELIACO')
+    }
+  )
+
   it('renders Hiperproteica as option 4 and shifts Bife to option 5 for a regular company', () => {
     const html = renderLunchMenu('laja')
 
