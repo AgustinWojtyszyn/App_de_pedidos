@@ -130,6 +130,36 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     expect(result.find((item) => item.slotIndex === 7)?.description).toMatch(/celiaco/i)
   })
 
+  it('does not shift an already normalized 4-7 menu a second time', () => {
+    const alreadyNormalized = [
+      { id: 'main', name: 'Menú principal', description: 'Milanesa', slotIndex: 0 },
+      { id: 'option-1', name: 'Opción 1', description: 'Pollo', slotIndex: 1 },
+      { id: 'option-2', name: 'Opción 2', description: 'Tarta', slotIndex: 2 },
+      { id: 'option-3', name: 'Opción 3', description: 'Omelette', slotIndex: 3 },
+      { id: 'hyper', name: 'Opción 4 - Hiperproteica', description: 'Hamburguesa proteica', slotIndex: 4 },
+      { id: 'bife', name: 'Opción 5', description: 'Bife de pollo', slotIndex: 5 },
+      { id: 'salad', name: 'Opción 6', description: 'Ensalada mix de hojas', slotIndex: 6 },
+      { id: 'celiac', name: 'Opción 7', description: 'Celíaco', slotIndex: 7 }
+    ]
+
+    const result = filterOrderableMenuItems(alreadyNormalized, 'genneia')
+    const display = displayFor(result, 'genneia')
+
+    expect(display.map((item) => item.label)).toEqual([
+      'Menú principal',
+      'Opción 1',
+      'Opción 2',
+      'Opción 3',
+      'Opción 4',
+      'Opción 5',
+      'Opción 6',
+      'Opción 7'
+    ])
+    expect(result.filter((item) => item.slotIndex === 7)).toHaveLength(1)
+    expect(display[6].dish).toMatch(/ensalada/i)
+    expect(display[7].dish).toMatch(/cel[ií]aco/i)
+  })
+
   it.each(['igarreta', 'isemar'])(
     'maps %s to options 1-3, Hiperproteica 4, salad 5 and Celíaco 6',
     (companySlug) => {
@@ -156,6 +186,7 @@ describe('company-specific menu display with hyperproteic option 4', () => {
       ])
       expect(display[1].dish).toBe('BIFE DE CARNE CON PURE')
       expect(display[4].dish).toBe('Hiperproteica · Pechuga grillada')
+      expect(result[4].description).toContain('Hiperproteica')
       expect(display[5].dish).toBe('Mix de hojas verdes')
       expect(display[6].dish).toBe('Celíaco')
       expect(result.some((item) => item.id === 'option-4')).toBe(false)
