@@ -130,6 +130,46 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     expect(result.find((item) => item.slotIndex === 7)?.description).toMatch(/celiaco/i)
   })
 
+  it('does not shift an already persisted 5/6/7 menu a second time', () => {
+    const alreadyShifted = [
+      { id: 'main', name: 'Menú principal', description: 'Milanesa', slotIndex: 0 },
+      { id: 'option-1', name: 'Opción 1', description: 'BIFE', slotIndex: 1 },
+      { id: 'option-2', name: 'Opción 2', description: 'Pollo', slotIndex: 2 },
+      { id: 'option-3', name: 'Opción 3', description: 'Tarta', slotIndex: 3 },
+      { id: 'hyper', name: 'Opción 4 - Hiperproteica', description: '46 g de proteína', slotIndex: 4 },
+      { id: 'bife', name: 'Opción 5', description: 'Bife de pollo', slotIndex: 5 },
+      { id: 'salad', name: 'Opción 6', description: 'Ensalada mix de hojas', slotIndex: 6 },
+      { id: 'celiac', name: 'Opción 7', description: 'Celíaco', slotIndex: 7 }
+    ]
+    const result = filterOrderableMenuItems(alreadyShifted, 'genneia')
+    const slots = result.map((item) => item.slotIndex)
+
+    expect(slots).toEqual([0, 1, 2, 3, 4, 5, 6, 7])
+    expect(new Set(slots).size).toBe(slots.length)
+    expect(result.find((item) => item.slotIndex === 6)?.description).toMatch(/ensalada/i)
+    expect(result.find((item) => item.slotIndex === 7)?.description).toMatch(/cel[ií]aco/i)
+  })
+
+  it('compacts EPSE tail options when option 5 is an empty placeholder', () => {
+    const epseMenu = [
+      { id: 'main', name: 'Menú principal', description: 'Milanesa', slotIndex: 0 },
+      { id: 'option-1', name: 'Opción 1', description: 'Uno', slotIndex: 1 },
+      { id: 'option-2', name: 'Opción 2', description: 'Dos', slotIndex: 2 },
+      { id: 'option-3', name: 'Opción 3', description: 'Tres', slotIndex: 3 },
+      { id: 'hyper', name: 'Opción 4 - Hiperproteica', description: 'Proteína', slotIndex: 4 },
+      { id: 'blank-5', name: 'Opción 5', description: '', slotIndex: 5 },
+      { id: 'next', name: 'Opción 6', description: 'Plato EPSE', slotIndex: 6 },
+      { id: 'salad', name: 'Opción 7', description: 'Ensalada mix de hojas', slotIndex: 7 },
+      { id: 'celiac', name: 'Opción 8', description: 'Celíaco', slotIndex: 8 }
+    ]
+    const result = filterOrderableMenuItems(epseMenu, 'epse')
+
+    expect(result.map((item) => item.slotIndex)).toEqual([0, 1, 2, 3, 4, 5, 6, 7])
+    expect(result.find((item) => item.slotIndex === 5)?.description).toBe('Plato EPSE')
+    expect(result.find((item) => item.slotIndex === 6)?.description).toMatch(/ensalada/i)
+    expect(result.find((item) => item.slotIndex === 7)?.description).toMatch(/cel[ií]aco/i)
+  })
+
   it.each(['igarreta', 'isemar'])(
     'maps %s to options 1-3, Hiperproteica 4, salad 5 and Celíaco 6',
     (companySlug) => {
