@@ -185,6 +185,39 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     expect(result.some((item) => item.slotIndex === 5 && !String(item.description || '').trim())).toBe(false)
   })
 
+  it('repairs the exact EPSE case with empty 5 and duplicated option 7', () => {
+    const brokenEpseMenu = [
+      { id: 'main', name: 'Menú principal', description: 'MILANESA', slotIndex: 0 },
+      { id: 'one', name: 'Opción 1', description: 'UNO', slotIndex: 1 },
+      { id: 'two', name: 'Opción 2', description: 'DOS', slotIndex: 2 },
+      { id: 'three', name: 'Opción 3', description: 'TRES', slotIndex: 3 },
+      { id: 'hyper', name: 'Opción 4 - Hiperproteica', description: 'HAMBURGUESA PROTEICA', slotIndex: 4 },
+      { id: 'empty-five', name: 'Opción 5', description: '', slotIndex: 5 },
+      { id: 'bife', name: 'Opción 6', description: 'BIFE DE POLLO', slotIndex: 6 },
+      { id: 'salad', name: 'Opción 7', description: 'ENSALADA MIX DE HOJAS', slotIndex: 7 },
+      { id: 'celiac', name: 'Opción 7', description: 'CELIACO', slotIndex: 7 }
+    ]
+
+    const result = filterOrderableMenuItems(brokenEpseMenu, 'epse')
+    const display = displayFor(result, 'epse')
+
+    expect(display.map((item) => item.label)).toEqual([
+      'Menú principal',
+      'Opción 1',
+      'Opción 2',
+      'Opción 3',
+      'Opción 4',
+      'Opción 5',
+      'Opción 6',
+      'Opción 7'
+    ])
+    expect(display[5].dish).toMatch(/bife de pollo/i)
+    expect(display[6].dish).toMatch(/ensalada/i)
+    expect(display[7].dish).toMatch(/cel[ií]aco/i)
+    expect(result.filter((item) => item.slotIndex === 7)).toHaveLength(1)
+    expect(result.some((item) => !String(item.description || '').trim())).toBe(false)
+  })
+
   it.each(['igarreta', 'isemar'])(
     'maps %s to options 1-3, Hiperproteica 4, salad 5 and Celíaco 6',
     (companySlug) => {
