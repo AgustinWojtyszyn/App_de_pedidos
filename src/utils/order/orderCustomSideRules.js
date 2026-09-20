@@ -17,6 +17,11 @@ const isCeliacOption = (text = '') => {
 
 const getDishText = (item = {}) => normalizeText(item?.description || item?.name)
 
+const isHyperproteicOption = (item = {}) => {
+  const text = normalizeText(`${item?.name || ''} ${item?.displayName || ''} ${item?.description || ''}`)
+  return text.includes('hiperprote')
+}
+
 const isSaladOption = (item = {}) => {
   const dishText = getDishText(item)
   return (
@@ -27,10 +32,11 @@ const isSaladOption = (item = {}) => {
   )
 }
 
-const canChooseCustomSide = (item = {}) => !isMainMenuOption(item) && !isSaladOption(item)
+const canChooseCustomSide = (item = {}) => !isMainMenuOption(item) && !isSaladOption(item) && !isHyperproteicOption(item)
 
 export {
   isMainMenuOption,
   isSaladOption,
+  isHyperproteicOption,
   canChooseCustomSide
 }
