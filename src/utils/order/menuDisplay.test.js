@@ -37,13 +37,13 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     })
     expect(display[5]).toMatchObject({
       label: 'Opción 5',
-      dish: 'BIFE DEL DÍA CARNE',
+      dish: 'Bife de pollo',
       slotIndex: 5
     })
   })
 
-  it('shows Dieta at the shifted option 5 for Greif, Molinos and Placo', () => {
-    for (const companySlug of ['greif', 'molinos', 'placo']) {
+  it('shows Dieta at the shifted option 5 for Molinos and Placo', () => {
+    for (const companySlug of ['molinos', 'placo']) {
       const result = filterOrderableMenuItems(baseMenu, companySlug)
       const display = displayFor(result, companySlug)
       expect(display[4]).toMatchObject({ label: 'Opción 4', dish: 'Hiperproteica · Pechuga grillada' })
@@ -64,7 +64,33 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     }
   })
 
-  it('keeps EPSE continuous with Hiperproteica 4 while hiding its excluded Bife source', () => {
+  it('keeps Bife de pollo fixed at option 5 for Genneia, Greif and Administración', () => {
+    for (const companySlug of ['genneia', 'greif', 'administracion_servifood']) {
+      const result = filterOrderableMenuItems(baseMenu, companySlug)
+      expect(result.find((item) => item.slotIndex === 5)).toMatchObject({
+        name: 'Opción 5',
+        displayName: 'Opción 5',
+        description: 'Bife de pollo',
+        slotIndex: 5
+      })
+      expect(result.find((item) => item.slotIndex === 6)?.description).toMatch(/hojas/i)
+      expect(result.find((item) => item.slotIndex === 7)?.description).toMatch(/celiaco/i)
+    }
+  })
+
+  it('removes duplicated Bife de pollo outside fixed option 5 for Calidra sites', () => {
+    const menuWithDuplicateBife = [
+      ...baseMenu,
+      { id: 'duplicate-bife', name: 'Bife de pollo', description: 'Bife de pollo', slotIndex: 7 }
+    ]
+    const result = filterOrderableMenuItems(menuWithDuplicateBife, 'laja')
+    const bifeItems = result.filter((item) => /bife\s+de\s+pollo/i.test(`${item.name || ''} ${item.description || ''}`))
+
+    expect(bifeItems).toHaveLength(1)
+    expect(bifeItems[0].slotIndex).toBe(5)
+  })
+
+  it('keeps EPSE capped at option 7 with Celíaco in option 7', () => {
     const result = filterOrderableMenuItems(baseMenu, 'epse')
     const display = displayFor(result, 'epse')
 
@@ -74,6 +100,7 @@ describe('company-specific menu display with hyperproteic option 4', () => {
       'option-2',
       'option-3',
       'hyper',
+      'option-4',
       'option-5',
       'option-6'
     ])
@@ -84,10 +111,23 @@ describe('company-specific menu display with hyperproteic option 4', () => {
       'Opción 3',
       'Opción 4',
       'Opción 5',
-      'Opción 6'
+      'Opción 6',
+      'Opción 7'
     ])
     expect(display[4].dish).toContain('Hiperproteica')
-    expect(result.some((item) => item.id === 'option-4')).toBe(false)
+    expect(display[7].dish).toMatch(/celiaco/i)
+  })
+
+  it('does not create option 8 when EPSE already has Celíaco persisted as option 7', () => {
+    const alreadyShifted = baseMenu.map((item) =>
+      item.id === 'option-6'
+        ? { ...item, name: 'Opción 7', slotIndex: 7 }
+        : item
+    )
+    const result = filterOrderableMenuItems(alreadyShifted, 'epse')
+
+    expect(Math.max(...result.map((item) => item.slotIndex))).toBe(7)
+    expect(result.find((item) => item.slotIndex === 7)?.description).toMatch(/celiaco/i)
   })
 
   it.each(['igarreta', 'isemar'])(
@@ -138,7 +178,7 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     })
     expect(display[5]).toMatchObject({
       label: 'Opción 5',
-      dish: 'Dieta'
+      dish: 'Bife de pollo'
     })
   })
 

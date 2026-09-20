@@ -1,7 +1,30 @@
 import { Edit3, Plus, Save, Trash2, X } from 'lucide-react'
 import LoadingState from '../../ui/LoadingState'
 import { formatDateLabel } from '../../../utils/admin/adminMenuSectionFormatters'
-import { isHyperproteicMenuItem } from '../../../utils/order/menuDisplay'
+import { filterOrderableMenuItems, getMenuDisplay, isHyperproteicMenuItem } from '../../../utils/order/menuDisplay'
+
+const buildDisplayEntries = (items = [], companySlug = 'global') => {
+  const sourceItems = (Array.isArray(items) ? items : []).map((item, sourceIndex) => ({
+    ...item,
+    __sourceIndex: sourceIndex
+  }))
+  const visibleItems = companySlug === 'global'
+    ? filterOrderableMenuItems(sourceItems, 'global')
+    : sourceItems
+
+  return visibleItems.map((item, index) => {
+    const display = getMenuDisplay(
+      item,
+      Number.isFinite(item?.slotIndex) ? item.slotIndex : index,
+      companySlug
+    )
+    return {
+      item,
+      sourceIndex: Number.isInteger(item?.__sourceIndex) ? item.__sourceIndex : index,
+      ...display
+    }
+  })
+}
 
 const AdminMenuDateEditorCard = ({
   menuDate,
@@ -19,7 +42,8 @@ const AdminMenuDateEditorCard = ({
   onAddMenuItem,
   onRemoveMenuItem,
   changeSummary,
-  onPrimeSuccess
+  onPrimeSuccess,
+  companySlug = 'global'
 }) => {
   const dateLabel = formatDateLabel(menuDate)
   const dinnerToggleId = `dinner-menu-enabled-${menuDate}`
@@ -27,6 +51,12 @@ const AdminMenuDateEditorCard = ({
   const modifiedCount = changeSummary?.modifiedItems?.length || 0
   const deletedCount = changeSummary?.deletedItems?.length || 0
   const hasChanges = Boolean(changeSummary?.hasChanges)
+
+  const displayItems = buildDisplayEntries(menuItems, companySlug)
+  const draftDisplayBySourceIndex = new Map(
+    buildDisplayEntries(draftItems, companySlug)
+      .map((entry) => [entry.sourceIndex, entry])
+  )
 
   return (
     <div className="border-2 border-gray-200 rounded-2xl bg-white p-4 sm:p-5">
@@ -93,14 +123,17 @@ const AdminMenuDateEditorCard = ({
       )}
 
       {!editingMenu ? (
-        menuItems.length === 0 ? (
+        displayItems.length === 0 ? (
           <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-4">
             No hay platos cargados para este día.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {menuItems.map((item, index) => {
+            {displayItems.map(({ item, label, dish }, index) => {
               const isHyperproteic = isHyperproteicMenuItem(item)
+              const visibleDescription = isHyperproteic
+                ? (item.hyperproteicDescription ?? item.description)
+                : dish
               return (
                 <div
                   key={item.id || index}
@@ -119,14 +152,14 @@ const AdminMenuDateEditorCard = ({
                     </div>
                   )}
                   <h4 className={`font-black mb-2 ${isHyperproteic ? 'text-xl text-orange-950' : 'text-base text-gray-900'}`}>
-                    {isHyperproteic ? '💪 Opción 4 · Hiperproteica' : item.name}
+                    {isHyperproteic ? '💪 Opción 4 · Hiperproteica' : (label || item.name)}
                   </h4>
-                  {item.description && (
+                  {visibleDescription && (
                     <p className={`leading-relaxed ${isHyperproteic ? 'text-sm font-semibold text-gray-800' : 'text-sm text-gray-600'}`}>
-                      {item.description}
+                      {visibleDescription}
                     </p>
                   )}
-                  {isHyperproteic && !item.description && (
+                  {isHyperproteic && !visibleDescription && (
                     <p className="text-sm font-semibold text-orange-700 leading-relaxed">Descripción pendiente.</p>
                   )}
                 </div>
@@ -178,6 +211,12 @@ const AdminMenuDateEditorCard = ({
             const nameId = `menu-item-name-${menuDate}-${index}`
             const descId = `menu-item-description-${menuDate}-${index}`
             const isHyperproteic = isHyperproteicMenuItem(item)
+            const visibleEntry = draftDisplayBySourceIndex.get(index)
+            const visibleLabel = visibleEntry?.label || ''
+            const showVisibleSlotHint = companySlug === 'global' &&
+              !isHyperproteic &&
+              visibleLabel &&
+              visibleLabel !== item.name
             return (
               <div
                 key={index}
@@ -218,6 +257,18 @@ const AdminMenuDateEditorCard = ({
                       aria-label="Opción 4 Hiperproteica"
                     >
                       💪 Opción 4 · Hiperproteica
+                    </div>
+                  ) : showVisibleSlotHint ? (
+                    <div className="space-y-2">
+                      <div
+                        id={nameId}
+                        className="input-field font-semibold text-base bg-blue-50 text-gray-900 w-full border-blue-200"
+                      >
+                        {visibleLabel}
+                      </div>
+                      <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800">
+                        Numeración automática: la Opción 4 está reservada para Hiperproteica. Este plato se mostrará como {visibleLabel}.
+                      </p>
                     </div>
                   ) : (
                     <input

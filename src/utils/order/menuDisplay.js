@@ -11,8 +11,8 @@ const IGARRETA_ISEMAR_CELIAC_DISH = 'Celíaco'
 const IGARRETA_ISEMAR_SALAD_DISH = 'Ensalada del día'
 const FIXED_BIFE_POLLO_SLOT_INDEX = 5
 const FIXED_BIFE_POLLO_DISH = 'Bife de pollo'
-const FIXED_BIFE_POLLO_COMPANY_SLUGS = new Set(['ccp', 'laja', 'padrebueno', 'losberros'])
-const DIETA_COMPANY_SLUGS = new Set(['greif', 'placo', 'molinos'])
+const FIXED_BIFE_POLLO_COMPANY_SLUGS = new Set(['ccp', 'laja', 'padrebueno', 'losberros', 'genneia', 'greif', 'administracion_servifood'])
+const DIETA_COMPANY_SLUGS = new Set(['placo', 'molinos'])
 const SYNTHETIC_FALLBACK_MENU = new Map([
   [1, 'Delicioso plato principal'],
   [2, 'Otro plato delicioso'],
@@ -119,12 +119,12 @@ const withHyperproteicOption4 = (items = []) => {
     }
 
     const slotIndex = getMenuSlotIndex(item, index)
-    if (!Number.isFinite(slotIndex) || slotIndex < HYPERPROTEIC_OPTION_SLOT_INDEX) return item
+    if (!Number.isFinite(slotIndex) || slotIndex < HYPERPROTEIC_OPTION_SLOT_INDEX || slotIndex >= 7) return item
 
     const displaySlotIndex = slotIndex + 1
     const rawName = normalizeText(item?.name)
     const shiftedName = rawName
-      ? rawName.replace(/opci[oó]n\s*0?[4-7]\b/i, getMenuLabelByIndex(displaySlotIndex))
+      ? rawName.replace(/opci[oó]n\s*0?[4-6]\b/i, getMenuLabelByIndex(displaySlotIndex))
       : getMenuLabelByIndex(displaySlotIndex)
 
     return {
@@ -241,8 +241,7 @@ const getCompanyMenuDisplay = (display, companySlug) => {
 const isHiddenOrderMenuSlot = (item = {}, companySlug = '') => {
   if (normalizeCompanySlug(companySlug) !== HIDDEN_ORDER_MENU_COMPANY_SLUG) return false
   const slotIndex = getMenuSlotIndex(item)
-  return slotIndex === HIDDEN_ORDER_MENU_SLOT_INDEX ||
-    (slotIndex === HYPERPROTEIC_OPTION_SLOT_INDEX && !isHyperproteicMenuItem(item))
+  return Number.isFinite(slotIndex) && slotIndex > 7
 }
 
 const isHiddenIgarretaMenuSlot = (item = {}, fallbackIndex = null) =>
@@ -256,6 +255,14 @@ const isIgarretaIsemarCeliacMenuItem = (item = {}) =>
 
 const isIgarretaIsemarSaladMenuItem = (item = {}) =>
   /ensalada/i.test(normalizeText(`${item?.name || ''} ${item?.displayName || ''} ${item?.description || ''}`))
+
+const isBifePolloMenuItem = (item = {}) =>
+  /bife\s+de\s+pollo/i.test(normalizeText(`${item?.name || ''} ${item?.displayName || ''} ${item?.description || ''}`))
+
+const isDuplicateFixedBifePollo = (item = {}, companySlug = '', fallbackIndex = null) =>
+  FIXED_BIFE_POLLO_COMPANY_SLUGS.has(normalizeCompanySlug(companySlug)) &&
+  getMenuSlotIndex(item, fallbackIndex) !== FIXED_BIFE_POLLO_SLOT_INDEX &&
+  isBifePolloMenuItem(item)
 
 const withIgarretaIsemarMenuItem = (item = {}, fallbackIndex = null) => {
   const slotIndex = getMenuSlotIndex(item, fallbackIndex)
@@ -342,20 +349,7 @@ const withCompanyMenuDisplay = (item = {}, companySlug = '', fallbackIndex = nul
     }
   }
   if (isIgarretaIsemarCompany(companySlug)) return withIgarretaIsemarMenuItem(item, fallbackIndex)
-  if (normalizedCompanySlug !== HIDDEN_ORDER_MENU_COMPANY_SLUG) return item
-  if (!Number.isFinite(slotIndex) || slotIndex <= HIDDEN_ORDER_MENU_SLOT_INDEX) return item
-
-  const displaySlotIndex = slotIndex - 1
-  const name = normalizeText(item?.name)
-  const displayName = name
-    ? name.replace(/opci[oó]n\s*0?[1-7]\b/i, `Opción ${displaySlotIndex}`)
-    : getMenuLabelByIndex(displaySlotIndex)
-
-  return {
-    ...item,
-    displayName,
-    displaySlotIndex
-  }
+  return item
 }
 
 const filterOrderableMenuItems = (items = [], companySlug = '') => {
@@ -366,6 +360,7 @@ const filterOrderableMenuItems = (items = [], companySlug = '') => {
 
   return (isIgarretaIsemarCompany(companySlug) ? withIgarretaIsemarMenuItems(menuWithHyperproteicOption) : menuWithHyperproteicOption)
     .filter((item, index) => {
+      if (isDuplicateFixedBifePollo(item, companySlug, index)) return false
       if (isIgarretaIsemarCompany(companySlug)) return !isHiddenIgarretaMenuSlot(item, index) && isMenuItemEnabledForCompany(item, companySlug, index)
       return !isHiddenOrderMenuSlot(item, companySlug) && isMenuItemEnabledForCompany(item, companySlug, index)
     })

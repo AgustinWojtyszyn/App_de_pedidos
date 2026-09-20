@@ -43,4 +43,11 @@ describe('company catalog', () => {
     expect(COMPANY_CATALOG.epse.locations).toContain('EPSE – Fábrica de Paneles Solares')
     expect(getCompanyByLocationOrSlug('EPSE – Fábrica de Paneles Solares')?.slug).toBe('epse')
   })
+
+  it('keeps DistroCuyo only for historical lookup and removes it from ordering companies', () => {
+    expect(COMPANY_CATALOG.distro_cuyo.hiddenFromOrdering).toBe(true)
+    expect(COMPANY_LIST.some((company) => company.slug === 'distro_cuyo')).toBe(false)
+    expect(getCompanyByLocationOrSlug('DistroCuyo')?.slug).toBe('distro_cuyo')
+  })
+
 })

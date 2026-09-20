@@ -138,7 +138,7 @@ const getFieldKey = (field, index = null) => index === null ? field : `${field}-
 const CompanyAdminMenuSection = ({ adminCompanies = [] }) => {
   const authorizedCompanies = useMemo(
     () => (Array.isArray(adminCompanies) ? adminCompanies : [])
-      .filter((company) => company?.slug && company.slug !== 'global'),
+      .filter((company) => company?.slug && company.slug !== 'global' && company.slug !== 'distro_cuyo'),
     [adminCompanies]
   )
   const adminCompanySlugs = useMemo(

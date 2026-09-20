@@ -36,7 +36,9 @@ export const useOrderCompany = () => {
 
   const companyCatalog = managedCatalog || COMPANY_CATALOG
   const companyList = useMemo(
-    () => Object.values(companyCatalog).filter((company) => isAdmin || !company.adminOnly),
+    () => Object.values(companyCatalog).filter((company) =>
+      company.slug !== 'distro_cuyo' && (isAdmin || !company.adminOnly)
+    ),
     [companyCatalog, isAdmin]
   )
 
@@ -50,7 +52,9 @@ export const useOrderCompany = () => {
     .toLowerCase()
 
   const requestedCompany = companyCatalog[rawCompanySlug]
-  const requestedCompanyAllowed = requestedCompany && (!requestedCompany.adminOnly || isAdmin)
+  const requestedCompanyAllowed = requestedCompany &&
+    requestedCompany.slug !== 'distro_cuyo' &&
+    (!requestedCompany.adminOnly || isAdmin)
   const companyConfig = requestedCompanyAllowed
     ? requestedCompany
     : companyCatalog[defaultCompanySlug]

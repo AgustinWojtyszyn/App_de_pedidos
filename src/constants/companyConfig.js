@@ -61,7 +61,8 @@ export const COMPANY_CATALOG = {
     badgeClass: 'bg-indigo-100 text-indigo-700',
     locations: ['DistroCuyo'],
     customHint: 'Incluye bebida y regla de postre/fruta igual que Genneia.',
-    optionsSourceSlug: 'distro_cuyo'
+    optionsSourceSlug: 'distro_cuyo',
+    hiddenFromOrdering: true
   },
   epse: {
     slug: 'epse',
@@ -150,7 +151,9 @@ export const COMPANY_CATALOG = {
 export const ALL_COMPANY_LIST = Object.values(COMPANY_CATALOG)
 
 export const getVisibleCompanyList = ({ includeAdminOnly = false } = {}) =>
-  ALL_COMPANY_LIST.filter((company) => includeAdminOnly || !company.adminOnly)
+  ALL_COMPANY_LIST.filter((company) =>
+    !company.hiddenFromOrdering && (includeAdminOnly || !company.adminOnly)
+  )
 
 export const COMPANY_LIST = getVisibleCompanyList()
 

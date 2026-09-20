@@ -314,7 +314,7 @@ const AdminExtraOrderModal = ({
     const scoped = isGlobalAdmin ? ALL_COMPANY_LIST : adminCompanies
     return (scoped || [])
       .map((company) => COMPANY_CATALOG[company.slug] || company)
-      .filter((company) => company?.slug && company.slug !== 'global')
+      .filter((company) => company?.slug && company.slug !== 'global' && company.slug !== 'distro_cuyo')
   }, [adminCompanies, isGlobalAdmin])
 
   const [deliveryDate, setDeliveryDate] = useState(operationalDate || today)

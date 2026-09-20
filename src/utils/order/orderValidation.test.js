@@ -333,4 +333,21 @@ describe('order validation', () => {
       }
     ])
   })
+
+
+  it('allows a different side for Bife fixed at option 5', () => {
+    const result = validateOrderSubmission(baseArgs({
+      getSelectedItemsList: () => [{ id: 'bife-pollo', name: 'Opción 5 - Bife de pollo', slotIndex: 5 }],
+      visibleLunchOptions: [{ id: 'side', title: 'Guarnición distinta', required: false }],
+      customResponses: { side: 'Puré' }
+    }))
+
+    expect(result.error).toBe('')
+    expect(result.data.customResponsesArray[0]).toMatchObject({
+      id: 'side',
+      response: 'Puré',
+      item_id: 'bife-pollo',
+      slotIndex: 5
+    })
+  })
 })

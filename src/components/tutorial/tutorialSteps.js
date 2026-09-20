@@ -6,7 +6,7 @@ export const TUTORIAL_STEPS = [
   },
   {
     title: 'Paso 2: Elegí la empresa',
-    content: 'Seleccioná la empresa correcta para tu pedido (La Laja, Ccp, Padre Bueno, Los Berros, Genneia o DistroCuyo). Esto es importante porque cada empresa puede mostrar opciones adicionales diferentes.',
+    content: 'Seleccioná la empresa correcta para tu pedido. Esto es importante porque cada empresa puede mostrar opciones adicionales diferentes.',
     image: '🏢'
   },
   {
