@@ -58,7 +58,8 @@ describe('AdminMenuDateEditorCard global numbering', () => {
   it('explains the visible shifted number while editing the raw global menu slots', () => {
     const html = renderCard({ editingMenu: true })
 
-    expect(html).toContain('En pedidos se mostrará como Opción 5')
-    expect(html).toContain('La Opción 4 está reservada para Hiperproteica')
+    expect(html).toContain('Numeración automática')
+    expect(html).toContain('la Opción 4 está reservada para Hiperproteica')
+    expect(html).toContain('Este plato se mostrará como Opción 5')
   })
 })
