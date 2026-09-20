@@ -258,24 +258,29 @@ const AdminMenuDateEditorCard = ({
                     >
                       💪 Opción 4 · Hiperproteica
                     </div>
-                  ) : (
-                    <>
-                      <input
+                  ) : showVisibleSlotHint ? (
+                    <div className="space-y-2">
+                      <div
                         id={nameId}
-                        name={nameId}
-                        type="text"
-                        placeholder="Ej: Menú principal u Opción 1"
-                        value={item.name}
-                        onChange={(e) => onMenuItemChange(menuDate, index, 'name', e.target.value)}
-                        className="input-field font-semibold text-base bg-white text-gray-900 w-full"
-                        required
-                      />
-                      {showVisibleSlotHint && (
-                        <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800">
-                          En pedidos se mostrará como {visibleLabel}. La Opción 4 está reservada para Hiperproteica.
-                        </p>
-                      )}
-                    </>
+                        className="input-field font-semibold text-base bg-blue-50 text-gray-900 w-full border-blue-200"
+                      >
+                        {visibleLabel}
+                      </div>
+                      <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800">
+                        Numeración automática: la Opción 4 está reservada para Hiperproteica. Este plato se mostrará como {visibleLabel}.
+                      </p>
+                    </div>
+                  ) : (
+                    <input
+                      id={nameId}
+                      name={nameId}
+                      type="text"
+                      placeholder="Ej: Menú principal u Opción 1"
+                      value={item.name}
+                      onChange={(e) => onMenuItemChange(menuDate, index, 'name', e.target.value)}
+                      className="input-field font-semibold text-base bg-white text-gray-900 w-full"
+                      required
+                    />
                   )}
                   <label htmlFor={descId} className="text-sm font-semibold text-gray-700">Descripción del plato</label>
                   <input
