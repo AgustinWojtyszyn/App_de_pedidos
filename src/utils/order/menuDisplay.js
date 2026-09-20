@@ -304,17 +304,22 @@ const withEpseMenuItems = (items = []) => {
     return slotIndex >= 0 && slotIndex <= 3
   })
   const hyperproteicSource = indexedItems.find(isHyperproteicMenuItem)
-  const saladSource = indexedItems.find(isIgarretaIsemarSaladMenuItem)
-  const celiacSource = indexedItems.find(isIgarretaIsemarCeliacMenuItem)
-  const optionFiveSource = indexedItems.find((item, index) => {
-    const slotIndex = getMenuSlotIndex(item, index)
-    return slotIndex >= 5 &&
-      item !== saladSource &&
-      item !== celiacSource &&
-      !isHyperproteicMenuItem(item) &&
-      !isBlankNumberedMenuItem(item, index) &&
-      normalizeText(item?.description || stripMenuLabelText(item?.name))
-  })
+  const tailItems = indexedItems
+    .filter((item, index) => {
+      const slotIndex = getMenuSlotIndex(item, index)
+      return slotIndex >= 5 &&
+        !isHyperproteicMenuItem(item) &&
+        !isBlankNumberedMenuItem(item, index) &&
+        normalizeText(item?.description || stripMenuLabelText(item?.name))
+    })
+    .sort((a, b) => getMenuSlotIndex(a) - getMenuSlotIndex(b))
+    .slice(0, 3)
+    .map((item, index) => ({
+      ...item,
+      name: getMenuLabelByIndex(index + 5),
+      displayName: getMenuLabelByIndex(index + 5),
+      slotIndex: index + 5
+    }))
 
   return [
     ...mainAndFirstOptions,
@@ -324,24 +329,7 @@ const withEpseMenuItems = (items = []) => {
       displayName: getMenuLabelByIndex(4),
       slotIndex: 4
     }] : []),
-    ...(optionFiveSource ? [{
-      ...optionFiveSource,
-      name: getMenuLabelByIndex(5),
-      displayName: getMenuLabelByIndex(5),
-      slotIndex: 5
-    }] : []),
-    ...(saladSource ? [{
-      ...saladSource,
-      name: getMenuLabelByIndex(6),
-      displayName: getMenuLabelByIndex(6),
-      slotIndex: 6
-    }] : []),
-    ...(celiacSource ? [{
-      ...celiacSource,
-      name: getMenuLabelByIndex(7),
-      displayName: getMenuLabelByIndex(7),
-      slotIndex: 7
-    }] : [])
+    ...tailItems
   ]
 }
 
