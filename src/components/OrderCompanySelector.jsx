@@ -72,6 +72,7 @@ const OrderCompanySelector = ({ user, loading }) => {
       : getVisibleCompanyList({ includeAdminOnly: isAdmin })
     return source.filter((company) =>
       company.active !== false &&
+      company.slug !== 'distro_cuyo' &&
       (isAdmin || !company.adminOnly) &&
       !EXCLUDED_SELECTOR_COMPANY_NAMES.has(normalizeSelectorCompanyName(company.name))
     ).sort((a, b) => {
