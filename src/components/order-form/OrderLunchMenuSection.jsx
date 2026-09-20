@@ -33,7 +33,7 @@ const OrderLunchMenuSection = ({ items, selectedItems, onToggleItem, companySlug
           const isDisabled = (hasSelectedRefrigerio && !isRefrigerio) || (hasSelectedMenu && isRefrigerio)
           const { label, dish } = getMenuDisplay(item, Number.isFinite(item?.slotIndex) ? item.slotIndex : index, companySlug)
           const hyperproteicDish = isHyperproteic
-            ? dish.replace(/^hiperproteica\s*[·:\-]\s*/i, '').trim()
+            ? dish.replace(/^hiperproteica\s*[-·:]\s*/i, '').trim()
             : dish
           return (
             <button
