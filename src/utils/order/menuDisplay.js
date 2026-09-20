@@ -88,17 +88,18 @@ const HYPERPROTEIC_OPTION_SLOT_INDEX = 4
 const HYPERPROTEIC_OPTION_ID = 'hyperproteic-option-4'
 
 const isHyperproteicMenuItem = (item = {}) => {
-  const name = normalizeSlotTitle(item?.name)
-  const displayName = normalizeSlotTitle(item?.displayName)
-  return name === 'hiperproteica' ||
-    name === 'opción 4 - hiperproteica' ||
-    name === 'opcion 4 - hiperproteica' ||
-    displayName === 'opción 4 - hiperproteica' ||
-    displayName === 'opcion 4 - hiperproteica'
+  if (item?.id === HYPERPROTEIC_OPTION_ID || item?.isSyntheticHyperproteicOption === true) return true
+  const text = normalizeSlotTitle(`${item?.name || ''} ${item?.displayName || ''} ${item?.description || ''}`)
+  return text.includes('hiperprote')
 }
 
 const withHyperproteicOption4 = (items = []) => {
   const indexedItems = withMenuSlotIndex(items)
+  const hasPersistedHyperproteicOption = indexedItems.some(isHyperproteicMenuItem)
+  const hasLegacyOption4Collision = indexedItems.some((item, index) =>
+    !isHyperproteicMenuItem(item) && getMenuSlotIndex(item, index) === HYPERPROTEIC_OPTION_SLOT_INDEX
+  )
+  const shouldShiftLegacySlots = !hasPersistedHyperproteicOption || hasLegacyOption4Collision
   let hasHyperproteicOption = false
 
   const shiftedItems = indexedItems.map((item, index) => {
@@ -119,7 +120,12 @@ const withHyperproteicOption4 = (items = []) => {
     }
 
     const slotIndex = getMenuSlotIndex(item, index)
-    if (!Number.isFinite(slotIndex) || slotIndex < HYPERPROTEIC_OPTION_SLOT_INDEX || slotIndex >= 7) return item
+    if (
+      !shouldShiftLegacySlots ||
+      !Number.isFinite(slotIndex) ||
+      slotIndex < HYPERPROTEIC_OPTION_SLOT_INDEX ||
+      slotIndex >= 7
+    ) return item
 
     const displaySlotIndex = slotIndex + 1
     const rawName = normalizeText(item?.name)
@@ -256,6 +262,89 @@ const isIgarretaIsemarCeliacMenuItem = (item = {}) =>
 const isIgarretaIsemarSaladMenuItem = (item = {}) =>
   /ensalada/i.test(normalizeText(`${item?.name || ''} ${item?.displayName || ''} ${item?.description || ''}`))
 
+const isBlankNumberedMenuItem = (item = {}, fallbackIndex = null) => {
+  const slotIndex = getMenuSlotIndex(item, fallbackIndex)
+  const description = normalizeText(item?.description)
+  const name = normalizeText(item?.name)
+  if (!Number.isFinite(slotIndex) || slotIndex <= 0 || description) return false
+  return getSlotIndexFromTitle(name) === slotIndex && stripMenuLabelText(name) === ''
+}
+
+const stripMenuLabelText = (value = '') =>
+  normalizeText(value)
+    .replace(/^opci[oó]n\s*0?[1-7]\b\s*[:-]?\s*/i, '')
+    .replace(/^men[uú]\s+principal\b\s*[:-]?\s*/i, '')
+    .trim()
+
+const withStandardTailSlots = (items = []) =>
+  items.map((item) => {
+    if (isIgarretaIsemarSaladMenuItem(item)) {
+      return {
+        ...item,
+        name: getMenuLabelByIndex(6),
+        displayName: getMenuLabelByIndex(6),
+        slotIndex: 6
+      }
+    }
+    if (isIgarretaIsemarCeliacMenuItem(item)) {
+      return {
+        ...item,
+        name: getMenuLabelByIndex(7),
+        displayName: getMenuLabelByIndex(7),
+        slotIndex: 7
+      }
+    }
+    return item
+  })
+
+const withEpseMenuItems = (items = []) => {
+  const indexedItems = withMenuSlotIndex(items)
+  const mainAndFirstOptions = indexedItems.filter((item, index) => {
+    const slotIndex = getMenuSlotIndex(item, index)
+    return slotIndex >= 0 && slotIndex <= 3
+  })
+  const hyperproteicSource = indexedItems.find(isHyperproteicMenuItem)
+  const saladSource = indexedItems.find(isIgarretaIsemarSaladMenuItem)
+  const celiacSource = indexedItems.find(isIgarretaIsemarCeliacMenuItem)
+  const optionFiveSource = indexedItems.find((item, index) => {
+    const slotIndex = getMenuSlotIndex(item, index)
+    return slotIndex >= 5 &&
+      item !== saladSource &&
+      item !== celiacSource &&
+      !isHyperproteicMenuItem(item) &&
+      !isBlankNumberedMenuItem(item, index) &&
+      normalizeText(item?.description || stripMenuLabelText(item?.name))
+  })
+
+  return [
+    ...mainAndFirstOptions,
+    ...(hyperproteicSource ? [{
+      ...hyperproteicSource,
+      name: 'Opción 4 - Hiperproteica',
+      displayName: getMenuLabelByIndex(4),
+      slotIndex: 4
+    }] : []),
+    ...(optionFiveSource ? [{
+      ...optionFiveSource,
+      name: getMenuLabelByIndex(5),
+      displayName: getMenuLabelByIndex(5),
+      slotIndex: 5
+    }] : []),
+    ...(saladSource ? [{
+      ...saladSource,
+      name: getMenuLabelByIndex(6),
+      displayName: getMenuLabelByIndex(6),
+      slotIndex: 6
+    }] : []),
+    ...(celiacSource ? [{
+      ...celiacSource,
+      name: getMenuLabelByIndex(7),
+      displayName: getMenuLabelByIndex(7),
+      slotIndex: 7
+    }] : [])
+  ]
+}
+
 const isBifePolloMenuItem = (item = {}) =>
   /bife\s+de\s+pollo/i.test(normalizeText(`${item?.name || ''} ${item?.displayName || ''} ${item?.description || ''}`))
 
@@ -357,8 +446,14 @@ const filterOrderableMenuItems = (items = [], companySlug = '') => {
   if (safeItems.length === 0) return []
 
   const menuWithHyperproteicOption = withHyperproteicOption4(safeItems)
+  const normalizedCompanySlug = normalizeCompanySlug(companySlug)
+  const companyMenuItems = isIgarretaIsemarCompany(companySlug)
+    ? withIgarretaIsemarMenuItems(menuWithHyperproteicOption)
+    : normalizedCompanySlug === HIDDEN_ORDER_MENU_COMPANY_SLUG
+      ? withEpseMenuItems(menuWithHyperproteicOption)
+      : withStandardTailSlots(menuWithHyperproteicOption)
 
-  return (isIgarretaIsemarCompany(companySlug) ? withIgarretaIsemarMenuItems(menuWithHyperproteicOption) : menuWithHyperproteicOption)
+  return companyMenuItems
     .filter((item, index) => {
       if (isDuplicateFixedBifePollo(item, companySlug, index)) return false
       if (isIgarretaIsemarCompany(companySlug)) return !isHiddenIgarretaMenuSlot(item, index) && isMenuItemEnabledForCompany(item, companySlug, index)
