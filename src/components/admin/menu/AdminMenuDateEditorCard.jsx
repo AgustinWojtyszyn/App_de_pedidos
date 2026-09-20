@@ -1,6 +1,7 @@
 import { Edit3, Plus, Save, Trash2, X } from 'lucide-react'
 import LoadingState from '../../ui/LoadingState'
 import { formatDateLabel } from '../../../utils/admin/adminMenuSectionFormatters'
+import { isHyperproteicMenuItem } from '../../../utils/order/menuDisplay'
 
 const AdminMenuDateEditorCard = ({
   menuDate,
@@ -98,14 +99,22 @@ const AdminMenuDateEditorCard = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {menuItems.map((item, index) => (
-              <div key={item.id || index} className="border-2 border-gray-200 rounded-lg p-4 bg-white hover:border-primary-300 transition-colors">
-                <h4 className="font-bold text-gray-900 mb-2 text-base">{item.name}</h4>
-                {item.description && (
-                  <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
-                )}
-              </div>
-            ))}
+            {menuItems.map((item, index) => {
+              const isHyperproteic = isHyperproteicMenuItem(item)
+              return (
+                <div key={item.id || index} className="border-2 border-gray-200 rounded-lg p-4 bg-white hover:border-primary-300 transition-colors">
+                  <h4 className="font-bold text-gray-900 mb-2 text-base">
+                    {isHyperproteic ? 'Opción 4 · Hiperproteica' : item.name}
+                  </h4>
+                  {item.description && (
+                    <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
+                  )}
+                  {isHyperproteic && !item.description && (
+                    <p className="text-sm text-gray-500 leading-relaxed">Descripción pendiente.</p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )
       ) : (
@@ -151,43 +160,65 @@ const AdminMenuDateEditorCard = ({
           {draftItems.map((item, index) => {
             const nameId = `menu-item-name-${menuDate}-${index}`
             const descId = `menu-item-description-${menuDate}-${index}`
+            const isHyperproteic = isHyperproteicMenuItem(item)
             return (
               <div key={index} className="border-2 border-gray-200 rounded-xl bg-white p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
                     {index + 1}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveMenuItem(menuDate, index)}
-                    className="ml-auto p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors shrink-0"
-                    title="Eliminar plato"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
+                  {isHyperproteic ? (
+                    <span className="ml-auto rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-black text-blue-800">
+                      Opción fija
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveMenuItem(menuDate, index)}
+                      className="ml-auto p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors shrink-0"
+                      title="Eliminar plato"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  )}
                 </div>
                 <div className="space-y-3">
                   <label htmlFor={nameId} className="text-sm font-semibold text-gray-700">Título del menú</label>
-                  <input
-                    id={nameId}
-                    name={nameId}
-                    type="text"
-                    placeholder="Ej: Menú principal u Opción 1"
-                    value={item.name}
-                    onChange={(e) => onMenuItemChange(menuDate, index, 'name', e.target.value)}
-                    className="input-field font-semibold text-base bg-white text-gray-900 w-full"
-                    required
-                  />
+                  {isHyperproteic ? (
+                    <div
+                      id={nameId}
+                      className="input-field font-semibold text-base bg-blue-50 text-gray-900 w-full border-blue-200"
+                      aria-label="Opción 4 Hiperproteica"
+                    >
+                      Opción 4 · Hiperproteica
+                    </div>
+                  ) : (
+                    <input
+                      id={nameId}
+                      name={nameId}
+                      type="text"
+                      placeholder="Ej: Menú principal u Opción 1"
+                      value={item.name}
+                      onChange={(e) => onMenuItemChange(menuDate, index, 'name', e.target.value)}
+                      className="input-field font-semibold text-base bg-white text-gray-900 w-full"
+                      required
+                    />
+                  )}
                   <label htmlFor={descId} className="text-sm font-semibold text-gray-700">Descripción del plato</label>
                   <input
                     id={descId}
                     name={descId}
                     type="text"
-                    placeholder="Descripción (opcional)"
+                    placeholder={isHyperproteic ? 'Ej: Pechuga de pollo con guarnición proteica' : 'Descripción (opcional)'}
                     value={item.description}
                     onChange={(e) => onMenuItemChange(menuDate, index, 'description', e.target.value)}
                     className="input-field text-sm bg-white text-gray-900 w-full"
                   />
+                  {isHyperproteic && (
+                    <p className="text-xs font-semibold text-blue-700">
+                      La descripción es editable; esta opción permanece fija como Opción 4 y desplaza las opciones siguientes.
+                    </p>
+                  )}
                 </div>
               </div>
             )

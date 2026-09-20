@@ -41,6 +41,12 @@ describe('synthetic menu fallback guard', () => {
     }
 
     expect(isSyntheticFallbackMenuItem(realRow)).toBe(false)
-    expect(filterOrderableMenuItems([realRow], 'greif')).toEqual([realRow])
+    const result = filterOrderableMenuItems([realRow], 'greif')
+    expect(result[0]).toMatchObject(realRow)
+    expect(result[1]).toMatchObject({
+      id: 'hyperproteic-option-4',
+      slotIndex: 4,
+      isSyntheticHyperproteicOption: true
+    })
   })
 })

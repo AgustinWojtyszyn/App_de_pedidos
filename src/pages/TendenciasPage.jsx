@@ -116,7 +116,9 @@ const TendenciasPage = () => {
       'opción 5': '#0ea5e9',
       'opcion 5': '#0ea5e9',
       'opción 6': '#14b8a6',
-      'opcion 6': '#14b8a6'
+      'opcion 6': '#14b8a6',
+      'opción 7': '#64748b',
+      'opcion 7': '#64748b'
     }
     return (menuRanking.items || []).map((item) => {
       const key = (item?.label || '').toLowerCase()

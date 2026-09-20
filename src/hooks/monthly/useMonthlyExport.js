@@ -24,6 +24,7 @@ const SUMMARY_COLUMNS = [
   { header: 'OPCIÓN 4', key: 'OPCIÓN 4', width: 12 },
   { header: 'OPCIÓN 5', key: 'OPCIÓN 5', width: 12 },
   { header: 'OPCIÓN 6', key: 'OPCIÓN 6', width: 12 },
+  { header: 'OPCIÓN 7', key: 'OPCIÓN 7', width: 12 },
   { header: 'Total opciones de almuerzo', key: 'Total opciones de almuerzo', width: 26 },
   { header: 'Guarniciones reales', key: 'Guarniciones reales', width: 20 },
   { header: 'Bebidas de almuerzo', key: 'Bebidas de almuerzo', width: 20 },

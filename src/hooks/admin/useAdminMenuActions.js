@@ -6,6 +6,7 @@ import { notifyError, notifyInfo, notifySuccess } from '../../utils/notice'
 import { confirmAction } from '../../utils/confirm'
 import { Sound } from '../../utils/Sound'
 import { mapMenuError } from '../../utils/menu/menuErrorMapper'
+import { isHyperproteicMenuItem } from '../../utils/order/menuDisplay'
 
 const logAdminMenuError = (...args) => {
   if (import.meta.env.DEV) console.error(...args)
@@ -162,8 +163,9 @@ const useAdminMenuActions = ({
 
   const addMenuItem = (menuDate) => {
     const current = draftMenuItemsByDate[menuDate] || []
-    const nextIndex = current.length
-    const optionsCount = Math.max(current.length - 1, 0)
+    const menuItemsWithoutHyperproteic = current.filter(item => !isHyperproteicMenuItem(item))
+    const nextIndex = menuItemsWithoutHyperproteic.length
+    const optionsCount = Math.max(menuItemsWithoutHyperproteic.length - 1, 0)
     const nextName = nextIndex === 0 ? 'Menú principal' : `Opción ${optionsCount + 1}`
     setDraftItemsForDate(menuDate, [...current, { name: nextName, description: '' }])
   }
@@ -175,6 +177,10 @@ const useAdminMenuActions = ({
       return
     }
     const item = current[index]
+    if (isHyperproteicMenuItem(item)) {
+      notifyInfo('La Opción 4 Hiperproteica es fija. Podés editar su descripción.')
+      return
+    }
     if (item?.id) {
       const confirmed = await confirmAction({
         title: 'Eliminar plato',

@@ -100,7 +100,7 @@ export const createAnalyticsService = ({ supabase } = {}) => {
           total_items: 0,
           total_amount: 0,
           menus_principales: 0,
-          opciones: { 'OPCIÓN 1': 0, 'OPCIÓN 2': 0, 'OPCIÓN 3': 0, 'OPCIÓN 4': 0, 'OPCIÓN 5': 0, 'OPCIÓN 6': 0 },
+          opciones: { 'OPCIÓN 1': 0, 'OPCIÓN 2': 0, 'OPCIÓN 3': 0, 'OPCIÓN 4': 0, 'OPCIÓN 5': 0, 'OPCIÓN 6': 0, 'OPCIÓN 7': 0 },
           tipos_guarniciones: {},
           total_opciones: 0,
           total_guarniciones: 0

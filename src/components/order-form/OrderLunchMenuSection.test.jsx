@@ -31,36 +31,39 @@ const textBetween = (html, from, to) => {
 }
 
 describe('OrderLunchMenuSection', () => {
-  it.each(['isemar', 'igarreta'])('renders %s with continuous semantic slots and only removes Bife del día', (companySlug) => {
+  it.each(['isemar', 'igarreta'])('renders %s with Hiperproteica 4 and shifts the remaining visible slots', (companySlug) => {
     const html = renderLunchMenu(companySlug)
     const option1 = textBetween(html, 'Opción 1', 'Opción 2')
     const option2 = textBetween(html, 'Opción 2', 'Opción 3')
     const option3 = textBetween(html, 'Opción 3', 'Opción 4')
     const option4 = textBetween(html, 'Opción 4', 'Opción 5')
-    const option5 = html.slice(html.indexOf('Opción 5'))
+    const option5 = textBetween(html, 'Opción 5', 'Opción 6')
+    const option6 = html.slice(html.indexOf('Opción 6'))
 
     expect(option1).toContain('BIFE DE CARNE CON PURE DE CALABAZA')
     expect(option2).toContain('OMELETTE DE ESPINACA RELLENO CON PURE DE PAPAS')
     expect(option3).toContain('TARTA PASCUALINA')
-    expect(option4).toContain('ENSALADA MIX DE HOJAS')
-    expect(option5).toContain('Celíaco')
+    expect(option4).toContain('Hiperproteica')
+    expect(option5).toContain('ENSALADA MIX DE HOJAS')
+    expect(option6).toContain('Celíaco')
+    expect((html.match(/Hiperproteica/g) || [])).toHaveLength(1)
     expect((html.match(/Celíaco/g) || [])).toHaveLength(1)
-    expect(option4).not.toContain('BIFE DE CARNE')
-    expect(option3).not.toContain('ENSALADA MIX DE HOJAS')
-    expect(option4).not.toContain('Celíaco')
+    expect(option5).not.toContain('BIFE DE CARNE')
     expect(html.indexOf('Opción 1')).toBeLessThan(html.indexOf('Opción 2'))
     expect(html.indexOf('Opción 2')).toBeLessThan(html.indexOf('Opción 3'))
     expect(html.indexOf('Opción 3')).toBeLessThan(html.indexOf('Opción 4'))
     expect(html.indexOf('Opción 4')).toBeLessThan(html.indexOf('Opción 5'))
+    expect(html.indexOf('Opción 5')).toBeLessThan(html.indexOf('Opción 6'))
   })
 
-  it('keeps regular company rendering unchanged', () => {
-    const html = renderLunchMenu('laja', sourceMenu)
+  it('renders Hiperproteica as option 4 and shifts Bife to option 5 for a regular company', () => {
+    const html = renderLunchMenu('laja')
 
     expect(textBetween(html, 'Opción 1', 'Opción 2')).toContain('BIFE DE CARNE CON PURE DE CALABAZA')
     expect(textBetween(html, 'Opción 3', 'Opción 4')).toContain('TARTA PASCUALINA')
-    expect(textBetween(html, 'Opción 4', 'Opción 5')).toContain('BIFE DE CARNE')
-    expect(textBetween(html, 'Opción 5', 'Opción 6')).toContain('ENSALADA MIX DE HOJAS')
-    expect(html.slice(html.indexOf('Opción 6'))).toContain('CELIACO')
+    expect(textBetween(html, 'Opción 4', 'Opción 5')).toContain('Hiperproteica')
+    expect(textBetween(html, 'Opción 5', 'Opción 6')).toContain('Bife de pollo')
+    expect(textBetween(html, 'Opción 6', 'Opción 7')).toContain('ENSALADA MIX DE HOJAS')
+    expect(html.slice(html.indexOf('Opción 7'))).toContain('CELIACO')
   })
 })
