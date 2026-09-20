@@ -77,11 +77,12 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     deliveryLocationsByLocation
   } = useOrderCompany()
 
-  const effectiveLunchMenuItems = useMemo(() => (
-    rawCompanySlug === 'epse'
-      ? filterOrderableMenuItems(menuItems, companyConfig || rawCompanySlug)
+  const effectiveLunchMenuItems = useMemo(() => {
+    const resolvedCompanySlug = (companyConfig?.slug || rawCompanySlug || '').toString().trim().toLowerCase()
+    return resolvedCompanySlug === 'epse'
+      ? filterOrderableMenuItems(menuItems, companyConfig || resolvedCompanySlug)
       : menuItems
-  ), [companyConfig, menuItems, rawCompanySlug])
+  }, [companyConfig, menuItems, rawCompanySlug])
 
   const selectedLocationRow = useMemo(
     () => (authorizedLocationRows || []).find((row) => row?.name === formData.location),
