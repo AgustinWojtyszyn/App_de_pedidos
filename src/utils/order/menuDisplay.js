@@ -329,6 +329,38 @@ const isDuplicateFixedBifePollo = (item = {}, companySlug = '', fallbackIndex = 
   getMenuSlotIndex(item, fallbackIndex) !== FIXED_BIFE_POLLO_SLOT_INDEX &&
   isBifePolloMenuItem(item)
 
+const dedupeCompanyMenuSlots = (items = [], companySlug = '') => {
+  const normalizedCompanySlug = normalizeCompanySlug(companySlug)
+  const seenSlots = new Set()
+  const ordered = []
+
+  ;(items || []).forEach((item, index) => {
+    const slotIndex = getMenuSlotIndex(item, index)
+    if (!Number.isFinite(slotIndex)) {
+      ordered.push(item)
+      return
+    }
+
+    if (seenSlots.has(slotIndex)) return
+    seenSlots.add(slotIndex)
+    ordered.push(item)
+  })
+
+  if (!FIXED_BIFE_POLLO_COMPANY_SLUGS.has(normalizedCompanySlug)) return ordered
+
+  return ordered.map((item, index) => {
+    const slotIndex = getMenuSlotIndex(item, index)
+    if (slotIndex !== FIXED_BIFE_POLLO_SLOT_INDEX) return item
+    return {
+      ...item,
+      name: getMenuLabelByIndex(FIXED_BIFE_POLLO_SLOT_INDEX),
+      displayName: getMenuLabelByIndex(FIXED_BIFE_POLLO_SLOT_INDEX),
+      description: FIXED_BIFE_POLLO_DISH,
+      slotIndex: FIXED_BIFE_POLLO_SLOT_INDEX
+    }
+  })
+}
+
 const withIgarretaIsemarMenuItem = (item = {}, fallbackIndex = null) => {
   const slotIndex = getMenuSlotIndex(item, fallbackIndex)
   if (slotIndex !== IGARRETA_ISEMAR_LAST_MENU_SLOT_INDEX) return item
@@ -428,12 +460,14 @@ const filterOrderableMenuItems = (items = [], companySlug = '') => {
       ? normalizeEpseMenuItems(menuWithHyperproteicOption)
       : menuWithHyperproteicOption
 
-  return companyMenuItems
+  const filteredCompanyMenuItems = companyMenuItems
     .filter((item, index) => {
       if (isDuplicateFixedBifePollo(item, companySlug, index)) return false
       if (isIgarretaIsemarCompany(companySlug)) return !isHiddenIgarretaMenuSlot(item, index) && isMenuItemEnabledForCompany(item, companySlug, index)
       return !isHiddenOrderMenuSlot(item, companySlug) && isMenuItemEnabledForCompany(item, companySlug, index)
     })
+
+  return dedupeCompanyMenuSlots(filteredCompanyMenuItems, companySlug)
     .map((item, index) => withCompanyMenuDisplay(item, companySlug, index))
 }
 
@@ -453,6 +487,7 @@ export {
   isSyntheticFallbackMenuItem,
   isHiddenOrderMenuSlot,
   isHyperproteicMenuItem,
+  dedupeCompanyMenuSlots,
   withHyperproteicOption4,
   withMenuSlotIndex,
   isMainMenuSlot
