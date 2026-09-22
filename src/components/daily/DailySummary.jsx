@@ -5,6 +5,7 @@ const DailySummary = ({
   mode,
   stats,
   printStats,
+  operationalSplit,
   tomorrowLabel,
   operationalSummary,
   sortedOrdersLength,
@@ -12,6 +13,11 @@ const DailySummary = ({
   locationCards
 }) => {
   const safeLocationCards = Array.isArray(locationCards) ? locationCards.filter(Boolean) : []
+  const safeOperationalSplit = operationalSplit || {
+    base: { units: Math.max(Number(stats?.total || 0) - Number(stats?.postReportExtra || 0), 0) },
+    postReportExtras: { units: Number(stats?.postReportExtra || 0) },
+    total: { units: Number(stats?.total || 0) }
+  }
   const locationKey = safeLocationCards
     .map(card => `${card.location || 'Sin ubicación'}:${card.total || 0}`)
     .join('|')
@@ -45,6 +51,24 @@ const DailySummary = ({
       <div className="print-only mb-4">
         <h2 className="text-lg font-black mb-1">📋 Resumen estadístico para PDF</h2>
         <p className="text-[12px] text-gray-700 mb-2">Entrega: {tomorrowLabel}</p>
+
+        <h3 className="text-sm font-bold text-gray-900 mb-1">Resumen operativo</h3>
+        <table className="print-table text-[11px] mb-2 print-block">
+          <tbody>
+            <tr>
+              <td>Base</td>
+              <td className="text-right">{safeOperationalSplit.base.units} viandas</td>
+            </tr>
+            <tr>
+              <td>Extras post reporte</td>
+              <td className="text-right">{safeOperationalSplit.postReportExtras.units} viandas</td>
+            </tr>
+            <tr>
+              <td><strong>Total operativo</strong></td>
+              <td className="text-right"><strong>{safeOperationalSplit.total.units} viandas</strong></td>
+            </tr>
+          </tbody>
+        </table>
 
         <h3 className="text-sm font-bold text-gray-900 mb-1">Viandas por empresa</h3>
         <table className="print-table text-[11px] mb-2 print-block">

@@ -228,6 +228,7 @@ const DailyOrders = ({ user, loading }) => {
           mode="print"
           stats={stats}
           printStats={printStats}
+          operationalSplit={operationalSplit}
           tomorrowLabel={deliveryDateLabel}
         />
 

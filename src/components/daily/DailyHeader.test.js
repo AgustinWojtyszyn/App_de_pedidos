@@ -65,16 +65,16 @@ const getQuickButton = (tree, label) => {
 }
 
 describe('DailyHeader delivery date selector', () => {
-  it('muestra cierre, extras del día y total a preparar en viandas', () => {
+  it('muestra base, extras post reporte y total operativo en viandas', () => {
     const tree = DailyHeader(baseProps)
     const content = textFromChildren(tree)
 
-    expect(content).toContain('Pedidos del cierre5viandas del cierre anterior')
-    expect(content).toContain('Pedidos extra del día5viandas agregadas después del cierre')
-    expect(content).toContain('Total a preparar10viandas para cocina')
+    expect(content).toContain('Base5viandas incluidas en el cierre')
+    expect(content).toContain('Extras post reporte5viandas agregadas después del reporte')
+    expect(content).toContain('Total operativo10base + extras para cocina')
   })
 
-  it('antes del reporte usa Pedidos cargados en vez de Pedidos del cierre', () => {
+  it('antes del reporte mantiene Base y aclara que todavía no hubo cierre', () => {
     const tree = DailyHeader({
       ...baseProps,
       dailyCloseStatus: {
@@ -84,8 +84,8 @@ describe('DailyHeader delivery date selector', () => {
     })
     const content = textFromChildren(tree)
 
-    expect(content).toContain('Pedidos cargados5viandas cargadas para esta entrega')
-    expect(content).not.toContain('Pedidos del cierre5')
+    expect(content).toContain('Base5viandas cargadas antes del reporte')
+    expect(content).not.toContain('viandas incluidas en el cierre')
   })
 
   it('refreshes with the existing callback and disables refresh while loading', () => {

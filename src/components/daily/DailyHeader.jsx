@@ -40,8 +40,9 @@ const DailyHeader = ({
     total: { units: Number(stats?.total || 0) }
   }
   const reportAlreadySent = dailyCloseStatus?.reportStatus?.state === 'sent'
-  const baseMetricLabel = reportAlreadySent ? 'Pedidos del cierre' : 'Pedidos cargados'
-  const baseMetricDetail = reportAlreadySent ? 'viandas del cierre anterior' : 'viandas cargadas para esta entrega'
+  const baseMetricDetail = reportAlreadySent
+    ? 'viandas incluidas en el cierre'
+    : 'viandas cargadas antes del reporte'
 
   const quickDates = [
     { label: 'Día anterior', value: previousDay },
@@ -82,9 +83,9 @@ const DailyHeader = ({
       </div>
       <div className="daily-metrics">
         {[
-          { label: baseMetricLabel, value: safeOperationalSplit.base.units, kind: 'archived', detail: baseMetricDetail },
-          { label: 'Pedidos extra del día', value: safeOperationalSplit.postReportExtras.units, kind: 'extra', detail: 'viandas agregadas después del cierre' },
-          { label: 'Total a preparar', value: safeOperationalSplit.total.units, kind: 'total', detail: 'viandas para cocina' },
+          { label: 'Base', value: safeOperationalSplit.base.units, kind: 'archived', detail: baseMetricDetail },
+          { label: 'Extras post reporte', value: safeOperationalSplit.postReportExtras.units, kind: 'extra', detail: 'viandas agregadas después del reporte' },
+          { label: 'Total operativo', value: safeOperationalSplit.total.units, kind: 'total', detail: 'base + extras para cocina' },
           { label: 'Pendientes', value: stats.pending, kind: 'pending', detail: 'viandas por archivar' },
           { label: 'Ubicaciones activas', value: activeLocationsCount, kind: 'locations', detail: 'puntos de entrega' }
         ].map(metric => (

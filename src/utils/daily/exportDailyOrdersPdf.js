@@ -97,9 +97,9 @@ export function exportDailyOrdersPdf(sortedOrders) {
           <h1>Pedidos diarios</h1>
           <h2>Fecha de generación: ${today} · Entrega: ${deliveryDateLabel}</h2>
           <div class="meta">
-            Pedidos del cierre: <strong>${operationalSplit.base.units} viandas</strong> ·
-            Pedidos extra del día: <strong>${operationalSplit.postReportExtras.units} viandas</strong> ·
-            Total a preparar: <strong>${operationalSplit.total.units} viandas</strong>
+            Base: <strong>${operationalSplit.base.units} viandas</strong> ·
+            Extras post reporte: <strong>${operationalSplit.postReportExtras.units} viandas</strong> ·
+            Total operativo: <strong>${operationalSplit.total.units} viandas</strong>
           </div>
 
           <h2>Resumen por turno</h2>
