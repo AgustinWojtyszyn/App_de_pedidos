@@ -29,6 +29,7 @@ export const useAuth = () => {
   const roleRequestIdRef = useRef(0)
   const mountedRef = useRef(true)
   const refreshInFlightRef = useRef(null)
+  const authenticatedUserIdRef = useRef(null)
 
   const logRoleDebug = useCallback((...args) => {
     if (import.meta.env.DEV) {
@@ -233,12 +234,14 @@ export const useAuth = () => {
             return
           }
 
+          authenticatedUserIdRef.current = currentUser.id
           setUser(currentUser)
           setSession(session)
           setTelemetryAuthState({ initialized: true, session, user: currentUser })
           setLoading(false)
           validateUserRole(currentUser)
         } else {
+          authenticatedUserIdRef.current = null
           roleRequestIdRef.current += 1
           setUser(null)
           setSession(null)
@@ -256,6 +259,7 @@ export const useAuth = () => {
         }
       } catch (error) {
         console.error('Error initializing auth:', error)
+        authenticatedUserIdRef.current = null
         roleRequestIdRef.current += 1
         setUser(null)
         setSession(null)
@@ -281,12 +285,32 @@ export const useAuth = () => {
         console.log('[Auth] onAuthStateChange', event, nextSession ? 'has session' : 'no session')
       }
       if (event === 'SIGNED_IN' && nextSession?.access_token && nextSession?.user) {
-        setUser(nextSession.user)
+        const nextUserId = nextSession.user.id || null
+        const isSameAuthenticatedUser = Boolean(
+          nextUserId && authenticatedUserIdRef.current === nextUserId
+        )
+
         setSession(nextSession)
         setTelemetryAuthState({ initialized: true, session: nextSession, user: nextSession.user })
         setLoading(false)
-        validateUserRole(nextSession.user)
+
+        // Supabase can emit SIGNED_IN again when the browser tab regains focus.
+        // Revalidating permissions in that case temporarily replaces protected routes
+        // with the permissions loader and unmounts local UI state (drafts/modals).
+        if (!isSameAuthenticatedUser) {
+          authenticatedUserIdRef.current = nextUserId
+          setUser(nextSession.user)
+          validateUserRole(nextSession.user)
+        }
+      } else if (event === 'TOKEN_REFRESHED' && nextSession?.access_token) {
+        setSession(nextSession)
+        setTelemetryAuthState({
+          initialized: true,
+          session: nextSession,
+          user: nextSession.user || null
+        })
       } else if (event === 'SIGNED_OUT') {
+        authenticatedUserIdRef.current = null
         roleRequestIdRef.current += 1
         setUser(null)
         setSession(null)
