@@ -632,7 +632,7 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
   })
 
   const deliveryDateISO = rows.find((row) => row.fechaEntregaISO)?.fechaEntregaISO || ''
-  const operationalSplit = buildExportOperationalSplit(orders)
+  const operationalSplit = buildDailyOperationalSplit(orders)
   const exportOperationalSplit = buildExportOperationalSplit(orders)
 
   return {
@@ -798,7 +798,7 @@ export const formatDailyOrdersOperationalText = (orders = [], selectedStatus = '
 
 export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pending') => {
   const summary = buildWhatsAppLocationMenuSummary(orders, selectedStatus)
-  const operationalSplit = buildDailyOperationalSplit(orders)
+  const operationalSplit = buildExportOperationalSplit(orders)
   const additionalByLocation = new Map(
     buildDailyOrdersSummary(orders, selectedStatus).additionalByLocation.map((location) => [
       location.label,
