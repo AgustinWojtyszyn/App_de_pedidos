@@ -69,15 +69,9 @@ const OrderLunchMenuSection = ({ items, selectedItems, onToggleItem, companySlug
                   {isHyperproteic ? `💪 ${label} · Hiperproteica` : label}
                 </h3>
 
-                {isHyperproteic && (
-                  <p className="mb-3 text-sm font-bold text-orange-700">
-                    ✨ Nueva alternativa hiperproteica
-                  </p>
-                )}
-
-                {hyperproteicDish && (
-                  <p className={`${isHyperproteic ? 'text-lg text-gray-900 font-semibold' : 'text-lg text-gray-800 font-medium'} leading-snug`}>
-                    {hyperproteicDish}
+                {dish && (
+                  <p className="text-lg text-gray-800 leading-snug font-medium">
+                    {dish}
                   </p>
                 )}
               </div>
