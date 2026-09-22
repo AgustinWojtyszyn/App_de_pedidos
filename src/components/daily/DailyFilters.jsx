@@ -31,7 +31,7 @@ const DailyFilters = ({
           onChange={(e) => onLocationChange(e.target.value)}
           className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="all">Todas ({stats.total})</option>
+          <option value="all">Todas · {stats.total} viandas</option>
           {locations.map(location => (
             <option key={location} value={location}>
               {location} ({stats.byLocation[location] || 0})

@@ -58,7 +58,7 @@ const DailyOrdersTable = ({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-xl font-black text-slate-900">
-              Pedidos del día ({safeSortedOrders.length})
+              Detalle de pedidos ({safeSortedOrders.length})
             </h3>
             <p className="text-sm font-semibold text-slate-600">
               Orden: {
