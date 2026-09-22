@@ -185,6 +185,59 @@ describe('daily orders export model', () => {
     expect(row['Menú elegido']).toBe('Opción 1 - SORRENTINOS DE JAMON Y QUESO CON SALSA MIXTA (x3)')
   })
 
+  it('mantiene cantidades de guarniciones en el Excel de pedidos extra', () => {
+    const order = {
+      ...baseOrder,
+      id: 'admin-extra-sides',
+      order_origin: 'admin_extra',
+      total_items: 5,
+      items: [
+        { id: 'op1', name: 'Opción 1 - Pollo', quantity: 5 }
+      ],
+      custom_responses: [
+        {
+          title: 'Guarnición',
+          response: ['Puré', 'Puré', 'Puré', 'Verduras', 'Verduras'],
+          quantities: { Puré: 3, Verduras: 2 },
+          itemId: 'op1'
+        }
+      ]
+    }
+
+    const [row] = buildDailyOrdersExcelDetailRows([order])
+
+    expect(row.Guarniciones).toBe('Puré (x3), Verduras (x2)')
+  })
+
+  it('mantiene cantidades de bebidas y postres en el Excel de pedidos extra', () => {
+    const order = {
+      ...baseOrder,
+      id: 'admin-extra-drinks-desserts',
+      order_origin: 'admin_extra',
+      total_items: 5,
+      items: [
+        { name: 'Opción 1 - Pollo', quantity: 5 }
+      ],
+      custom_responses: [
+        {
+          title: 'Bebida',
+          response: ['Coca Cola', 'Coca Cola', 'Agua', 'Agua', 'Agua'],
+          quantities: { 'Coca Cola': 2, Agua: 3 }
+        },
+        {
+          title: 'Postre',
+          response: ['Flan', 'Flan', 'Fruta', 'Fruta', 'Fruta'],
+          quantities: { Flan: 2, Fruta: 3 }
+        }
+      ]
+    }
+
+    const [row] = buildDailyOrdersExcelDetailRows([order])
+
+    expect(row.Bebidas).toBe('Coca Cola (x2), Agua (x3)')
+    expect(row.Postres).toBe('Flan (x2), Fruta (x3)')
+  })
+
   it('muestra correo como creador cuando un pedido extra no tiene nombre de admin', () => {
     const extraOrder = {
       ...baseOrder,
