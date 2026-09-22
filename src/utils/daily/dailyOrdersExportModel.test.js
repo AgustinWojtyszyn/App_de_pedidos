@@ -159,14 +159,30 @@ describe('daily orders export model', () => {
     expect(row.Email).toBe('claudia@servifood.com')
     expect(summary.rows[0].cliente).toBe('Solicitado por Claudia Sarmiento')
     expect(summary.rows[0].email).toBe('claudia@servifood.com')
-    expect(row['Menú elegido']).toContain('Opción 1 - BIDE DEL DIA')
-    expect(row['Menú elegido']).toContain('Opción 2 - Pollo')
+    expect(row['Menú elegido']).toBe('Opción 1 - BIDE DEL DIA (x3); Opción 2 - Pollo (x2)')
     expect(summary.rows[0].bebida).toBe('Coca Cola (x2)')
     expect(summary.rows[0].postre).toBe('Flan (x2), Fruta (x3)')
     expect(row).not.toHaveProperty('Respuestas personalizadas')
     expect(whatsapp).toContain('Pedidos del cierre: 0 viandas')
     expect(whatsapp).toContain('Pedidos extra del día: 5 viandas')
     expect(whatsapp).toContain('TOTAL A PREPARAR: 5 viandas')
+  })
+
+  it('muestra la cantidad en Menú elegido cuando una carga administrativa repite el mismo menú', () => {
+    const order = {
+      ...baseOrder,
+      id: 'admin-extra-quantity',
+      order_origin: 'admin_extra',
+      total_items: 3,
+      items: [
+        { name: 'Opción 1 - SORRENTINOS DE JAMON Y QUESO CON SALSA MIXTA', quantity: 3 }
+      ],
+      custom_responses: []
+    }
+
+    const [row] = buildDailyOrdersExcelDetailRows([order])
+
+    expect(row['Menú elegido']).toBe('Opción 1 - SORRENTINOS DE JAMON Y QUESO CON SALSA MIXTA (x3)')
   })
 
   it('muestra correo como creador cuando un pedido extra no tiene nombre de admin', () => {
