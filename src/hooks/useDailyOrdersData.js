@@ -41,6 +41,7 @@ export const useDailyOrdersData = (user) => {
   })
   const requestSequenceRef = useRef(0)
   const loadingRequestRef = useRef(null)
+  const userId = user?.id || ''
   const hasAdminAccess = isGlobalAdmin || isCompanyAdmin
 
   const fetchDailyReportRunStatus = useCallback(async (reportDate, requestId = null) => {
@@ -69,7 +70,7 @@ export const useDailyOrdersData = (user) => {
   }, [])
 
   const fetchDailyOrders = useCallback(async (silent = false, deliveryDate = operationalDate) => {
-    if (!user?.id) return []
+    if (!userId) return []
 
     const requestId = ++requestSequenceRef.current
     const isLatestRequest = () => requestId === requestSequenceRef.current
@@ -186,10 +187,10 @@ export const useDailyOrdersData = (user) => {
       }
     }
     return []
-  }, [fetchDailyReportRunStatus, operationalDate, user])
+  }, [fetchDailyReportRunStatus, operationalDate, userId])
 
   useEffect(() => {
-    if (!user?.id || !hasAdminAccess) return
+    if (!userId || !hasAdminAccess) return
 
     fetchDailyOrders()
 
@@ -219,7 +220,7 @@ export const useDailyOrdersData = (user) => {
         document.removeEventListener('visibilitychange', handleVisibilityChange)
       }
     }
-  }, [hasAdminAccess, operationalDate, user?.id, fetchDailyOrders])
+  }, [hasAdminAccess, operationalDate, userId, fetchDailyOrders])
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
