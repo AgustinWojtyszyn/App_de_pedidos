@@ -238,6 +238,58 @@ describe('daily orders export model', () => {
     expect(row.Postres).toBe('Flan (x2), Fruta (x3)')
   })
 
+  it('reconstruye nombres completos, limpia guarniciones y cuenta admin_extra en el resumen exportado', () => {
+    const order = {
+      ...baseOrder,
+      id: 'admin-extra-export-regression',
+      order_origin: 'admin_extra',
+      status: 'pending',
+      company_slug: 'ccp',
+      company_name: 'Ccp',
+      location: 'Ccp',
+      total_items: 8,
+      items: [
+        { name: 'Menú principal', description: 'PECHUGA DE POLLO AL LIMON CON PASTA CORTA AL PESTO', quantity: 3, slotIndex: 0 },
+        { name: 'Opción 1', description: 'FILET DE MERLUZA AL LIMÓN CON PURÉ DE CALABAZA', quantity: 3, slotIndex: 1 },
+        { name: 'Opción 3', description: 'TARTA DE CEBOLLA Y QUESO', quantity: 1, slotIndex: 3 },
+        { name: 'Opción 4 - Hiperproteica', description: 'Hiperproteica · ALBÓNDIGAS DE QUINOA Y ESPINACA', quantity: 1, slotIndex: 4 }
+      ],
+      custom_responses: [
+        {
+          title: 'Guarnición',
+          quantities: { Arroz: 1, Puré: 1, Fideos: 1, Verduras: 1, 'Papas fritas': 1 }
+        },
+        {
+          title: 'Bebida',
+          quantities: { Agua: 1, 'Coca Zero': 2, 'Coca cola': 3 }
+        }
+      ]
+    }
+
+    const summary = buildDailyOrdersSummary([order], 'all')
+    const [row] = buildDailyOrdersExcelDetailRows([order])
+
+    expect(row['Menú elegido']).toBe(
+      'Menú principal - PECHUGA DE POLLO AL LIMON CON PASTA CORTA AL PESTO (x3); ' +
+      'Opción 1 - FILET DE MERLUZA AL LIMÓN CON PURÉ DE CALABAZA (x3); ' +
+      'Opción 3 - TARTA DE CEBOLLA Y QUESO; ' +
+      'Opción 4 - Hiperproteica · ALBÓNDIGAS DE QUINOA Y ESPINACA'
+    )
+    expect(row.Guarniciones).toBe('Arroz, Puré, Fideos, Verduras, Papas fritas')
+    expect(row.Bebidas).toBe('Agua, Coca Zero (x2), Coca cola (x3)')
+    expect(summary.byMenu).toEqual([
+      { label: 'Menú principal - PECHUGA DE POLLO AL LIMON CON PASTA CORTA AL PESTO', quantity: 3 },
+      { label: 'Opción 1 - FILET DE MERLUZA AL LIMÓN CON PURÉ DE CALABAZA', quantity: 3 },
+      { label: 'Opción 3 - TARTA DE CEBOLLA Y QUESO', quantity: 1 },
+      { label: 'Opción 4 - Hiperproteica · ALBÓNDIGAS DE QUINOA Y ESPINACA', quantity: 1 }
+    ])
+    expect(summary.exportOperationalSplit).toEqual({
+      base: { orders: 0, units: 0 },
+      postReportExtras: { orders: 1, units: 8 },
+      total: { orders: 1, units: 8 }
+    })
+  })
+
   it('muestra correo como creador cuando un pedido extra no tiene nombre de admin', () => {
     const extraOrder = {
       ...baseOrder,
