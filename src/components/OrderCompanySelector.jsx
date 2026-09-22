@@ -65,7 +65,7 @@ const OrderCompanySelector = ({ user, loading }) => {
         adminOnly: company.visibility === 'admins',
         accent: company.active ? 'from-orange-500 to-orange-700' : 'from-gray-400 to-gray-600',
         badgeClass: company.visibility === 'public' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700',
-        customHint: company.description || 'Flujo configurado desde Administración.',
+        customHint: '',
         locations: company.locations.length > 0 ? company.locations.map((location) => location.name) : [company.name],
         requiresAuthorizedLocations: Boolean(company.settings?.requiresAuthorizedLocations)
       }))
@@ -95,71 +95,86 @@ const OrderCompanySelector = ({ user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-      <div className="max-w-5xl mx-auto space-y-8">
-        <header className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 border-2 border-white/40 text-white font-semibold shadow-lg">
-            <ShieldCheck className="h-5 w-5" />
+      <div className="mx-auto max-w-7xl space-y-5 px-1 sm:px-2">
+        <header className="space-y-2 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/15 px-3 py-1.5 text-sm font-bold text-white shadow-md">
+            <ShieldCheck className="h-4 w-4" />
             Elige tu empresa antes de crear el pedido
           </div>
-          <h1 className="text-4xl sm:text-5xl font-black text-white drop-shadow-2xl">
+          <h1 className="text-3xl font-black text-white drop-shadow-xl sm:text-4xl">
             ¿Para qué empresa vas a pedir hoy?
           </h1>
-          <p className="text-lg sm:text-xl text-white/90 max-w-3xl mx-auto font-semibold drop-shadow">
-            Cada empresa puede tener preguntas y configuraciones propias (ej. multiple choice). Selecciona la correcta y te llevamos a su flujo dedicado.
+          <p className="mx-auto max-w-2xl text-sm font-semibold leading-relaxed text-white/90 drop-shadow sm:text-base">
+            Cada empresa puede tener preguntas y configuraciones propias. Elegí la correcta y continuá con su flujo.
           </p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          {orderedCompanies.map((company) => (
-            <button
-              key={company.slug}
-              onClick={() => handleSelect(company.slug)}
-              className="relative group text-left bg-white/95 border-2 border-white/30 rounded-3xl shadow-2xl hover:shadow-3xl overflow-hidden transition-all duration-200 hover:-translate-y-1.5 p-2 sm:p-3"
-            >
-              <div className={`absolute inset-0 bg-linear-to-br ${company.accent} opacity-10 group-hover:opacity-25 transition-opacity`} />
-              <div className="p-6 sm:p-8 flex flex-col gap-5 relative z-10">
-                <div className="flex items-center gap-4">
-                  <div className="p-5 rounded-2xl bg-white shadow-inner border-2 border-gray-100">
-                    <Building2 className="h-9 w-9 text-gray-800" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`inline-flex px-4 py-2.5 rounded-full text-xl font-black ${company.badgeClass} border border-white`}>
-                        {company.name}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {orderedCompanies.map((company) => {
+            const locationCount = Array.isArray(company.locations) ? company.locations.filter(Boolean).length : 0
+            const locationSummary = company.requiresAuthorizedLocations
+              ? `${locationCount} ubicación${locationCount === 1 ? '' : 'es'} disponible${locationCount === 1 ? '' : 's'}`
+              : company.locations.join(' • ')
+
+            return (
+              <button
+                key={company.slug}
+                type="button"
+                onClick={() => handleSelect(company.slug)}
+                aria-label={`Continuar con ${company.name}`}
+                className="relative group h-full min-h-[190px] overflow-hidden rounded-2xl border border-white/40 bg-white/95 p-0 text-left shadow-xl transition-all duration-200 hover:-translate-y-1 hover:border-white/70 hover:shadow-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60"
+              >
+                <div className={`absolute inset-0 bg-linear-to-br ${company.accent} opacity-[0.07] transition-opacity group-hover:opacity-[0.16]`} />
+                <div className="relative z-10 flex h-full flex-col gap-3 p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+                      <Building2 className="h-6 w-6 text-gray-800" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className={`inline-flex max-w-full rounded-full border border-white px-3 py-1.5 text-base font-black sm:text-lg ${company.badgeClass}`}>
+                          <span className="truncate">{company.name}</span>
+                        </p>
+                        {company.slug === recommendedCompany && (
+                          <span className="inline-flex shrink-0 rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-black text-white">
+                            Última usada
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-sm font-bold text-gray-800">
+                        {company.subtitle || 'Flujo dedicado'}
                       </p>
-                      {company.slug === recommendedCompany && (
-                        <span className="inline-flex px-3 py-1 text-xs font-bold rounded-full bg-emerald-600 text-white">
-                          Última usada
-                        </span>
+                    </div>
+                  </div>
+
+                  {(company.description || company.customHint) && (
+                    <div className="space-y-1">
+                      {company.description && (
+                        <p className="line-clamp-2 text-sm font-semibold leading-snug text-gray-800">
+                          {company.description}
+                        </p>
+                      )}
+                      {company.customHint && (
+                        <p className="line-clamp-2 text-xs font-semibold leading-snug text-gray-600">
+                          {company.customHint}
+                        </p>
                       )}
                     </div>
-                    <p className="text-lg font-semibold text-gray-800 mt-1">
-                      {company.subtitle || 'Flujo dedicado'}
-                    </p>
-                  </div>
-                </div>
+                  )}
 
-                <div className="space-y-2">
-                  <p className="text-lg sm:text-xl text-gray-900 font-bold leading-snug">
-                    {company.description}
-                  </p>
-                  <p className="text-sm sm:text-base text-gray-700">
-                    {company.customHint}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                    {company.requiresAuthorizedLocations ? 'Locaciones autorizadas' : company.locations.join(' • ')}
-                  </div>
-                  <div className="inline-flex items-center gap-2 bg-[#0b1f3a] text-white font-bold text-base px-3 py-1.5 rounded-full shadow-md">
-                    Continuar
-                    <ArrowRight className="h-4 w-4" />
+                  <div className="mt-auto flex items-end justify-between gap-3 border-t border-slate-200/80 pt-3">
+                    <div className="min-w-0 text-xs font-bold uppercase tracking-wide text-gray-600">
+                      <span className="line-clamp-2">{locationSummary}</span>
+                    </div>
+                    <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#0b1f3a] px-3 py-1.5 text-sm font-black text-white shadow-sm transition-transform group-hover:translate-x-0.5">
+                      Continuar
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            )
+          })}
         </div>
 
       </div>
