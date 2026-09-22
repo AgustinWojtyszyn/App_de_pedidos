@@ -53,9 +53,9 @@ const addSummarySheet = (workbook, summary) => {
   worksheet.addRows([
     { Concepto: 'Fecha de entrega', Valor: summary.deliveryDate || 'Sin fecha' },
     { Concepto: 'Estado exportado', Valor: summary.exportedStatus },
-    { Concepto: 'Pedidos del cierre', Valor: `${summary.operationalSplit.base.units} viandas` },
-    { Concepto: 'Pedidos extra del día', Valor: `${summary.operationalSplit.postReportExtras.units} viandas` },
-    { Concepto: 'Total a preparar', Valor: `${summary.operationalSplit.total.units} viandas` },
+    { Concepto: 'Pedidos del cierre', Valor: `${summary.exportOperationalSplit.base.units} viandas` },
+    { Concepto: 'Pedidos extra del día', Valor: `${summary.exportOperationalSplit.postReportExtras.units} viandas` },
+    { Concepto: 'Total a preparar', Valor: `${summary.exportOperationalSplit.total.units} viandas` },
     { Concepto: 'Cantidad de pedidos con comentarios', Valor: summary.commentsCount }
   ])
 
