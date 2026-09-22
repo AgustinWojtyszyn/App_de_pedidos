@@ -254,7 +254,12 @@ export const buildOrderExportRow = (order = {}) => {
 
 const getMenuNames = (items = []) =>
   items
-    .map((item) => normalizeText(item.raw?.name || item.raw?.title || item.raw?.menu))
+    .map((item) => {
+      const label = normalizeText(item.raw?.name || item.raw?.title || item.raw?.menu || item.label)
+      if (!label) return ''
+      const quantity = Number(item.quantity) || 0
+      return quantity > 1 ? `${label} (x${quantity})` : label
+    })
     .filter(Boolean)
     .join('; ') || 'Sin menú'
 
