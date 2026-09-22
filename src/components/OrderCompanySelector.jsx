@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building2, ArrowRight, MapPin, ShieldCheck } from 'lucide-react'
+import { Building2, ArrowRight, ShieldCheck } from 'lucide-react'
 import RequireUser from './RequireUser'
 import { getVisibleCompanyList } from '../constants/companyConfig'
 import { useAuthContext } from '../contexts/authContextValue'
@@ -95,28 +95,26 @@ const OrderCompanySelector = ({ user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-      <div className="mx-auto max-w-7xl px-2 pb-4 sm:px-3">
-        <header className="mb-4 text-center">
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-bold text-white/95 backdrop-blur-sm">
+      <div className="mx-auto max-w-5xl space-y-5 px-2 pb-5 sm:px-3">
+        <header className="text-center">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3 py-1.5 text-sm font-bold text-white shadow-md">
             <ShieldCheck className="h-4 w-4" />
             Elegí tu empresa
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-lg sm:text-4xl">
+          <h1 className="text-3xl font-black text-white drop-shadow-xl sm:text-4xl">
             ¿Para qué empresa vas a pedir hoy?
           </h1>
-          <p className="mx-auto mt-1 max-w-2xl text-sm font-semibold text-white/85 sm:text-[15px]">
+          <p className="mx-auto mt-1 max-w-2xl text-sm font-semibold text-white/90 sm:text-base">
             Seleccioná una empresa para continuar con su pedido.
           </p>
         </header>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {orderedCompanies.map((company) => {
             const locationCount = Array.isArray(company.locations) ? company.locations.filter(Boolean).length : 0
             const locationSummary = company.requiresAuthorizedLocations
               ? `${locationCount} ubicación${locationCount === 1 ? '' : 'es'} disponible${locationCount === 1 ? '' : 's'}`
-              : locationCount > 1
-                ? `${locationCount} ubicaciones`
-                : 'Acceso directo'
+              : company.locations.join(' • ')
 
             return (
               <button
@@ -124,49 +122,46 @@ const OrderCompanySelector = ({ user, loading }) => {
                 type="button"
                 onClick={() => handleSelect(company.slug)}
                 aria-label={`Continuar con ${company.name}`}
-                className="group relative min-h-[158px] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 text-left shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60"
+                className="relative group min-h-[210px] overflow-hidden rounded-3xl border-2 border-white/30 bg-white/95 p-2 text-left shadow-2xl transition-all duration-200 hover:-translate-y-1 hover:shadow-3xl focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60 sm:p-3"
               >
-                <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-blue-600 via-blue-500 to-orange-400" />
+                <div className={`absolute inset-0 bg-linear-to-br ${company.accent} opacity-10 transition-opacity group-hover:opacity-20`} />
 
-                <div className="flex h-full flex-col p-4 pt-5 sm:p-5 sm:pt-5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100 transition-colors group-hover:bg-blue-100">
-                      <Building2 className="h-5 w-5" />
+                <div className="relative z-10 flex h-full flex-col gap-4 p-5 sm:p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-2xl border-2 border-gray-100 bg-white p-4 shadow-inner">
+                      <Building2 className="h-8 w-8 text-gray-800" />
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h2 className="truncate text-lg font-black leading-tight text-slate-950 sm:text-xl">
-                            {company.name}
-                          </h2>
-                          <p className="mt-0.5 text-xs font-bold text-slate-500">
-                            {company.subtitle || 'Pedido empresarial'}
-                          </p>
-                        </div>
-
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className={`inline-flex max-w-full rounded-full border border-white px-4 py-2 text-lg font-black ${company.badgeClass}`}>
+                          <span className="truncate">{company.name}</span>
+                        </p>
                         {company.slug === recommendedCompany && (
-                          <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200">
+                          <span className="inline-flex shrink-0 rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white">
                             Última usada
                           </span>
                         )}
                       </div>
 
-                      {company.description && (
-                        <p className="mt-2 line-clamp-2 text-sm font-medium leading-snug text-slate-600">
-                          {company.description}
-                        </p>
-                      )}
+                      <p className="mt-1 text-base font-semibold text-gray-800">
+                        {company.subtitle || 'Flujo dedicado'}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                    <div className="flex min-w-0 items-center gap-1.5 text-xs font-bold text-slate-500">
-                      <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                      <span className="truncate">{locationSummary}</span>
+                  {company.description && (
+                    <p className="line-clamp-2 text-base font-semibold leading-snug text-gray-800">
+                      {company.description}
+                    </p>
+                  )}
+
+                  <div className="mt-auto flex items-center justify-between gap-4 border-t border-slate-200/80 pt-3">
+                    <div className="min-w-0 text-xs font-bold uppercase tracking-wide text-gray-600">
+                      <span className="line-clamp-2">{locationSummary}</span>
                     </div>
 
-                    <div className="inline-flex shrink-0 items-center gap-1 text-sm font-black text-blue-700 transition-all group-hover:gap-2">
+                    <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#0b1f3a] px-3.5 py-2 text-sm font-black text-white shadow-sm">
                       Continuar
                       <ArrowRight className="h-4 w-4" />
                     </div>
