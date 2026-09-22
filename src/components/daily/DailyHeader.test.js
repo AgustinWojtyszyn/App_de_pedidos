@@ -48,7 +48,12 @@ const baseProps = {
   onArchiveAll: () => {},
   sortedOrdersLength: 0,
   pendingOrdersCount: 0,
-  isAdmin: true
+  isAdmin: true,
+  dailyCloseStatus: {
+    reportStatus: { state: 'sent' },
+    overallStatus: { tone: 'success', label: 'OK' },
+    lastUpdatedLabel: '10:20 a. m.'
+  }
 }
 
 const getQuickButton = (tree, label) => {
@@ -65,8 +70,22 @@ describe('DailyHeader delivery date selector', () => {
     const content = textFromChildren(tree)
 
     expect(content).toContain('Pedidos del cierre5viandas del cierre anterior')
-    expect(content).toContain('Pedidos extra del día5viandas agregadas después')
+    expect(content).toContain('Pedidos extra del día5viandas agregadas después del cierre')
     expect(content).toContain('Total a preparar10viandas para cocina')
+  })
+
+  it('antes del reporte usa Pedidos cargados en vez de Pedidos del cierre', () => {
+    const tree = DailyHeader({
+      ...baseProps,
+      dailyCloseStatus: {
+        ...baseProps.dailyCloseStatus,
+        reportStatus: { state: 'no_record' }
+      }
+    })
+    const content = textFromChildren(tree)
+
+    expect(content).toContain('Pedidos cargados5viandas cargadas para esta entrega')
+    expect(content).not.toContain('Pedidos del cierre5')
   })
 
   it('refreshes with the existing callback and disables refresh while loading', () => {
