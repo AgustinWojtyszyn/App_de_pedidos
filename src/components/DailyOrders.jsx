@@ -27,7 +27,8 @@ import {
   calculateStats,
   buildPrintStats,
   filterOrdersByCompany,
-  getOperationalOrderUnits
+  getOperationalOrderUnits,
+  withoutPostReportExtras
 } from '../utils/daily/dailyOrderCalculations'
 import { getDailyOperationalStatus } from '../utils/daily/dailyCloseStatus'
 import { formatDeliveryDateLabel } from '../utils/daily/dailyOrderFormatters'
@@ -43,6 +44,7 @@ const DailyOrders = ({ user, loading }) => {
   const [selectedDish, setSelectedDish] = useState('all')
   const [selectedSide, setSelectedSide] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
+  const [excludePostReportExtrasFromExports, setExcludePostReportExtrasFromExports] = useState(true)
   const [extraOrderOpen, setExtraOrderOpen] = useState(false)
   const [discountModalOpen, setDiscountModalOpen] = useState(false)
   const [extraOrderMode, setExtraOrderMode] = useState('standard')
@@ -103,7 +105,7 @@ const DailyOrders = ({ user, loading }) => {
 
   const exportToExcel = async () => {
     await exportDailyOrdersExcel({
-      sortedOrders: manualExportOrders,
+      sortedOrders: exportOrders,
       exportCompany,
       selectedLocation,
       selectedStatus,
@@ -113,7 +115,7 @@ const DailyOrders = ({ user, loading }) => {
 
   const generateNotaPedido = async () => {
     await exportDailyOrderNotesExcel({
-      sortedOrders: manualExportOrders,
+      sortedOrders: exportOrders,
       exportCompany,
       selectedLocation,
       selectedStatus,
@@ -163,10 +165,16 @@ const DailyOrders = ({ user, loading }) => {
     () => filterOrdersByCompany(sortedOrders, exportCompany),
     [sortedOrders, exportCompany]
   )
+  const exportOrders = useMemo(
+    () => excludePostReportExtrasFromExports
+      ? withoutPostReportExtras(manualExportOrders)
+      : manualExportOrders,
+    [excludePostReportExtrasFromExports, manualExportOrders]
+  )
   const countOperationalUnits = (ordersList = []) =>
     (Array.isArray(ordersList) ? ordersList : [])
       .reduce((sum, order) => sum + getOperationalOrderUnits(order), 0)
-  const exportableOrdersCount = countOperationalUnits(manualExportOrders)
+  const exportableOrdersCount = countOperationalUnits(exportOrders)
   const sortedOrdersUnits = countOperationalUnits(sortedOrders)
   const deliveryDateLabel = formatDeliveryDateLabel(operationalDate)
   const remitoCompanyOptions = useMemo(
@@ -235,6 +243,8 @@ const DailyOrders = ({ user, loading }) => {
           onExportCompanyChange={setExportCompany}
           locations={locations}
           exportableOrdersCount={exportableOrdersCount}
+          excludePostReportExtrasFromExports={excludePostReportExtrasFromExports}
+          onExcludePostReportExtrasFromExportsChange={setExcludePostReportExtrasFromExports}
           onExportExcel={exportToExcel}
           onGenerateNotaPedido={generateNotaPedido}
           onShareWhatsApp={shareViaWhatsApp}

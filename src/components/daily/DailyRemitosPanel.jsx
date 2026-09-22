@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Download, Eye, FileText, Printer, RotateCcw } from 'lucide-react'
 import { db } from '../../supabaseClient'
 import { addDaysToISO, getTodayISOInTimeZone } from '../../utils/dateUtils'
-import { filterOrdersByCompany } from '../../utils/daily/dailyOrderCalculations'
+import { filterOrdersByCompany, withoutPostReportExtras } from '../../utils/daily/dailyOrderCalculations'
 import {
   buildCompanyGroups,
   buildRemitoConfigBySlug,
@@ -145,10 +145,18 @@ const buildLocationOptions = (orders = []) => {
 const getOrderLocationKey = (order = {}) =>
   getOrderRemitoLocationKey(order) || normalizeText(order?.location || order?.delivery_location || '')
 
-const filterOrdersForRemitos = ({ orders = [], companySlug = 'all', location = 'all' } = {}) => {
+export const filterOrdersForRemitos = ({
+  orders = [],
+  companySlug = 'all',
+  location = 'all',
+  excludePostReportExtras = false
+} = {}) => {
   const companyFiltered = filterOrdersByCompany(orders, companySlug)
+  const scopedOrders = excludePostReportExtras
+    ? withoutPostReportExtras(companyFiltered)
+    : companyFiltered
   const selectedLocationKey = location === 'all' ? '' : normalizeText(location)
-  return companyFiltered.filter((order) => {
+  return scopedOrders.filter((order) => {
     const status = String(order?.status || '').toLowerCase()
     if (!['pending', 'archived', 'post_report_extra'].includes(status)) return false
     if (location === 'all') return true
@@ -260,7 +268,8 @@ const buildFreshGroupForRemito = ({
   orders = [],
   existing = {},
   fallbackGroup = {},
-  deliveryDate = ''
+  deliveryDate = '',
+  excludePostReportExtras = false
 } = {}) => {
   const safeExisting = getSafeRemito(existing)
   const targetSlug = safeExisting.company_slug || safeExisting.companySlug || fallbackGroup.slug || ''
@@ -276,7 +285,10 @@ const buildFreshGroupForRemito = ({
       orders: []
     }
   }
-  const freshOrders = (Array.isArray(orders) ? orders : []).filter((order) => {
+  const sourceOrders = excludePostReportExtras
+    ? withoutPostReportExtras(orders)
+    : (Array.isArray(orders) ? orders : [])
+  const freshOrders = sourceOrders.filter((order) => {
     const status = String(order?.status || '').toLowerCase()
     if (!['pending', 'archived', 'post_report_extra'].includes(status)) return false
     if (targetDate && String(order?.delivery_date || '').slice(0, 10) !== targetDate) return false
@@ -309,6 +321,7 @@ const DailyRemitosPanel = ({
   onRefresh
 }) => {
   const [locationFilter, setLocationFilter] = useState('all')
+  const [excludePostReportExtras, setExcludePostReportExtras] = useState(true)
   const [remitos, setRemitos] = useState([])
   const [remitoConfigs, setRemitoConfigs] = useState([])
   const [loading, setLoading] = useState(false)
@@ -320,8 +333,9 @@ const DailyRemitosPanel = ({
   const filteredOrders = useMemo(() => filterOrdersForRemitos({
     orders,
     companySlug: exportCompany,
-    location: locationFilter
-  }), [exportCompany, locationFilter, orders])
+    location: locationFilter,
+    excludePostReportExtras
+  }), [excludePostReportExtras, exportCompany, locationFilter, orders])
 
   const groups = useMemo(() => buildCompanyGroups(filteredOrders), [filteredOrders])
   const remitoConfigBySlug = useMemo(() => buildRemitoConfigBySlug(remitoConfigs), [remitoConfigs])
@@ -480,7 +494,8 @@ const DailyRemitosPanel = ({
         orders: refreshedOrders,
         existing,
         fallbackGroup: group,
-        deliveryDate
+        deliveryDate,
+        excludePostReportExtras
       })
       const orderIds = getOrderIds(freshGroup.orders)
       if (!Array.isArray(freshGroup.orders) || freshGroup.orders.length === 0) {
@@ -660,13 +675,31 @@ const DailyRemitosPanel = ({
             </select>
           </label>
         </div>
+
+        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700">
+          <input
+            type="checkbox"
+            checked={excludePostReportExtras}
+            onChange={(event) => setExcludePostReportExtras(event.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+          />
+          <span>
+            Remitar sin extras del día
+            <small className="ml-2 font-semibold text-slate-500">
+              Excluye únicamente los pedidos posteriores al cierre.
+            </small>
+          </span>
+        </label>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
           <div>
             <h2 className="text-lg font-black text-slate-900">Remitos de la jornada</h2>
-            <p className="text-xs font-semibold text-slate-500">{filteredOrders.length} pedidos considerados por delivery_date</p>
+            <p className="text-xs font-semibold text-slate-500">
+              {filteredOrders.length} pedidos considerados por delivery_date
+              {excludePostReportExtras ? ' · extras del día excluidos' : ' · incluye extras del día'}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" disabled={isPanelBusy} onClick={refreshVisibleIssuedSnapshots} className="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700 disabled:opacity-60">

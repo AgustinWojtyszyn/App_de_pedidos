@@ -7,6 +7,8 @@ const DailyExportActions = ({
   onExportCompanyChange,
   locations,
   exportableOrdersCount,
+  excludePostReportExtrasFromExports = true,
+  onExcludePostReportExtrasFromExportsChange,
   onExportExcel,
   onGenerateNotaPedido,
   onShareWhatsApp,
@@ -82,23 +84,38 @@ const DailyExportActions = ({
             </p>
           </div>
 
-          <div className="daily-company">
-            <label htmlFor="export-company" className="text-xs font-bold text-slate-600">
-              Empresa
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="daily-company">
+              <label htmlFor="export-company" className="text-xs font-bold text-slate-600">
+                Empresa
+              </label>
+              <select
+                id="export-company"
+                value={exportCompany}
+                onChange={(e) => onExportCompanyChange(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="all">Todas las empresas</option>
+                {locations.map(loc => (
+                  <option key={loc} value={loc}>
+                    {loc}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <label className="inline-flex min-h-[42px] cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700">
+              <input
+                type="checkbox"
+                checked={excludePostReportExtrasFromExports}
+                onChange={(event) => onExcludePostReportExtrasFromExportsChange?.(event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span>
+                Sin extras del día
+                <small className="block font-semibold text-slate-500">Excel y nota de pedido</small>
+              </span>
             </label>
-            <select
-              id="export-company"
-              value={exportCompany}
-              onChange={(e) => onExportCompanyChange(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="all">Todas las empresas</option>
-              {locations.map(loc => (
-                <option key={loc} value={loc}>
-                  {loc}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 

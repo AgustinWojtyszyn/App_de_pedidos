@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { matchesDailyOrderStatusFilter } from './useDailyOrdersFilters'
-import { buildDailyOperationalSplit, calculateStats } from '../utils/daily/dailyOrderCalculations'
+import {
+  buildDailyOperationalSplit,
+  calculateStats,
+  withoutPostReportExtras
+} from '../utils/daily/dailyOrderCalculations'
 
 describe('daily orders status filtering', () => {
   it('pending solo incluye status pending', () => {
@@ -49,6 +53,16 @@ describe('daily orders status filtering', () => {
     expect(split.base).toEqual({ orders: 2, units: 5 })
     expect(split.postReportExtras).toEqual({ orders: 2, units: 5 })
     expect(split.total).toEqual({ orders: 4, units: 10 })
+  })
+
+  it('excluye solo extras posteriores al cierre y conserva admin_extra ya incluidos en el cierre', () => {
+    const result = withoutPostReportExtras([
+      { id: 'normal', status: 'archived' },
+      { id: 'admin-cierre', status: 'archived', order_origin: 'admin_extra' },
+      { id: 'extra-dia', status: 'post_report_extra', order_origin: 'admin_extra' }
+    ])
+
+    expect(result.map((order) => order.id)).toEqual(['normal', 'admin-cierre'])
   })
 
   it('calculateStats cuenta pedidos extra por cantidad real de menús', () => {

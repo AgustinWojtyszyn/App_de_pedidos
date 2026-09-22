@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildDailyRemitoRows } from './DailyRemitosPanel.jsx'
+import { buildDailyRemitoRows, filterOrdersForRemitos } from './DailyRemitosPanel.jsx'
 
 const epseGroup = {
   slug: 'epse',
@@ -11,6 +11,21 @@ const epseGroup = {
 }
 
 describe('DailyRemitosPanel remito row matching', () => {
+  it('permite remitar sin extras del día y conserva admin_extra que ya pertenecían al cierre', () => {
+    const result = filterOrdersForRemitos({
+      orders: [
+        { id: 'normal', status: 'archived', location: 'Genneia' },
+        { id: 'admin-cierre', status: 'archived', order_origin: 'admin_extra', location: 'Genneia' },
+        { id: 'extra-dia', status: 'post_report_extra', order_origin: 'admin_extra', location: 'Genneia' }
+      ],
+      companySlug: 'all',
+      location: 'all',
+      excludePostReportExtras: true
+    })
+
+    expect(result.map((order) => order.id)).toEqual(['normal', 'admin-cierre'])
+  })
+
   it('does not show or associate an empty EPSE remito with blank location_key', () => {
     const rows = buildDailyRemitoRows({
       deliveryDate: '2026-08-21',

@@ -13,6 +13,8 @@ const DailyHeader = ({
   onExportCompanyChange,
   locations,
   exportableOrdersCount,
+  excludePostReportExtrasFromExports,
+  onExcludePostReportExtrasFromExportsChange,
   onExportExcel,
   onGenerateNotaPedido,
   onShareWhatsApp,
@@ -96,6 +98,8 @@ const DailyHeader = ({
         onExportCompanyChange={onExportCompanyChange}
         locations={locations}
         exportableOrdersCount={exportableOrdersCount}
+        excludePostReportExtrasFromExports={excludePostReportExtrasFromExports}
+        onExcludePostReportExtrasFromExportsChange={onExcludePostReportExtrasFromExportsChange}
         onExportExcel={onExportExcel}
         onGenerateNotaPedido={onGenerateNotaPedido}
         onShareWhatsApp={onShareWhatsApp}

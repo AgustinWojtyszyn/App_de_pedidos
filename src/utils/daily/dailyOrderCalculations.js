@@ -47,13 +47,21 @@ export const getOperationalOrderUnits = (order = {}) => {
   return getOrderMenuTotal(order)
 }
 
+export const isPostReportExtraOrder = (order = {}) =>
+  String(order?.status || '').toLowerCase() === 'post_report_extra'
+
+export const withoutPostReportExtras = (ordersList = []) =>
+  (Array.isArray(ordersList) ? ordersList : []).filter((order) => (
+    order && !isPostReportExtraOrder(order)
+  ))
+
 export const buildDailyOperationalSplit = (ordersList = []) => {
   const base = { orders: 0, units: 0 }
   const postReportExtras = { orders: 0, units: 0 }
 
   ;(Array.isArray(ordersList) ? ordersList : []).filter(Boolean).forEach((order) => {
     const units = getOperationalOrderUnits(order)
-    const target = String(order?.status || '').toLowerCase() === 'post_report_extra'
+    const target = isPostReportExtraOrder(order)
       ? postReportExtras
       : base
 
