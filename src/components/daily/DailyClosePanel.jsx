@@ -53,9 +53,9 @@ const getReportLabel = (reportStatus = {}) => {
 }
 
 const getArchiveLabel = (pendingCount = 0) => {
-  if (pendingCount === 0) return 'Pendientes por archivar: 0'
-  if (pendingCount === 1) return 'Pendientes por archivar: 1'
-  return `Pendientes por archivar: ${pendingCount}`
+  if (pendingCount === 0) return 'Viandas pendientes por archivar: 0'
+  if (pendingCount === 1) return 'Viandas pendientes por archivar: 1'
+  return `Viandas pendientes por archivar: ${pendingCount}`
 }
 
 const getInconsistencyLabel = (inconsistencyCount = 0) => `Inconsistencias: ${inconsistencyCount}`

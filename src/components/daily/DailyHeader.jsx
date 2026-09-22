@@ -4,6 +4,7 @@ import DailyExportActions from './DailyExportActions'
 
 const DailyHeader = ({
   stats,
+  operationalSplit,
   activeLocationsCount,
   tomorrowLabel,
   operationalDate,
@@ -31,6 +32,11 @@ const DailyHeader = ({
   const tomorrow = getTomorrowISOInTimeZone()
   const previousDay = addDaysToISO(operationalDate, -1)
   const nextDay = addDaysToISO(operationalDate, 1)
+  const safeOperationalSplit = operationalSplit || {
+    base: { units: Math.max(Number(stats?.total || 0) - Number(stats?.postReportExtra || 0), 0) },
+    postReportExtras: { units: Number(stats?.postReportExtra || 0) },
+    total: { units: Number(stats?.total || 0) }
+  }
 
   const quickDates = [
     { label: 'Día anterior', value: previousDay },
@@ -71,10 +77,10 @@ const DailyHeader = ({
       </div>
       <div className="daily-metrics">
         {[
-          { label: 'Total del día', value: stats.total, kind: 'total', detail: 'pedidos' },
-          { label: 'Pendientes', value: stats.pending, kind: 'pending', detail: 'por archivar' },
-          { label: 'Extras post reporte', value: stats.postReportExtra || 0, kind: 'extra', detail: 'posteriores al envío' },
-          { label: 'Archivados', value: stats.archived, kind: 'archived', detail: 'pedidos archivados' },
+          { label: 'Pedidos del cierre', value: safeOperationalSplit.base.units, kind: 'archived', detail: 'viandas del cierre anterior' },
+          { label: 'Pedidos extra del día', value: safeOperationalSplit.postReportExtras.units, kind: 'extra', detail: 'viandas agregadas después' },
+          { label: 'Total a preparar', value: safeOperationalSplit.total.units, kind: 'total', detail: 'viandas para cocina' },
+          { label: 'Pendientes', value: stats.pending, kind: 'pending', detail: 'viandas por archivar' },
           { label: 'Ubicaciones activas', value: activeLocationsCount, kind: 'locations', detail: 'puntos de entrega' }
         ].map(metric => (
           <div key={metric.label} className={`daily-metric daily-metric--${metric.kind}`}>

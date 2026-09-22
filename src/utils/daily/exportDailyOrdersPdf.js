@@ -1,4 +1,5 @@
 import {
+  buildDailyOperationalSplit,
   buildOrderPreview,
   buildTurnSummary
 } from './dailyOrderCalculations'
@@ -44,6 +45,7 @@ export function exportDailyOrdersPdf(sortedOrders) {
 
   const today = getTodayISOInTimeZone()
   const deliveryDateLabel = getExportDeliveryDateLabel(sortedOrders)
+  const operationalSplit = buildDailyOperationalSplit(sortedOrders)
   const { turnCounts, byLocationTurn } = buildTurnSummary(sortedOrders)
   const rowsHtml = sortedOrders.map(order => {
     const preview = buildOrderPreview(order)
@@ -94,7 +96,11 @@ export function exportDailyOrdersPdf(sortedOrders) {
         <body>
           <h1>Pedidos diarios</h1>
           <h2>Fecha de generación: ${today} · Entrega: ${deliveryDateLabel}</h2>
-          <div class="meta">Total pedidos: ${sortedOrders.length}</div>
+          <div class="meta">
+            Pedidos del cierre: <strong>${operationalSplit.base.units} viandas</strong> ·
+            Pedidos extra del día: <strong>${operationalSplit.postReportExtras.units} viandas</strong> ·
+            Total a preparar: <strong>${operationalSplit.total.units} viandas</strong>
+          </div>
 
           <h2>Resumen por turno</h2>
           <table>

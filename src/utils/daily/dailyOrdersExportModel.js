@@ -1,5 +1,5 @@
 import { getStatusText } from './dailyOrderFormatters'
-import { getOrderBeverageLabels, isBeverage } from './dailyOrderCalculations'
+import { buildDailyOperationalSplit, getOrderBeverageLabels, isBeverage } from './dailyOrderCalculations'
 import { getSideAssociationsForOrder, getSideSummaryForOrder } from './dailyOrderSideAssociations'
 import { normalizeOrderForReadOnly } from '../order/normalizeOrderForReadOnly'
 import { isValidCustomerName } from '../order/orderCustomerName'
@@ -579,6 +579,7 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
   })
 
   const deliveryDateISO = rows.find((row) => row.fechaEntregaISO)?.fechaEntregaISO || ''
+  const operationalSplit = buildDailyOperationalSplit(orders)
 
   return {
     deliveryDateISO,
@@ -587,6 +588,7 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
     exportedStatusSlug: formatStatusForFilename(selectedStatus),
     totalOrders: rows.length,
     totalItems,
+    operationalSplit,
     commentsCount,
     extraOrdersCount,
     byLocation: [...byLocation.entries()].map(([label, value]) => ({ label, ...value }))
@@ -641,8 +643,9 @@ export const formatDailyOrdersOperationalText = (orders = [], selectedStatus = '
     '',
     '*RESUMEN GENERAL*',
     '',
-    `*Total de pedidos:* ${summary.totalOrders}`,
-    `*Total de ítems:* ${summary.totalItems}`,
+    `*Pedidos del cierre:* ${summary.operationalSplit.base.units} viandas`,
+    `*Pedidos extra del día:* ${summary.operationalSplit.postReportExtras.units} viandas`,
+    `*Total a preparar:* ${summary.operationalSplit.total.units} viandas`,
     `*Estado del reporte:* ${summary.inconsistencies.length ? 'Con avisos' : 'Completo'}`,
     '',
     '*TOTALES POR UBICACIÓN / EMPRESA*',
@@ -740,17 +743,24 @@ export const formatDailyOrdersOperationalText = (orders = [], selectedStatus = '
 
 export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pending') => {
   const summary = buildWhatsAppLocationMenuSummary(orders, selectedStatus)
-  const extraOrdersCount = (orders || []).filter(isAdminExtraOrder).length
+  const operationalSplit = buildDailyOperationalSplit(orders)
   const additionalByLocation = new Map(
     buildDailyOrdersSummary(orders, selectedStatus).additionalByLocation.map((location) => [
       location.label,
       location.items.filter((item) => !normalizeText(item.label).toLowerCase().startsWith('guarnición:'))
     ])
   )
-  const lines = ['📋 PEDIDOS SERVIFOOD', '']
+  const lines = [
+    '📋 PEDIDOS SERVIFOOD',
+    '',
+    `Pedidos del cierre: ${operationalSplit.base.units} viandas`,
+    `Pedidos extra del día: ${operationalSplit.postReportExtras.units} viandas`,
+    `✅ TOTAL A PREPARAR: ${operationalSplit.total.units} viandas`,
+    ''
+  ]
 
   if (!summary.locations.length) {
-    lines.push('Sin pedidos', '', '========================================', '', '✅ TOTAL GENERAL: 0 pedidos')
+    lines.push('Sin pedidos')
     return lines.join('\n')
   }
 
@@ -779,8 +789,7 @@ export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pend
     lines.push(`Total ${location.label}: ${location.total}`, '')
   })
 
-  lines.push('========================================', '', `✅ TOTAL GENERAL: ${summary.totalItems} pedidos`)
-  if (extraOrdersCount > 0) lines.push(`Extras cargados por admin: ${extraOrdersCount}`)
+  lines.push('========================================')
 
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }

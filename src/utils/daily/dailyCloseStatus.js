@@ -160,7 +160,7 @@ export const buildDailyCloseChecklist = ({
       id: 'archive',
       label: pendingCount === 0 ? 'Archivado realizado o sin pendientes' : 'Pedidos pendientes de archivar',
       status: pendingCount === 0 ? 'ok' : 'warning',
-      detail: pendingCount === 0 ? 'No quedan pedidos pendientes' : `${pendingCount} pedido${pendingCount === 1 ? '' : 's'} pendiente${pendingCount === 1 ? '' : 's'}`
+      detail: pendingCount === 0 ? 'No quedan viandas pendientes' : `${pendingCount} vianda${pendingCount === 1 ? '' : 's'} pendiente${pendingCount === 1 ? '' : 's'}`
     }
   ]
 }

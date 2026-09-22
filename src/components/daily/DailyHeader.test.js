@@ -25,7 +25,12 @@ const findElements = (node, predicate, results = []) => {
 }
 
 const baseProps = {
-  stats: { total: 0, pending: 0, archived: 0 },
+  stats: { total: 10, pending: 0, archived: 5, postReportExtra: 5 },
+  operationalSplit: {
+    base: { orders: 2, units: 5 },
+    postReportExtras: { orders: 2, units: 5 },
+    total: { orders: 4, units: 10 }
+  },
   activeLocationsCount: 0,
   tomorrowLabel: 'jueves, 2 de julio de 2026',
   operationalDate: '2026-07-02',
@@ -55,6 +60,15 @@ const getQuickButton = (tree, label) => {
 }
 
 describe('DailyHeader delivery date selector', () => {
+  it('muestra cierre, extras del día y total a preparar en viandas', () => {
+    const tree = DailyHeader(baseProps)
+    const content = textFromChildren(tree)
+
+    expect(content).toContain('Pedidos del cierre5viandas del cierre anterior')
+    expect(content).toContain('Pedidos extra del día5viandas agregadas después')
+    expect(content).toContain('Total a preparar10viandas para cocina')
+  })
+
   it('refreshes with the existing callback and disables refresh while loading', () => {
     const onRefresh = vi.fn()
     const tree = DailyHeader({ ...baseProps, onRefresh })

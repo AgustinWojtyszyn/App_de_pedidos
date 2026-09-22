@@ -129,6 +129,7 @@ describe('daily orders export model', () => {
     const extraOrder = {
       ...baseOrder,
       order_origin: 'admin_extra',
+      status: 'post_report_extra',
       created_by_admin_id: 'admin-1',
       created_by_admin_name: 'Claudia Sarmiento',
       created_by_admin_email: 'claudia@servifood.com',
@@ -163,8 +164,9 @@ describe('daily orders export model', () => {
     expect(summary.rows[0].bebida).toBe('Coca Cola (x2)')
     expect(summary.rows[0].postre).toBe('Flan (x2), Fruta (x3)')
     expect(row).not.toHaveProperty('Respuestas personalizadas')
-    expect(whatsapp).toContain('TOTAL GENERAL: 5 pedidos')
-    expect(whatsapp).toContain('Extras cargados por admin: 1')
+    expect(whatsapp).toContain('Pedidos del cierre: 0 viandas')
+    expect(whatsapp).toContain('Pedidos extra del día: 5 viandas')
+    expect(whatsapp).toContain('TOTAL A PREPARAR: 5 viandas')
   })
 
   it('muestra correo como creador cuando un pedido extra no tiene nombre de admin', () => {
@@ -289,7 +291,7 @@ describe('daily orders export model', () => {
     expect(text).toContain('* 8 Bebida: Agua sin gas')
     expect(text).toContain('* 8 Postre: Fruta')
     expect(text).toContain('Total Genneia: 8')
-    expect(text).toContain('✅ TOTAL GENERAL: 8 pedidos')
+    expect(text).toContain('✅ TOTAL A PREPARAR: 8 viandas')
     expect(text).not.toContain('Ana Cliente')
     expect(text).not.toContain('ana@example.com')
     expect(text).not.toContain('Guarnición:')
@@ -390,8 +392,8 @@ describe('daily orders export model', () => {
     const text = formatDailyOrdersForWhatsApp(orders, 'pending')
 
     expect(text).toContain('Total Genneia: 19')
-    expect(text).toContain('✅ TOTAL GENERAL: 19 pedidos')
-    expect(text).not.toContain('Total de 19 pedidos')
+    expect(text).toContain('✅ TOTAL A PREPARAR: 19 viandas')
+    expect(text).not.toContain('TOTAL GENERAL')
     expect(text).not.toContain('bulk1@example.com')
     expect(text).not.toContain('261555991')
     expect(text).not.toContain('Cliente Bulk')
@@ -420,7 +422,7 @@ describe('daily orders export model', () => {
     expect(text).toContain('Opción 4 - BIFE DEL DÍA CARNE: 1\n\n* 1 Papas fritas')
     expect(text).toContain('Opción 5 - ENSALADA DEL FOOD: 1\n\n* 1 Papas fritas')
     expect(text).not.toContain('* 2 Papas fritas')
-    expect(text).toContain('✅ TOTAL GENERAL: 2 pedidos')
+    expect(text).toContain('✅ TOTAL A PREPARAR: 2 viandas')
   })
 
   it('fusiona una opción corta bajo el nombre completo del menú disponible', () => {
@@ -446,7 +448,7 @@ describe('daily orders export model', () => {
     expect(text).toContain('Opción 4 - BIFE DEL DÍA CARNE: 2\n\n* 1 Papas fritas')
     expect(text).not.toContain('\nOpción 4: 1\n')
     expect(text).toContain('Total Genneia: 2')
-    expect(text).toContain('✅ TOTAL GENERAL: 2 pedidos')
+    expect(text).toContain('✅ TOTAL A PREPARAR: 2 viandas')
   })
 
   it('normaliza múltiples menús históricos y asocia guarnición al menú preservado', () => {

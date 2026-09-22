@@ -23,6 +23,7 @@ import { matchesDailyOrderStatusFilter, useDailyOrdersFilters } from '../hooks/u
 import {
   buildLocationCards,
   buildOperationalSummary,
+  buildDailyOperationalSplit,
   calculateStats,
   buildPrintStats,
   filterOrdersByCompany,
@@ -142,9 +143,14 @@ const DailyOrders = ({ user, loading }) => {
     [statusFilteredOrders]
   )
 
+  const operationalSplit = useMemo(
+    () => buildDailyOperationalSplit(allOrders),
+    [allOrders]
+  )
+
   const activeLocationsCount = useMemo(
-    () => Object.values(statsForFilters.byLocation || {}).filter(count => Number(count) > 0).length,
-    [statsForFilters.byLocation]
+    () => Object.values(stats.byLocation || {}).filter(count => Number(count) > 0).length,
+    [stats.byLocation]
   )
 
   const locationCards = useMemo(
@@ -219,7 +225,8 @@ const DailyOrders = ({ user, loading }) => {
 
         <DailyHeader
           dailyCloseStatus={dailyCloseStatus}
-          stats={statsForFilters}
+          stats={stats}
+          operationalSplit={operationalSplit}
           activeLocationsCount={activeLocationsCount}
           tomorrowLabel={deliveryDateLabel}
           operationalDate={operationalDate}

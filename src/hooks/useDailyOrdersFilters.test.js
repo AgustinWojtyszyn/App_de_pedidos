@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { matchesDailyOrderStatusFilter } from './useDailyOrdersFilters'
-import { calculateStats } from '../utils/daily/dailyOrderCalculations'
+import { buildDailyOperationalSplit, calculateStats } from '../utils/daily/dailyOrderCalculations'
 
 describe('daily orders status filtering', () => {
   it('pending solo incluye status pending', () => {
@@ -36,6 +36,19 @@ describe('daily orders status filtering', () => {
     expect(stats.postReportExtra).toBe(2)
     expect(stats.archived).toBe(1)
     expect(stats.total).toBe(6)
+  })
+
+  it('separa pedidos del cierre, extras del día y total a preparar por estado operativo', () => {
+    const split = buildDailyOperationalSplit([
+      { id: 'base-normal', status: 'archived', total_items: 1, items: [{ name: 'Opción 1', quantity: 1 }] },
+      { id: 'base-admin', status: 'archived', order_origin: 'admin_extra', total_items: 4, items: [{ name: 'Opción 1', quantity: 4 }] },
+      { id: 'extra-1', status: 'post_report_extra', order_origin: 'admin_extra', total_items: 3, items: [{ name: 'Opción 1', quantity: 3 }] },
+      { id: 'extra-2', status: 'post_report_extra', order_origin: 'admin_extra', total_items: 2, items: [{ name: 'Opción 1', quantity: 2 }] }
+    ])
+
+    expect(split.base).toEqual({ orders: 2, units: 5 })
+    expect(split.postReportExtras).toEqual({ orders: 2, units: 5 })
+    expect(split.total).toEqual({ orders: 4, units: 10 })
   })
 
   it('calculateStats cuenta pedidos extra por cantidad real de menús', () => {

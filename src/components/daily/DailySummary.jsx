@@ -46,7 +46,7 @@ const DailySummary = ({
         <h2 className="text-lg font-black mb-1">📋 Resumen estadístico para PDF</h2>
         <p className="text-[12px] text-gray-700 mb-2">Entrega: {tomorrowLabel}</p>
 
-        <h3 className="text-sm font-bold text-gray-900 mb-1">Pedidos por empresa</h3>
+        <h3 className="text-sm font-bold text-gray-900 mb-1">Viandas por empresa</h3>
         <table className="print-table text-[11px] mb-2 print-block">
           <tbody>
             {Object.entries(stats.byLocation).map(([loc, count]) => (
@@ -164,7 +164,7 @@ const DailySummary = ({
       <section className="daily-analytics print-hide" aria-label="Resumen operativo">
         <div className="daily-section-heading">
           <div><p className="daily-section-kicker">Producción del día</p><h2>Qué sale de cocina</h2></div>
-          <span className="daily-scope">{sortedOrdersLength} pedidos · filtros actuales</span>
+          <span className="daily-scope">{sortedOrdersLength} viandas · filtros actuales</span>
         </div>
         <div className="daily-analytics-grid">
           {[
@@ -257,7 +257,7 @@ const DailySummary = ({
                       <span className="flex shrink-0 items-center gap-2">
                         <span className="text-right">
                           <strong className="block text-xl font-black leading-none text-indigo-900">{card.total || 0}</strong>
-                          <span className="text-[9px] font-medium text-slate-500">pedidos</span>
+                          <span className="text-[9px] font-medium text-slate-500">viandas</span>
                         </span>
                         <span className="text-slate-400">
                           {expanded ? <ChevronUp size={17} aria-hidden="true" /> : <ChevronDown size={17} aria-hidden="true" />}
