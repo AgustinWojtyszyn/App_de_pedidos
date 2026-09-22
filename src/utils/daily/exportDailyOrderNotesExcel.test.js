@@ -10,6 +10,7 @@ import {
   getRemitoIssueFallbackMessage,
   getRemitoRowPriority,
   getOrderRemitoBeverages,
+  getOrderIdentityRows,
   getTotalMenuItemsForRemito,
   isRemitoNumberInCompanyRange,
   isValidRemitoNumberingConfig,
@@ -34,6 +35,73 @@ const makeOrder = (overrides = {}) => ({
 })
 
 describe('daily order notes Excel model', () => {
+  it('vincula cada order.id con nombre e email sin cambiar el contrato UUID de getOrderIds', () => {
+    const customerOrder = makeOrder({
+      customer_name: 'María López',
+      customer_email: 'maria.lopez@example.com',
+      user_id: '10000000-0000-4000-8000-000000000099'
+    })
+    const adminExtra = makeOrder({
+      id: crypto.randomUUID(),
+      order_origin: 'admin_extra',
+      created_by_admin_name: 'Claudia Sarmiento',
+      created_by_admin_email: 'claudia@servifood.com',
+      customer_name: null,
+      customer_email: null
+    })
+
+    expect(getOrderIdentityRows([customerOrder, adminExtra])).toEqual([
+      {
+        orderId: customerOrder.id,
+        personId: customerOrder.user_id,
+        fullName: 'María López',
+        email: 'maria.lopez@example.com',
+        origin: 'user',
+        identityType: 'customer'
+      },
+      {
+        orderId: adminExtra.id,
+        personId: null,
+        fullName: 'Claudia Sarmiento',
+        email: 'claudia@servifood.com',
+        origin: 'admin_extra',
+        identityType: 'admin_creator'
+      }
+    ])
+  })
+
+  it('guarda identidad trazable dentro del snapshot del remito', () => {
+    const order = makeOrder({
+      customer_name: 'Juan Pérez',
+      customer_email: 'juan.perez@example.com',
+      person_key: 'persona-juan'
+    })
+    const snapshot = buildRemitoSnapshot({
+      group: {
+        slug: 'genneia',
+        name: 'Genneia',
+        displayName: 'Genneia',
+        orders: [order]
+      },
+      deliveryDate: '2026-08-05'
+    })
+
+    expect(snapshot.orderIdentities).toContainEqual({
+      orderId: order.id,
+      personId: 'persona-juan',
+      fullName: 'Juan Pérez',
+      email: 'juan.perez@example.com',
+      origin: 'user',
+      identityType: 'customer'
+    })
+    expect(snapshot.sourceOrders[0]).toMatchObject({
+      id: order.id,
+      customer_name: 'Juan Pérez',
+      customer_email: 'juan.perez@example.com',
+      person_key: 'persona-juan'
+    })
+  })
+
   it('includes Greif, Placo and Molinos in remito grouping and excludes global/admin companies', () => {
     const groups = buildCompanyGroups([
       makeOrder({ location: 'Greif', company_slug: 'greif' }),

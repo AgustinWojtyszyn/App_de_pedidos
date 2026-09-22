@@ -236,6 +236,53 @@ export const isRemitoEligibleCompany = (company = {}) =>
 const isAdminExtraOrder = (order = {}) =>
   normalizeCompanyMatchText(order?.order_origin) === 'admin_extra'
 
+const getOrderIdentityName = (order = {}) => {
+  if (isAdminExtraOrder(order)) {
+    return firstNonBlank(
+      order.admin_extra_creator_name,
+      order.created_by_admin_name,
+      order.user_name,
+      order.customer_name
+    )
+  }
+  return firstNonBlank(
+    order.person_name,
+    order.customer_name,
+    order.user_full_name,
+    order.full_name,
+    order.user_name
+  )
+}
+
+const getOrderIdentityEmail = (order = {}) => {
+  if (isAdminExtraOrder(order)) {
+    return firstNonBlank(
+      order.admin_extra_creator_email,
+      order.created_by_admin_email,
+      order.user_email,
+      order.customer_email
+    )
+  }
+  return firstNonBlank(
+    order.person_email,
+    order.customer_email,
+    order.user_email,
+    order.email
+  )
+}
+
+export const getOrderIdentityRows = (orders = []) =>
+  (Array.isArray(orders) ? orders : [])
+    .filter((order) => order && getOrderIds([order]).length === 1)
+    .map((order) => ({
+      orderId: order.id,
+      personId: firstNonBlank(order.person_key, order.user_id) || null,
+      fullName: getOrderIdentityName(order),
+      email: getOrderIdentityEmail(order),
+      origin: isAdminExtraOrder(order) ? 'admin_extra' : 'user',
+      identityType: isAdminExtraOrder(order) ? 'admin_creator' : 'customer'
+    }))
+
 const allowsRemitoBeverages = (order = {}) =>
   isAdminExtraOrder(order) || REMITO_BEVERAGE_COMPANY_SLUGS.has(resolveCompanyForOrder(order).slug)
 
@@ -1162,6 +1209,7 @@ export const buildRemitoSnapshot = ({
     const products = summarizeProducts(group?.orders || [])
     const operationalSummary = summarizeRemitoOperationalOrders(group?.orders || [])
     const orderIds = getOrderIds(group?.orders || [])
+    const orderIdentities = getOrderIdentityRows(group?.orders || [])
     return {
     version: 1,
     status,
@@ -1176,6 +1224,7 @@ export const buildRemitoSnapshot = ({
     issuedAt,
     issuedBy,
     orderIds,
+    orderIdentities,
     ordersCount: orderIds.length || (group?.orders || []).length,
     totalItems: operationalSummary.menuTotal,
     totalMenus: operationalSummary.menuTotal,
@@ -1187,6 +1236,17 @@ export const buildRemitoSnapshot = ({
     products,
     sourceOrders: (group?.orders || []).map((order) => ({
       id: order?.id || null,
+      user_id: order?.user_id || null,
+      person_key: order?.person_key || null,
+      person_name: order?.person_name || null,
+      person_email: order?.person_email || null,
+      customer_name: order?.customer_name || null,
+      customer_email: order?.customer_email || null,
+      customer_phone: order?.customer_phone || null,
+      user_name: order?.user_name || null,
+      user_full_name: order?.user_full_name || null,
+      user_email: order?.user_email || null,
+      full_name: order?.full_name || null,
       status: order?.status || null,
       delivery_date: order?.delivery_date || null,
       service: order?.service || null,
@@ -1252,6 +1312,8 @@ export const remitoFromSnapshot = (snapshot = {}, fallback = {}) => {
     totalDesserts: Number(snapshot.totalDesserts ?? dessertBreakdown.reduce((sum, row) => sum + Number(row?.quantity || 0), 0) ?? 0),
     dessertBreakdown,
     products,
+    orderIdentities: Array.isArray(snapshot.orderIdentities) ? snapshot.orderIdentities : [],
+    sourceOrders: Array.isArray(snapshot.sourceOrders) ? snapshot.sourceOrders : [],
     reused: Boolean(fallback.reused)
   }
 }
