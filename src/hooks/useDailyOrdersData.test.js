@@ -57,6 +57,14 @@ describe('useDailyOrdersData daily orders loading', () => {
     expect(source).not.toContain('isFetchingRef')
   })
 
+  it('does not restart the daily loader when auth emits the same user on tab focus', () => {
+    expect(source).toContain("const userId = user?.id || ''")
+    expect(source).toContain('if (!userId) return []')
+    expect(source).toContain('}, [fetchDailyReportRunStatus, operationalDate, userId])')
+    expect(source).toContain('}, [hasAdminAccess, operationalDate, userId, fetchDailyOrders])')
+    expect(source).not.toContain('}, [fetchDailyReportRunStatus, operationalDate, user])')
+  })
+
   it('polls only the live operational date and pauses while the tab is hidden', () => {
     const historicalGuard = source.indexOf('if (operationalDate !== liveOperationalDate) return')
     const intervalSetup = source.indexOf('const interval = setInterval(refreshIfVisible, 30000)')
