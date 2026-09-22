@@ -263,9 +263,26 @@ const getMenuNames = (items = []) =>
     .filter(Boolean)
     .join('; ') || 'Sin menú'
 
+const getQuantifiedSideSummaryForExcel = (order = {}) => {
+  const counts = new Map()
+
+  getSideAssociationsForOrder(order).forEach((association) => {
+    const label = normalizeText(association.displayLabel || association.label)
+    if (!label) return
+    const current = counts.get(label) || { label, quantity: 0 }
+    current.quantity += 1
+    counts.set(label, current)
+  })
+
+  return [...counts.values()]
+    .map(({ label, quantity }) => `${label}${quantity > 1 ? ` (x${quantity})` : ''}`)
+    .join(', ')
+}
+
 export const buildDailyOrdersExcelDetailRow = (order = {}) => {
   const items = extractOrderItems(order)
   const custom = extractCustomResponses(order)
+  const sideSummary = getQuantifiedSideSummaryForExcel(order)
   const deliveryDate = normalizeText(order.delivery_date || '').slice(0, 10)
 
   return {
@@ -277,7 +294,7 @@ export const buildDailyOrdersExcelDetailRow = (order = {}) => {
     'Fecha de entrega': formatDateOnly(deliveryDate),
     'Turno / servicio': getOrderServiceLabel(order),
     'Menú elegido': getMenuNames(items),
-    Guarniciones: custom.side || 'Sin guarnición',
+    Guarniciones: sideSummary || custom.side || 'Sin guarnición',
     Bebidas: custom.beverage || 'Sin bebida',
     Postres: custom.dessert || 'Sin postre',
     Origen: getAdminExtraOrderLabel(order),
