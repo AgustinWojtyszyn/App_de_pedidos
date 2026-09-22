@@ -33,7 +33,11 @@ const OrderLunchMenuSection = ({ items, selectedItems, onToggleItem, companySlug
           const isDisabled = (hasSelectedRefrigerio && !isRefrigerio) || (hasSelectedMenu && isRefrigerio)
           const { label, dish } = getMenuDisplay(item, Number.isFinite(item?.slotIndex) ? item.slotIndex : index, companySlug)
           const hyperproteicDish = isHyperproteic
-            ? dish.replace(/^hiperproteica\s*[-·:]\s*/i, '').trim()
+            ? (item.hyperproteicDescription || dish)
+              .replace(/\bnueva alternativa hiperproteica\b/gi, '')
+              .replace(/^(?:\s*(?:hiperproteica\b|[-–—·•:]))+/i, '')
+              .replace(/[\s\-–—·•:]+$/, '')
+              .trim()
             : dish
           return (
             <button
@@ -46,7 +50,7 @@ const OrderLunchMenuSection = ({ items, selectedItems, onToggleItem, companySlug
               disabled={isDisabled}
               aria-pressed={isSelected}
               className={`card relative overflow-hidden text-left border-2 rounded-2xl p-5
-                        transition-all duration-300 flex flex-col justify-between min-h-65
+                        transition-all duration-300 flex flex-col justify-between min-h-56
                         focus:outline-none focus:ring-2 focus:ring-blue-400
                         ${isHyperproteic ? 'bg-linear-to-br from-amber-50 via-white to-orange-50 border-amber-300 shadow-lg ring-1 ring-amber-100' : 'bg-white'}
                         ${isDisabled ? 'cursor-not-allowed opacity-55 border-gray-200' : isHyperproteic ? 'cursor-pointer hover:border-orange-400 hover:shadow-2xl hover:-translate-y-0.5' : 'cursor-pointer hover:border-blue-400 hover:shadow-xl'}
@@ -59,19 +63,16 @@ const OrderLunchMenuSection = ({ items, selectedItems, onToggleItem, companySlug
                       <Sparkles className="h-3.5 w-3.5" />
                       Nueva
                     </span>
-                    <span className="text-xs font-extrabold uppercase tracking-[0.16em] text-orange-700">
-                      💪 Hiperproteica
-                    </span>
                   </div>
                 )}
 
-                <h3 className={`${isHyperproteic ? 'text-3xl text-orange-950' : 'text-2xl text-gray-900'} font-extrabold mb-2 leading-tight`}>
+                <h3 className={`${isHyperproteic ? 'text-2xl text-orange-950' : 'text-2xl text-gray-900'} font-extrabold mb-2 leading-tight`}>
                   {isHyperproteic ? `💪 ${label} · Hiperproteica` : label}
                 </h3>
 
-                {dish && (
-                  <p className="text-lg text-gray-800 leading-snug font-medium">
-                    {dish}
+                {hyperproteicDish && (
+                  <p className="text-lg text-gray-800 leading-snug font-semibold">
+                    {hyperproteicDish}
                   </p>
                 )}
               </div>
