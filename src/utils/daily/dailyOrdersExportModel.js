@@ -159,7 +159,17 @@ const getRawItemQuantity = (item = {}) => Number(item.quantity ?? item.qty ?? 1)
 export const getItemLabel = (item = {}) => {
   const name = normalizeText(item.name || item.title || item.menu || item.label)
   const option = normalizeText(item.option || item.selected_option || item.choice)
-  return [name, option].filter(Boolean).join(' - ') || 'Sin menú / opción'
+  const description = normalizeText(item.description || item.dish)
+  const baseLabel = [name, option].filter(Boolean).join(' - ')
+
+  if (description && name) {
+    const genericMenuMatch = name.match(/^(Menú principal|Opción\s+\d+)(?:\s*-\s*Hiperproteica)?$/i)
+    if (genericMenuMatch) {
+      return `${genericMenuMatch[1]} - ${description}`
+    }
+  }
+
+  return baseLabel || description || 'Sin menú / opción'
 }
 
 export const extractOrderItems = (order = {}) => {
@@ -255,7 +265,7 @@ export const buildOrderExportRow = (order = {}) => {
 const getMenuNames = (items = []) =>
   items
     .map((item) => {
-      const label = normalizeText(item.raw?.name || item.raw?.title || item.raw?.menu || item.label)
+      const label = normalizeText(item.label || item.raw?.name || item.raw?.title || item.raw?.menu)
       if (!label) return ''
       const quantity = Number(item.quantity) || 0
       return quantity > 1 ? `${label} (x${quantity})` : label
@@ -267,7 +277,7 @@ const getQuantifiedSideSummaryForExcel = (order = {}) => {
   const counts = new Map()
 
   getSideAssociationsForOrder(order).forEach((association) => {
-    const label = normalizeText(association.displayLabel || association.label)
+    const label = normalizeText(association.label || association.displayLabel)
     if (!label) return
     const current = counts.get(label) || { label, quantity: 0 }
     current.quantity += 1
@@ -554,6 +564,27 @@ const buildInconsistencies = (orders) => {
   return rows
 }
 
+const buildExportOperationalSplit = (orders = []) => {
+  const base = { orders: 0, units: 0 }
+  const postReportExtras = { orders: 0, units: 0 }
+
+  ;(Array.isArray(orders) ? orders : []).filter(Boolean).forEach((order) => {
+    const units = getOrderMenuTotal(order)
+    const target = isAdminExtraOrder(order) ? postReportExtras : base
+    target.orders += 1
+    target.units += units
+  })
+
+  return {
+    base,
+    postReportExtras,
+    total: {
+      orders: base.orders + postReportExtras.orders,
+      units: base.units + postReportExtras.units
+    }
+  }
+}
+
 export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending') => {
   const rows = orders.map(buildOrderExportRow)
   const byLocation = new Map()
@@ -601,7 +632,8 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
   })
 
   const deliveryDateISO = rows.find((row) => row.fechaEntregaISO)?.fechaEntregaISO || ''
-  const operationalSplit = buildDailyOperationalSplit(orders)
+  const operationalSplit = buildExportOperationalSplit(orders)
+  const exportOperationalSplit = buildExportOperationalSplit(orders)
 
   return {
     deliveryDateISO,
@@ -611,6 +643,7 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
     totalOrders: rows.length,
     totalItems,
     operationalSplit,
+    exportOperationalSplit,
     commentsCount,
     extraOrdersCount,
     byLocation: [...byLocation.entries()].map(([label, value]) => ({ label, ...value }))
@@ -665,9 +698,9 @@ export const formatDailyOrdersOperationalText = (orders = [], selectedStatus = '
     '',
     '*RESUMEN GENERAL*',
     '',
-    `*Pedidos del cierre:* ${summary.operationalSplit.base.units} viandas`,
-    `*Pedidos extra del día:* ${summary.operationalSplit.postReportExtras.units} viandas`,
-    `*Total a preparar:* ${summary.operationalSplit.total.units} viandas`,
+    `*Pedidos del cierre:* ${summary.exportOperationalSplit.base.units} viandas`,
+    `*Pedidos extra del día:* ${summary.exportOperationalSplit.postReportExtras.units} viandas`,
+    `*Total a preparar:* ${summary.exportOperationalSplit.total.units} viandas`,
     `*Estado del reporte:* ${summary.inconsistencies.length ? 'Con avisos' : 'Completo'}`,
     '',
     '*TOTALES POR UBICACIÓN / EMPRESA*',
