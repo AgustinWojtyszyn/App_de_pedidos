@@ -217,6 +217,7 @@ export const useAuth = () => {
           }
 
           if (!currentUser) {
+            authenticatedUserIdRef.current = null
             roleRequestIdRef.current += 1
             setUser(null)
             setSession(null)
