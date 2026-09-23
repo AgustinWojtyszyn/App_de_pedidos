@@ -1,325 +1,122 @@
-# 🍽️ ServiFood Order System
+<div align="center">
 
-<p align="center">
-  <strong>Plataforma web full-stack para la gestión integral de pedidos corporativos de alimentación.</strong>
+# ServiFood · App de Pedidos
+
+**Plataforma web para gestionar pedidos corporativos de alimentación, operación multiempresa, reportes y administración.**
+
+<p>
+  <img src="https://img.shields.io/badge/Estado-En%20desarrollo%20activo-16a34a?style=for-the-badge" alt="Estado: desarrollo activo" />
+  <img src="https://img.shields.io/badge/Arquitectura-Multiempresa-2563eb?style=for-the-badge" alt="Arquitectura multiempresa" />
+  <img src="https://img.shields.io/badge/Deploy-Render-0f172a?style=for-the-badge&logo=render&logoColor=white" alt="Render" />
 </p>
 
-<p align="center">
-  Pedidos · Multiempresa · Administración · Reportes · Auditoría · Automatizaciones
+<p>
+  <img src="https://img.shields.io/badge/React-19-20232A?style=flat-square&logo=react&logoColor=61DAFB" alt="React 19" />
+  <img src="https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 7" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
+  <img src="https://img.shields.io/badge/Supabase-Backend-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Vitest-Testing-6E9F18?style=flat-square&logo=vitest&logoColor=white" alt="Vitest" />
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" />
-  <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white" />
-  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tailwind-CSS-06B6D4?logo=tailwindcss&logoColor=white" />
-  <img src="https://img.shields.io/badge/Vitest-Testing-6E9F18?logo=vitest&logoColor=white" />
-  <img src="https://img.shields.io/badge/Render-Deploy-46E3B7?logo=render&logoColor=white" />
-</p>
+</div>
 
 ---
 
-## 🚀 Vista general
+## Sobre el proyecto
 
-**ServiFood Order System** es una plataforma web desarrollada para centralizar y automatizar la operación diaria de pedidos corporativos de alimentación.
+**ServiFood · App de Pedidos** centraliza la gestión diaria de pedidos corporativos, menús, empresas, sedes, permisos, reportes y automatizaciones operativas.
 
-Permite administrar desde un único sistema:
+| Pedidos y operación | Administración y análisis |
+|---|---|
+| Pedidos diarios y extras | Usuarios, roles y permisos |
+| Menús dinámicos por empresa | Panel diario y mensual |
+| Horarios y reglas operativas | Reportes de consumo |
+| Sedes y ubicaciones | Tendencias y totalización |
+| Cafetería y etiquetas | Auditoría y salud del sistema |
+| Estados y validaciones | Exportaciones y automatizaciones |
 
-- pedidos diarios;
-- menús dinámicos;
-- múltiples empresas y sedes;
-- usuarios, roles y permisos;
-- cafetería;
-- etiquetas;
-- reportes operativos;
-- reportes de consumo;
-- estadísticas y tendencias;
-- totalización;
-- auditoría;
-- monitoreo de salud;
-- exportaciones;
-- automatizaciones server-side.
+## Stack tecnológico
 
-La aplicación está desarrollada con **React + Vite** y utiliza **Supabase** como plataforma backend para autenticación, PostgreSQL, políticas de seguridad, RPCs y Edge Functions.
+### Frontend
 
-El deploy productivo se realiza mediante **Render**.
+![React](https://img.shields.io/badge/React_19-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite_7-646CFF?style=flat-square&logo=vite&logoColor=white)
+![React Router](https://img.shields.io/badge/React_Router_7-CA4245?style=flat-square&logo=reactrouter&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![Zustand](https://img.shields.io/badge/Zustand-State-443E38?style=flat-square)
+![Zod](https://img.shields.io/badge/Zod-Validation-3E67B1?style=flat-square)
+![React Hook Form](https://img.shields.io/badge/React_Hook_Form-EC5990?style=flat-square&logo=reacthookform&logoColor=white)
 
----
+Interfaz desarrollada con **React 19**, **Vite 7**, **React Router 7**, **Tailwind CSS 4**, **Framer Motion**, **Zustand**, **Zod**, **React Hook Form**, **Lucide React** y **DOMPurify**.
 
-# 🖥️ Interfaz
+### Backend y datos
 
-## Vista general del sistema
+![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Deno](https://img.shields.io/badge/Deno-Edge_Functions-000000?style=flat-square&logo=deno&logoColor=white)
 
-<p align="center">
-  <img
-    src="https://github.com/user-attachments/assets/ccd822b0-3311-498f-8109-abb1c3185352"
-    alt="ServiFood Order System"
-    width="100%"
-  />
-</p>
+**Supabase** concentra autenticación, PostgreSQL, acceso a datos y lógica server-side. El proyecto utiliza además **Deno** para funciones y automatizaciones del entorno Supabase.
 
----
+### Reportes, comunicación y calidad
 
-## 🏠 Panel principal
+![ExcelJS](https://img.shields.io/badge/ExcelJS-217346?style=flat-square&logo=microsoftexcel&logoColor=white)
+![jsPDF](https://img.shields.io/badge/jsPDF-PDF-b91c1c?style=flat-square)
+![Nodemailer](https://img.shields.io/badge/Nodemailer-Email-22c55e?style=flat-square)
+![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)
+![ESLint](https://img.shields.io/badge/ESLint-4B32C3?style=flat-square&logo=eslint&logoColor=white)
 
-El dashboard concentra el estado del usuario y proporciona acceso directo a los principales módulos del sistema.
+- **ExcelJS** — exportación de reportes a Excel.
+- **jsPDF** — generación de documentos PDF.
+- **Nodemailer** — envío de emails.
+- **Vitest** — tests automatizados.
+- **ESLint** — análisis estático.
+- **Playwright** — pruebas E2E del flujo de etiquetas.
+- **Unlighthouse** — auditorías de rendimiento.
 
-Desde esta vista es posible consultar:
+## Instalación local
 
-- estado del pedido;
-- horario operativo;
-- pedidos del día;
-- pedidos pendientes;
-- pedidos archivados;
-- empresa activa;
-- accesos administrativos;
-- reportes y análisis.
+```bash
+git clone https://github.com/AgustinWojtyszyn/App_de_pedidos.git
+cd App_de_pedidos
+npm install
+```
 
-### 📸 Captura
+Crear `.env` con las variables públicas necesarias para Supabase:
 
-<!--
-ARRASTRÁ ACÁ LA CAPTURA DEL PANEL PRINCIPAL DESDE TU PC.
+```env
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-clave-publica
+```
 
-GitHub va a generar algo parecido a:
+Ejecutar:
 
-![Panel principal](https://github.com/user-attachments/assets/XXXXXXXX)
+```bash
+npm run dev
+```
 
-Borrá este comentario cuando esté subida.
--->
+## Scripts principales
 
----
+| Comando | Uso |
+|---|---|
+| `npm run dev` | Desarrollo local |
+| `npm run build` | Build de producción |
+| `npm run lint` | Análisis estático |
+| `npm test` | Tests automatizados |
+| `npm run test:e2e:labels` | E2E del flujo de etiquetas |
+| `npm run test:load` | Pruebas de carga |
+| `npm run audit:unlighthouse` | Auditoría web |
 
-## 🩺 Salud del sistema
+## Seguridad
 
-El sistema incorpora herramientas administrativas de monitoreo para comprobar el estado de la aplicación y de los servicios asociados.
+Las variables `VITE_*` son públicas para el frontend. No deben contener `service_role`, contraseñas, tokens privados ni secretos administrativos.
 
-Incluye controles sobre:
-
-- disponibilidad de Supabase;
-- conectividad;
-- última ejecución;
-- pedidos creados durante el día;
-- eventos de health check;
-- errores HTTP;
-- latencia;
-- request ID;
-- historial de verificaciones.
-
-### 📸 Captura
-
-<!--
-ARRASTRÁ ACÁ LA CAPTURA "SALUD DEL SISTEMA".
-
-GitHub generará automáticamente la URL pública.
--->
+La aplicación complementa las validaciones del cliente con controles de acceso y lógica del lado de Supabase.
 
 ---
 
-## ⚙️ Panel de administración
+<div align="center">
 
-El panel administrativo centraliza las herramientas necesarias para gestionar la operación de ServiFood.
+**Desarrollado por [Agustin Wojtyszyn](https://github.com/AgustinWojtyszyn)**
 
-Incluye módulos para:
-
-- usuarios;
-- menú;
-- cena;
-- opciones;
-- empresas;
-- cafetería;
-- roles;
-- permisos;
-- configuración operativa.
-
-### 📸 Captura
-
-<!--
-ARRASTRÁ ACÁ LA CAPTURA "PANEL DE ADMINISTRACIÓN".
--->
-
----
-
-# ✨ Funcionalidades
-
-## 🛒 Gestión de pedidos
-
-- Creación de pedidos diarios.
-- Selección dinámica de menú.
-- Modificación controlada.
-- Historial de pedidos.
-- Estados operativos.
-- Validación de horarios.
-- Restricciones según empresa.
-- Control de cantidades.
-- Manejo de opciones especiales.
-- Pedidos administrativos.
-- Gestión de pedidos posteriores al reporte.
-
----
-
-## 🏢 Arquitectura multiempresa
-
-ServiFood permite operar múltiples organizaciones desde una única plataforma.
-
-Cada empresa puede disponer de:
-
-- menú propio;
-- reglas operativas;
-- horarios;
-- sedes;
-- configuración;
-- permisos;
-- reportes;
-- lógica específica.
-
-El sistema también permite combinar menús globales con configuraciones particulares por empresa.
-
----
-
-## 👥 Usuarios, roles y permisos
-
-La aplicación incorpora distintos niveles de acceso.
-
-Entre ellos:
-
-- usuarios estándar;
-- administradores;
-- administradores por empresa;
-- acceso restringido a reportes;
-- permisos específicos para acciones sensibles.
-
-La autorización no depende únicamente del frontend.
-
-Las operaciones críticas también son verificadas mediante:
-
-- PostgreSQL;
-- RPCs;
-- Row Level Security;
-- funciones server-side.
-
----
-
-# 📊 Reportes y análisis
-
-ServiFood incorpora distintas herramientas para analizar la operación.
-
-## Pedidos diarios
-
-Permite consultar y administrar los pedidos correspondientes a una jornada.
-
-## Totalizadora
-
-Agrupa cantidades de platos y opciones para facilitar la preparación.
-
-## Panel mensual
-
-Permite analizar actividad y consumo durante períodos mensuales.
-
-## Reportes de consumo
-
-Generación de información consolidada por:
-
-- usuario;
-- empresa;
-- período;
-- día;
-- tipo de pedido.
-
-## Tendencias
-
-Visualización y análisis de la evolución de pedidos.
-
----
-
-# 🏷️ Sistema de etiquetas
-
-La aplicación dispone de un módulo específico para preparar e imprimir etiquetas operativas.
-
-Permite:
-
-- filtrar pedidos;
-- seleccionar etiquetas;
-- identificar empresa;
-- identificar sede solicitante;
-- controlar impresión;
-- procesar pedidos individualmente.
-
----
-
-# ☕ Cafetería
-
-ServiFood incluye un módulo independiente para gestionar operaciones relacionadas con cafetería.
-
-Esto permite mantener los flujos de cafetería integrados dentro de la misma plataforma operativa.
-
----
-
-# 📄 Generación de documentos
-
-El sistema puede generar distintos documentos operativos.
-
-Entre ellos:
-
-- archivos Excel;
-- reportes;
-- documentos PDF;
-- etiquetas;
-- remitos.
-
-Tecnologías utilizadas:
-
-- **ExcelJS**
-- **jsPDF**
-
----
-
-# 🤖 Automatizaciones
-
-ServiFood incorpora procesos automáticos ejecutados fuera del frontend.
-
-Entre ellos:
-
-- generación de reportes;
-- envío de emails;
-- procesamiento diario;
-- archivado automático;
-- tareas programadas;
-- verificaciones de ejecución.
-
-Los procesos importantes utilizan mecanismos de **idempotencia** para evitar ejecuciones duplicadas.
-
----
-
-# 🏗️ Arquitectura
-
-```text
-┌──────────────────────────────────────┐
-│               Usuario                │
-│        Desktop / Tablet / Mobile     │
-└──────────────────┬───────────────────┘
-                   │
-                   ▼
-┌──────────────────────────────────────┐
-│           React 19 + Vite 7          │
-│                                      │
-│ UI · Routing · State · Validation    │
-└──────────────────┬───────────────────┘
-                   │
-                   ▼
-┌──────────────────────────────────────┐
-│               Supabase               │
-│                                      │
-│ Auth · PostgreSQL · RLS · RPC        │
-│ Edge Functions · Realtime            │
-└──────────────┬─────────────┬─────────┘
-               │             │
-               ▼             ▼
-      ┌────────────────┐  ┌───────────────┐
-      │ Automatización │  │   Reportes    │
-      │   Cron / Jobs  │  │  Excel / PDF  │
-      └────────┬───────┘  └───────────────┘
-               │
-               ▼
-      ┌────────────────┐
-      │ Email / Operación │
-      └────────────────┘
+</div>
