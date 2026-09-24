@@ -47,6 +47,7 @@ const MENU_ITEMS = [
   ['otros_menus', 'Otros menús'],
   ['dieta', 'Dieta'],
   ['celiacos', 'Celíacos'],
+  ['bife_dia', 'Bife del día'],
   ['bife_lomo', 'Bife de lomo'],
   ['bife_pollo', 'Bife de pollo'],
   ['guarniciones', 'Guarniciones']
