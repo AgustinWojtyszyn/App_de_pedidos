@@ -18,6 +18,14 @@ describe('permission validation resilience', () => {
     expect(authSource).toContain('setPermissionError(accessContextError)')
   })
 
+  it('preserves already verified permissions while the same user is revalidated', () => {
+    expect(authSource).toContain('const permissionOwnerIdRef = useRef(null)')
+    expect(authSource).toContain('permissionOwnerIdRef.current && permissionOwnerIdRef.current !== authUser?.id')
+    expect(authSource).toContain('if (!accessContextError) {')
+    expect(authSource).toContain('permissionOwnerIdRef.current = authUser?.id || null')
+    expect(authSource).not.toContain('setPermissionLoading(true)\n    setPermissionError(null)\n    setIsAdmin(false)')
+  })
+
   it('does not use the user role lookup error as the canonical protected-route error', () => {
     expect(authSource).toContain('roleError = roleResult.error || null')
     expect(authSource).not.toContain('setPermissionError(roleError)')
