@@ -34,7 +34,6 @@ import { useDashboardCountdown } from '../hooks/dashboard/useDashboardCountdown'
 import { useDashboardOrders } from '../hooks/dashboard/useDashboardOrders'
 import { useDashboardDerived } from '../hooks/dashboard/useDashboardDerived'
 import { useDashboardOrderActions } from '../hooks/dashboard/useDashboardOrderActions'
-import OrderRegisteredCard from './dashboard/OrderRegisteredCard'
 
 const Dashboard = ({ user, loading }) => {
   const navigate = useNavigate()
@@ -66,8 +65,6 @@ const Dashboard = ({ user, loading }) => {
     headerOrder,
     headerStatus,
     headerSummary,
-    deliveryText,
-    isDeliveringTomorrow
   } = useDashboardDerived({ orders })
 
   const {
@@ -210,7 +207,7 @@ const Dashboard = ({ user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-      <div className="p-6 space-y-6 pb-8">
+      <div className="space-y-4 p-4 pb-6 sm:p-6">
       <ToastBanner toast={toast} />
       <DashboardHeader
         user={user}
@@ -232,16 +229,7 @@ const Dashboard = ({ user, loading }) => {
         changeCompanyHint={changeCompanyHint}
       />
 
-      <div className="mt-8">
-        <StatsCards stats={stats} />
-      </div>
-
-      <OrderRegisteredCard
-        headerOrder={headerOrder}
-        headerSummary={headerSummary}
-        deliveryText={deliveryText}
-        isDeliveringTomorrow={isDeliveringTomorrow}
-      />
+      <StatsCards stats={stats} />
 
       <WeeklyOrdersSection
         weeklyOrders={weeklyOrders}
