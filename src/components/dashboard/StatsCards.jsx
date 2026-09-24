@@ -1,30 +1,23 @@
-import { CheckCircle, Clock } from 'lucide-react'
+import { CheckCircle, Clock, ShoppingBag } from 'lucide-react'
 
-const StatsCards = ({ stats }) => {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pedidos hoy</p>
-        <p className="text-3xl sm:text-4xl font-black text-slate-900">{stats.total}</p>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-yellow-600" />
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pendientes</p>
-        </div>
-        <p className="text-3xl sm:text-4xl font-black text-slate-900">{stats.pending}</p>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-4 w-4 text-emerald-600" />
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Archivados</p>
-        </div>
-        <p className="text-3xl sm:text-4xl font-black text-slate-900">{stats.archived}</p>
-      </div>
+const Stat = ({ icon: Icon, label, value }) => (
+  <div className="flex min-w-0 items-center gap-3 px-3 py-2 sm:px-4">
+    <div className="rounded-lg bg-slate-100 p-2 text-slate-600">
+      <Icon className="h-4 w-4" />
     </div>
-  )
-}
+    <div className="min-w-0">
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-2xl font-black leading-none text-slate-900">{value}</p>
+    </div>
+  </div>
+)
+
+const StatsCards = ({ stats }) => (
+  <div className="grid grid-cols-1 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+    <Stat icon={ShoppingBag} label="Pedidos hoy" value={stats.total} />
+    <Stat icon={Clock} label="Pendientes" value={stats.pending} />
+    <Stat icon={CheckCircle} label="Archivados" value={stats.archived} />
+  </div>
+)
 
 export default StatsCards
