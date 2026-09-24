@@ -111,6 +111,21 @@ const isHyperproteicMenuItem = (item = {}) => {
     description.startsWith('hiperproteica -')
 }
 
+const withoutHyperproteicOption4 = (items = []) => {
+  const indexedItems = withMenuSlotIndex(items)
+  const hadStoredHyperproteic = indexedItems.some(isHyperproteicMenuItem)
+
+  return indexedItems
+    .filter((item) => !isHyperproteicMenuItem(item))
+    .map((item, index) => {
+      const slotIndex = getMenuSlotIndex(item, index)
+      if (!hadStoredHyperproteic || !Number.isFinite(slotIndex) || slotIndex <= HYPERPROTEIC_OPTION_SLOT_INDEX) {
+        return item
+      }
+      return setMenuItemSlot(item, slotIndex - 1)
+    })
+}
+
 const withHyperproteicOption4 = (items = []) => {
   const indexedItems = withMenuSlotIndex(items)
   let hasHyperproteicOption = false
@@ -482,7 +497,7 @@ const filterOrderableMenuItems = (items = [], companySlug = '', deliveryDate = '
   const includeHyperproteic = isWeekdayDeliveryDate(deliveryDate)
   const menuWithHyperproteicOption = includeHyperproteic
     ? withHyperproteicOption4(safeItems)
-    : withMenuSlotIndex(safeItems.filter((item) => !isHyperproteicMenuItem(item)))
+    : withoutHyperproteicOption4(safeItems)
   const companyMenuItems = isIgarretaIsemarCompany(companySlug)
     ? withIgarretaIsemarMenuItems(menuWithHyperproteicOption, { includeHyperproteic })
     : normalizeCompanySlug(companySlug) === HIDDEN_ORDER_MENU_COMPANY_SLUG
