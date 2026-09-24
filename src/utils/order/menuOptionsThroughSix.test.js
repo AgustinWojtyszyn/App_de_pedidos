@@ -169,6 +169,48 @@ describe('menu contract with fixed hyperproteic option 4', () => {
     expect(epse.some((item) => /bife/i.test(`${item.name || ''} ${item.description || ''}`))).toBe(false)
   })
 
+  it('supports one, two or three bife types through company product settings', () => {
+    const bifeMenu = [
+      { id: 'main', name: 'Menú principal', description: 'Principal', slotIndex: 0 },
+      { id: 'day', name: 'Bife del día', description: 'Bife del día' },
+      { id: 'lomo', name: 'Bife de lomo', description: 'Bife de lomo' },
+      { id: 'pollo', name: 'Bife de pollo', description: 'Bife de pollo' }
+    ]
+
+    const oneType = filterOrderableMenuItems(bifeMenu, {
+      slug: 'custom-one',
+      menuItems: [
+        { key: 'bife_dia', enabled: true },
+        { key: 'bife_lomo', enabled: false },
+        { key: 'bife_pollo', enabled: false }
+      ]
+    }, '2026-09-25')
+    const twoTypes = filterOrderableMenuItems(bifeMenu, {
+      slug: 'custom-two',
+      menuItems: [
+        { key: 'bife_dia', enabled: true },
+        { key: 'bife_lomo', enabled: true },
+        { key: 'bife_pollo', enabled: false }
+      ]
+    }, '2026-09-25')
+    const threeTypes = filterOrderableMenuItems(bifeMenu, {
+      slug: 'custom-three',
+      menuItems: [
+        { key: 'bife_dia', enabled: true },
+        { key: 'bife_lomo', enabled: true },
+        { key: 'bife_pollo', enabled: true }
+      ]
+    }, '2026-09-25')
+
+    const countBifes = (items) => items.filter((item) =>
+      /\bbife\b/i.test(`${item.name || ''} ${item.description || ''}`)
+    ).length
+
+    expect(countBifes(oneType)).toBe(1)
+    expect(countBifes(twoTypes)).toBe(2)
+    expect(countBifes(threeTypes)).toBe(3)
+  })
+
   it.each(['igarreta', 'isemar'])(
     'keeps %s continuous with Hiperproteica 4, salad 5 and Celíaco 6',
     (companySlug) => {
