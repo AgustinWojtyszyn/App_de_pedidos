@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { Building2, Clock, Edit, Plus, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react'
-import servifoodLogo from '../../assets/servifood_logo_white_text_HQ.png'
 
 const DashboardHeader = ({
   user,
@@ -32,98 +31,53 @@ const DashboardHeader = ({
 
   return (
     <div className="space-y-4">
-      <section className="dashboardHero">
-        <div className="dashboardHeroContent">
-          <div className="dashboardHeroInfo">
-            <h1 className="dashboardHeroTitle">Panel Principal</h1>
-            <p className="dashboardHeroGreeting">
-              ¡Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}!
+      <section className="rounded-2xl border border-white/20 bg-blue-950/25 px-4 py-4 sm:px-6 sm:py-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-blue-100">
+              Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
             </p>
-            <p className="dashboardHeroDescription">{description}</p>
+            <h1 className="mt-1 text-3xl font-black text-white sm:text-4xl">Panel Principal</h1>
+            <p className="mt-1 text-sm font-semibold text-blue-100/90">{description}</p>
             <div
-              className={`dashboardHeroSchedule ${
+              className={`mt-3 inline-flex max-w-full flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold ${
                 countdownTone === 'urgent'
-                  ? 'dashboardHeroSchedule--urgent'
+                  ? 'border-red-300/60 bg-red-500/20 text-white'
                   : countdownTone === 'warn'
-                  ? 'dashboardHeroSchedule--warn'
-                  : ''
+                    ? 'border-amber-300/60 bg-amber-400/20 text-white'
+                    : 'border-white/20 bg-white/10 text-white'
               }`}
             >
-              <Clock className="h-5 w-5 shrink-0" />
+              <Clock className="h-4 w-4 shrink-0" />
               <span>{scheduleStatus}{scheduleRange ? `: ${scheduleRange}` : ''}</span>
               {countdownText && <span>• {countdownText}</span>}
             </div>
-            <div className="dashboardHeroActions">
-              <button
-                onClick={onRefresh}
-                disabled={refreshing}
-                className={`inline-flex items-center justify-center font-bold py-3 px-6 text-base rounded-xl border transition-all duration-200 ${
-                  refreshing
-                    ? 'bg-gray-200 border-gray-200 cursor-not-allowed text-gray-500'
-                    : 'bg-white text-gray-900 border-white/40 hover:bg-white/90'
-                }`}
-              >
-                <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                {refreshing ? 'Actualizando...' : 'Actualizar'}
-              </button>
-              {!hideNewOrder && (
-                <Link to="/order" className="inline-flex items-center justify-center w-full sm:w-auto text-white font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg rounded-xl border border-blue-300/70 bg-transparent hover:bg-blue-600/25 shadow-lg shadow-blue-900/25 transition-colors">
-                  <Plus className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
-                  Nuevo Pedido
-                </Link>
-              )}
-            </div>
           </div>
 
-          <div className="dashboardHeroBrand">
-            <img
-              src={servifoodLogo}
-              alt="ServiFood"
-              className="dashboardHeroLogo"
-            />
-            <div className="dashboardHeroStars" aria-label="Tres estrellas">
-              <span>★</span>
-              <span>★</span>
-              <span>★</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="dashboardHeroFlag" aria-label="Bandera de Argentina">
-          <div className="dashboardHeroFlagStripe dashboardHeroFlagStripe--sky" />
-          <div className="dashboardHeroFlagStripe dashboardHeroFlagStripe--white">
-            <svg
-              className="dashboardHeroSun"
-              viewBox="0 0 64 64"
-              role="img"
-              aria-label="Sol de Mayo"
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing}
+              className={`inline-flex min-h-11 items-center justify-center rounded-xl border px-4 py-2 text-sm font-bold transition-colors ${
+                refreshing
+                  ? 'cursor-not-allowed border-white/20 bg-white/10 text-white/60'
+                  : 'border-white/30 bg-white/10 text-white hover:bg-white/20'
+              }`}
             >
-              <g fill="none" stroke="#d89b12" strokeLinecap="round" strokeWidth="3">
-                <path d="M32 4v9" />
-                <path d="M32 51v9" />
-                <path d="M4 32h9" />
-                <path d="M51 32h9" />
-                <path d="m12.2 12.2 6.4 6.4" />
-                <path d="m45.4 45.4 6.4 6.4" />
-                <path d="m51.8 12.2-6.4 6.4" />
-                <path d="m18.6 45.4-6.4 6.4" />
-                <path d="M20.4 6.8 24 15" />
-                <path d="M40 49l3.6 8.2" />
-                <path d="M6.8 43.6 15 40" />
-                <path d="M49 24l8.2-3.6" />
-                <path d="M43.6 6.8 40 15" />
-                <path d="M24 49l-3.6 8.2" />
-                <path d="M6.8 20.4 15 24" />
-                <path d="M49 40l8.2 3.6" />
-              </g>
-              <circle cx="32" cy="32" r="13" fill="#f6c445" stroke="#d89b12" strokeWidth="2" />
-              <path d="M24 31c2-3 5-4 8-4s6 1 8 4" fill="none" stroke="#9b6b08" strokeLinecap="round" strokeWidth="2" />
-              <circle cx="27" cy="33" r="1.5" fill="#7a5206" />
-              <circle cx="37" cy="33" r="1.5" fill="#7a5206" />
-              <path d="M27 39c3 2 7 2 10 0" fill="none" stroke="#9b6b08" strokeLinecap="round" strokeWidth="2" />
-            </svg>
+              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Actualizando...' : 'Actualizar'}
+            </button>
+            {!hideNewOrder && (
+              <Link
+                to="/order"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 py-2 text-sm font-black text-blue-800 shadow-sm transition-colors hover:bg-blue-50"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Nuevo pedido
+              </Link>
+            )}
           </div>
-          <div className="dashboardHeroFlagStripe dashboardHeroFlagStripe--sky" />
         </div>
       </section>
 
