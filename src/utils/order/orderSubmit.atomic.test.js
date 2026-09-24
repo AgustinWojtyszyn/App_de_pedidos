@@ -21,6 +21,10 @@ describe('atomic order submission', () => {
     vi.clearAllMocks()
     ordersService.createOrdersAtomic.mockResolvedValue({ data: [{ id: 'lunch-id' }, { id: 'dinner-id' }], error: null })
     ordersService.createOrder.mockResolvedValue({ data: { id: 'single-id' }, error: null })
+    ordersService.getOrders.mockResolvedValue({
+      data: [{ id: 'lunch-id' }, { id: 'dinner-id' }, { id: 'single-id' }],
+      error: null
+    })
   })
 
   it('builds both normalized payloads and submits once, returning every ID', async () => {
@@ -67,6 +71,16 @@ describe('atomic order submission', () => {
     expect((await submitOrders(input())).ok).toBe(false)
   })
 
+  it('does not report success when the created IDs are not visible in the personal dashboard read', async () => {
+    ordersService.getOrders.mockResolvedValue({ data: [{ id: 'lunch-id' }], error: null })
+
+    const result = await submitOrders(input())
+
+    expect(result.ok).toBe(false)
+    expect(result.errorMessage).toContain('no pudimos verificarlo en tu panel')
+    expect(ordersService.getOrders).toHaveBeenCalledWith('atomic-user', { limit: 50 })
+  })
+
   it.each(['dinner_not_enabled', 'duplicate_active_order', 'ORDER_WINDOW_CLOSED', 'location_not_allowed', 'unexpected_failure', 'PGRST202'])('fails closed on %s without individual inserts or compensation', async message => {
     ordersService.createOrdersAtomic.mockResolvedValue({ data: null, error: { message } })
     expect((await submitOrders(input())).ok).toBe(false)
@@ -82,7 +96,7 @@ describe('atomic order submission', () => {
     const calls = ordersService.createOrdersAtomic.mock.calls.map(([rows]) => Object.fromEntries(rows.map(row => [row.service, row.idempotency_key])))
     expect(calls[1]).toEqual(calls[0])
     expect(calls[2]).toEqual(calls[0])
-    expect(ordersService.getOrders).not.toHaveBeenCalled()
+    expect(ordersService.getOrders).toHaveBeenCalled()
   })
 
   it('changes both identities if one member changes', async () => {
