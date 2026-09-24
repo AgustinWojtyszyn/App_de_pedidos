@@ -1203,7 +1203,8 @@ export const buildRemitoSnapshot = ({
   deliveryDate = getDeliveryDate(group?.orders || []),
   issuedAt = null,
   issuedBy = null,
-  status = 'draft'
+  status = 'draft',
+  excludePostReportExtras = false
 } = {}) => {
   try {
     const products = summarizeProducts(group?.orders || [])
@@ -1213,6 +1214,7 @@ export const buildRemitoSnapshot = ({
     return {
     version: 1,
     status,
+    excludePostReportExtras: Boolean(excludePostReportExtras),
     companySlug: group?.slug || '',
     companyName: group?.name || group?.slug || '',
     companyDisplayName: group?.displayName || group?.name || group?.slug || 'Empresa',
