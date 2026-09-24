@@ -75,7 +75,7 @@ describe('menu contract with fixed hyperproteic option 4', () => {
     expect(getMenuDisplay(result[4], 4, 'genneia').dish).toBe('Hiperproteica')
   })
 
-  it('does not let legacy semantic settings hide numbered slots 4 to 7', () => {
+  it('honors the company bife switch without hiding unrelated numbered slots', () => {
     const companyConfig = {
       slug: 'laja',
       menuItems: [
@@ -99,10 +99,10 @@ describe('menu contract with fixed hyperproteic option 4', () => {
       'option-2',
       'option-3',
       'hyper',
-      'option-4',
       'option-5',
       'option-6'
     ])
+    expect(result.some((item) => item.slotIndex === 5)).toBe(false)
   })
 
   it('removes every bife option from EPSE and keeps numbering continuous', () => {
