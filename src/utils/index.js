@@ -350,6 +350,14 @@ export const getUserFriendlyErrorMessage = (error, fallback = 'No pudimos comple
     return 'La empresa existe, pero no tiene configurados todos los datos de numeración de notas de pedido.'
   }
 
+  if (
+    normalized.includes('remito_orders_mismatch') ||
+    normalized.includes('remito_snapshot_orders_mismatch') ||
+    normalized.includes('remito_snapshot_source_orders_mismatch')
+  ) {
+    return 'Los pedidos cambiaron mientras se preparaba la nota de pedido. Recargá y volvé a emitir o actualizar; no se consumió una numeración nueva.'
+  }
+
   if (normalized.includes('company_required') || normalized.includes('company_not_found')) {
     return 'No pudimos identificar la empresa para emitir la nota de pedido.'
   }
