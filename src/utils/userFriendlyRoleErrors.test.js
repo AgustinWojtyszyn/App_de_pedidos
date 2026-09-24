@@ -31,4 +31,10 @@ describe('role update friendly errors', () => {
       'Falta aplicar el SQL de numeración de notas de pedido en la base de datos.'
     )
   })
+  it('transforma desalineación de remito en una instrucción segura de recarga', () => {
+    expect(getUserFriendlyErrorMessage(new Error('remito_orders_mismatch'))).toBe(
+      'Los pedidos cambiaron mientras se preparaba la nota de pedido. Recargá y volvé a emitir o actualizar; no se consumió una numeración nueva.'
+    )
+  })
+
 })
