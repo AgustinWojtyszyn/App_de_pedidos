@@ -1,6 +1,6 @@
 begin;
 
--- Valentina Moreno: acceso de solo lectura al reporte de consumo de Igarreta e ISEMAR.
+-- Refuerzo para vmoreno@imasa.com.ar: acceso de solo lectura al reporte de consumo de Igarreta e ISEMAR.
 -- La autorización por email autenticado evita que el acceso desaparezca si public.users
 -- todavía no está sincronizado con el UUID de Auth. Si el perfil existe, también dejamos
 -- persistidos los permisos granulares.
