@@ -11,12 +11,38 @@ import {
 
 const PAGE_SIZE = 50
 const SERVER_PAGE_SIZE = 100
+const LABEL_DELIVERY_DATE_STORAGE_KEY = 'sf-order-labels-delivery-date'
+
+const getPersistedDeliveryDate = () => {
+  const fallbackDate = getTodayISOInTimeZone()
+  if (typeof window === 'undefined') return fallbackDate
+  try {
+    const persisted = window.localStorage.getItem(LABEL_DELIVERY_DATE_STORAGE_KEY)
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(persisted || ''))
+      ? persisted
+      : fallbackDate
+  } catch {
+    return fallbackDate
+  }
+}
+
+const persistDeliveryDate = (value) => {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(
+      LABEL_DELIVERY_DATE_STORAGE_KEY,
+      /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? value : getTodayISOInTimeZone()
+    )
+  } catch {
+    // El filtro sigue funcionando aunque el navegador bloquee storage.
+  }
+}
 
 const createInitialFilters = () => ({
   search: '',
   email: '',
   company: 'all',
-  deliveryDate: getTodayISOInTimeZone(),
+  deliveryDate: getPersistedDeliveryDate(),
   fromDate: '',
   toDate: '',
   location: '',
@@ -93,6 +119,7 @@ export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminC
   }, [accessLocations, isAdmin, selectedCompanyLocations])
 
   const updateFilter = useCallback((name, value) => {
+    if (name === 'deliveryDate') persistDeliveryDate(value)
     setFilters(prev => ({ ...prev, [name]: value }))
     setPage(0)
     setPreviewMode(false)
@@ -100,7 +127,9 @@ export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminC
   }, [])
 
   const clearFilters = useCallback(() => {
-    setFilters(createInitialFilters())
+    const deliveryDate = getTodayISOInTimeZone()
+    persistDeliveryDate(deliveryDate)
+    setFilters({ ...createInitialFilters(), deliveryDate })
     setPage(0)
     setPreviewMode(false)
     setPrintWarning('')
