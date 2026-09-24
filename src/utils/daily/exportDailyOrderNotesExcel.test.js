@@ -829,6 +829,45 @@ describe('daily order notes Excel model', () => {
     }))
   })
 
+  it('quantifies a Padre Bueno admin extra with several menu options as separate remito rows', () => {
+    const order = makeOrder({
+      id: '10000000-0000-4000-8000-000000000024',
+      order_origin: 'admin_extra',
+      company_slug: 'padrebueno',
+      company_name: 'Padre Bueno',
+      location: 'Padre Bueno',
+      total_items: 8,
+      items: [
+        { id: 'op-1', name: 'Opción 1 - Pollo', quantity: 3 },
+        { id: 'op-2', name: 'Opción 2 - Carne', quantity: 4 },
+        { id: 'op-3', name: 'Opción 3 - Tarta', quantity: 1 }
+      ],
+      custom_responses: []
+    })
+    const products = summarizeProducts([order])
+    const snapshot = buildRemitoSnapshot({
+      group: {
+        slug: 'padrebueno',
+        name: 'Padre Bueno',
+        displayName: 'Padre Bueno',
+        orders: [order]
+      },
+      deliveryDate: '2026-09-25',
+      status: 'draft'
+    })
+
+    expect(products).toEqual(expect.arrayContaining([
+      expect.objectContaining({ producto: 'Opción 1 - Pollo', cantidad: 3 }),
+      expect.objectContaining({ producto: 'Opción 2 - Carne', cantidad: 4 }),
+      expect.objectContaining({ producto: 'Opción 3 - Tarta', cantidad: 1 })
+    ]))
+    expect(snapshot.ordersCount).toBe(1)
+    expect(snapshot.totalMenus).toBe(8)
+    expect(snapshot.totalItems).toBe(8)
+    expect(getPrintableDetailRows(snapshot.products).find((row) => row.producto === 'TOTAL MENÚS / VIANDAS'))
+      .toMatchObject({ cantidad: 8 })
+  })
+
   it('sums real menu units in remito snapshots instead of counting distinct option rows', () => {
     const snapshot = buildRemitoSnapshot({
       group: {
