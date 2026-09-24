@@ -178,6 +178,22 @@ const submitOrders = async ({
   if (createdOrderIds.length !== payloads.length) {
     return { ok: false, errorMessage: 'No pudimos confirmar el pedido. Intentá nuevamente.', forceLunchOnly: false }
   }
+
+  // No mostrar "pedido registrado" hasta comprobar que las mismas filas que
+  // alimentan el panel personal ya pueden leerse con la sesión del usuario.
+  // Si esta verificación falla, la idempotencia permite reintentar sin duplicar.
+  const { data: visibleOrders, error: visibilityError } = await ordersService.getOrders(user?.id, { limit: 50 })
+  const visibleIds = new Set((Array.isArray(visibleOrders) ? visibleOrders : []).map(order => order?.id).filter(Boolean))
+  const allCreatedOrdersVisible = !visibilityError && createdOrderIds.every(orderId => visibleIds.has(orderId))
+
+  if (!allCreatedOrdersVisible) {
+    return {
+      ok: false,
+      errorMessage: 'El pedido se envió pero no pudimos verificarlo en tu panel. Intentá nuevamente: no se duplicará.',
+      forceLunchOnly: false
+    }
+  }
+
   return { ok: true, createdOrderIds }
 }
 
