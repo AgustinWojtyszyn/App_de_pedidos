@@ -154,9 +154,9 @@ describe('daily orders export model', () => {
 
     expect(summary.totalItems).toBe(5)
     expect(summary.extraOrdersCount).toBe(1)
-    expect(row.Origen).toBe('Extra')
     expect(row.Cliente).toBe('Solicitado por Claudia Sarmiento')
-    expect(row.Email).toBe('claudia@servifood.com')
+    expect(row).not.toHaveProperty('Email')
+    expect(row).not.toHaveProperty('Origen')
     expect(summary.rows[0].cliente).toBe('Solicitado por Claudia Sarmiento')
     expect(summary.rows[0].email).toBe('claudia@servifood.com')
     expect(row['Menú elegido']).toBe('Opción 1 - BIDE DEL DIA (x3); Opción 2 - Pollo (x2)')
@@ -306,7 +306,7 @@ describe('daily orders export model', () => {
     expect(getOrderCustomer(extraOrder)).toBe('Solicitado por admin@example.com')
     expect(getOrderEmail(extraOrder)).toBe('admin@example.com')
     expect(row.Cliente).toBe('Solicitado por admin@example.com')
-    expect(row.Email).toBe('admin@example.com')
+    expect(row).not.toHaveProperty('Email')
   })
 
   it('usa fallback legado para pedido extra sin datos de trazabilidad', () => {
@@ -324,7 +324,7 @@ describe('daily orders export model', () => {
     expect(getOrderCustomer(extraOrder)).toBe('Solicitado por administrador')
     expect(getOrderEmail(extraOrder)).toBe('')
     expect(row.Cliente).toBe('Solicitado por administrador')
-    expect(row.Email).toBe('')
+    expect(row).not.toHaveProperty('Email')
   })
 
   it('genera nombre de Excel con delivery_date y estado', () => {
@@ -346,32 +346,28 @@ describe('daily orders export model', () => {
 
     expect(Object.keys(rows[0])).toEqual([
       'Cliente',
-      'Email',
-      'Organización',
       'Ubicación / empresa',
-      'Lugar de entrega',
-      'Fecha de entrega',
       'Turno / servicio',
       'Menú elegido',
       'Guarniciones',
       'Bebidas',
-      'Postres',
-      'Origen',
-      'Comentarios'
+      'Postres'
     ])
     expect(rows[0]).toMatchObject({
       Cliente: 'Nombre Desde Vista',
-      Email: 'vista@example.com',
       'Ubicación / empresa': 'Genneia',
-      'Fecha de entrega': '25/06/2026',
       'Turno / servicio': 'Almuerzo',
       'Menú elegido': 'Opción 1 - BIDE DEL DIA',
       Guarniciones: 'Puré',
       Bebidas: 'Coca cola (x3)',
-      Postres: 'Fruta (x3)',
-      Origen: 'Normal',
-      Comentarios: 'Sin sal'
+      Postres: 'Fruta (x3)'
     })
+    expect(rows[0]).not.toHaveProperty('Email')
+    expect(rows[0]).not.toHaveProperty('Organización')
+    expect(rows[0]).not.toHaveProperty('Lugar de entrega')
+    expect(rows[0]).not.toHaveProperty('Fecha de entrega')
+    expect(rows[0]).not.toHaveProperty('Origen')
+    expect(rows[0]).not.toHaveProperty('Comentarios')
     expect(rows[0]).not.toHaveProperty('Opción elegida')
     expect(rows[0]).not.toHaveProperty('Respuestas personalizadas')
     expect(rows[0]).not.toHaveProperty('Estado')
