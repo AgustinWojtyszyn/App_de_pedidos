@@ -556,6 +556,8 @@ begin
 end;
 $$;
 
+drop function if exists public.get_late_admin_extra_history_for_day(date);
+
 create or replace function public.get_late_admin_extra_history_for_day(p_operational_date date)
 returns setof public.late_admin_extra_order_history
 language plpgsql
