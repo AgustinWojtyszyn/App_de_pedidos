@@ -16,6 +16,11 @@ const BASE_VIEWER_EMAILS = [
   'vcastilla@imasa.com.ar'
 ]
 const MARIANELA_EMAIL = 'marianelaborras@gmail.com'
+const valentinaAccess = readFileSync(
+  new URL('./20260924153500_add_valentina_moreno_consumption_access.sql', import.meta.url),
+  'utf8'
+)
+const VALENTINA_EMAIL = 'vmoreno@imasa.com.ar'
 
 describe('Igarreta + ISEMAR consumption viewer access repair', () => {
   it('grants the verified viewers report access to both companies', () => {
@@ -25,6 +30,14 @@ describe('Igarreta + ISEMAR consumption viewer access repair', () => {
     expect(migration).toContain("c.slug in ('igarreta', 'isemar')")
     expect(marianelaIdentityRepair).toContain("c.slug in ('igarreta', 'isemar')")
     expect(marianelaIdentityRepair).toContain('on conflict (user_id, permission, company_slug) do nothing')
+  })
+
+  it('keeps Valentina authorized for both Igarreta and ISEMAR even if public.users identity is resynced', () => {
+    expect(valentinaAccess).toContain(VALENTINA_EMAIL)
+    expect(valentinaAccess).toContain("r.slug in ('igarreta', 'isemar')")
+    expect(valentinaAccess).toContain("select u.id, 'consumption_report_viewer', c.slug")
+    expect(valentinaAccess).toContain('auth.jwt()')
+    expect(valentinaAccess).not.toContain('insert into public.company_admins')
   })
 
   it('keeps the viewers scoped to the report instead of promoting them to company admins', () => {
