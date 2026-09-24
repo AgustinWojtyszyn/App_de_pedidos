@@ -23,6 +23,7 @@ import {
   getCustomSide,
   getDefaultReportDate,
   getOrderTotalItems,
+  getOperationalResponseRows,
   getEmailSubject,
   getMenuOptionText,
   getRecipientsForMode,
@@ -92,9 +93,20 @@ type ReportFailureContext = {
 
 const getMenuNames = (order: ReturnType<typeof normalizeOrder>) =>
   order.items
-    .map((item) => String(item.name || item.title || item.menu || '').trim())
+    .map((item) => {
+      const name = String(item.name || item.title || item.menu || '').trim()
+      const quantity = Number(item.quantity || item.qty || 1)
+      return name ? `${name}${quantity > 1 ? ` (x${quantity})` : ''}` : ''
+    })
     .filter(Boolean)
     .join('; ') || 'Sin menú'
+
+const formatOperationalRows = (
+  rows: Array<{ label: string; quantity: number }>,
+  emptyLabel: string
+) => rows
+  .map((row) => `${row.label}${row.quantity > 1 ? ` (x${row.quantity})` : ''}`)
+  .join(', ') || emptyLabel
 
 const addHeaderStyle = (worksheet: ExcelJS.Worksheet) => {
   worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
@@ -162,41 +174,35 @@ const buildWorkbook = async ({
   const details = workbook.addWorksheet('Pedidos Detallados')
   details.columns = [
     { header: 'Cliente', key: 'cliente', width: 24 },
-    { header: 'Organización', key: 'organizacion', width: 20 },
     { header: 'Ubicación / empresa', key: 'ubicacion', width: 28 },
-    { header: 'Lugar de entrega', key: 'lugarEntrega', width: 28 },
-    { header: 'Fecha de entrega', key: 'fechaEntrega', width: 18 },
     { header: 'Turno / servicio', key: 'turno', width: 16 },
-    { header: 'Menú elegido', key: 'menu', width: 36 },
-    { header: 'Guarniciones', key: 'guarniciones', width: 24 },
-    { header: 'Comentarios', key: 'comentarios', width: 36 }
+    { header: 'Menú elegido', key: 'menu', width: 42 },
+    { header: 'Guarniciones', key: 'guarniciones', width: 28 },
+    { header: 'Bebidas', key: 'bebidas', width: 28 },
+    { header: 'Postres', key: 'postres', width: 28 }
   ]
 
   if (isTest) {
     details.addRow({
       cliente: 'PRUEBA - NO USAR PARA PRODUCCIÓN',
-      organizacion: '',
       ubicacion: '',
-      lugarEntrega: '',
-      fechaEntrega: formatDateEs(reportDate),
       turno: '',
       menu: '',
       guarniciones: '',
-      comentarios: ''
+      bebidas: '',
+      postres: ''
     })
   }
 
   orders.forEach((order) => {
     details.addRow({
       cliente: order.customer_name || order.user_name || 'Sin nombre',
-      organizacion: order.organization || order.company_name || order.company || '',
       ubicacion: order.location || order.company_name || order.company || 'Sin ubicación / empresa',
-      lugarEntrega: order.delivery_location || order.location || order.company_name || order.company || 'Sin ubicación / empresa',
-      fechaEntrega: formatDateEs(String(order.delivery_date || reportDate)),
       turno: getServiceLabel(order.service),
       menu: getMenuNames(order),
       guarniciones: getCustomSide(order) || 'Sin guarnición',
-      comentarios: order.comments || 'Sin comentarios'
+      bebidas: formatOperationalRows(getOperationalResponseRows(order, 'bebida'), 'Sin bebida'),
+      postres: formatOperationalRows(getOperationalResponseRows(order, 'postre'), 'Sin postre')
     })
   })
   addHeaderStyle(details)
@@ -237,7 +243,6 @@ const buildWorkbook = async ({
     const pedido = order.customer_name || order.user_name || `Pedido ${index + 1}`
     const ubicacion = order.location || order.company_name || order.company || 'Sin ubicación'
     if (!order.customer_name && !order.user_name) issueRows.push({ pedido, ubicacion, problema: 'Sin cliente' })
-    if (!order.customer_email && !order.user_email) issueRows.push({ pedido, ubicacion, problema: 'Sin email' })
     if (!order.location && !order.company && !order.company_name) issueRows.push({ pedido, ubicacion, problema: 'Sin ubicación' })
     if (!order.items.length) issueRows.push({ pedido, ubicacion, problema: 'Sin items' })
     ;(order.normalization_warnings || []).forEach((warning) => {
