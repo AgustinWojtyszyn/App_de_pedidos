@@ -100,6 +100,29 @@ describe('daily order notes Excel model', () => {
       customer_email: 'juan.perez@example.com',
       person_key: 'persona-juan'
     })
+    expect(snapshot.excludePostReportExtras).toBe(false)
+  })
+
+  it('persists the explicit remito scope when post-report extras are excluded', () => {
+    const order = makeOrder({
+      status: 'archived',
+      company_slug: 'padrebueno',
+      company_name: 'Padre Bueno',
+      location: 'Padre Bueno'
+    })
+    const snapshot = buildRemitoSnapshot({
+      group: {
+        slug: 'padrebueno',
+        name: 'Padre Bueno',
+        displayName: 'Padre Bueno',
+        orders: [order]
+      },
+      deliveryDate: '2026-09-23',
+      status: 'issued',
+      excludePostReportExtras: true
+    })
+
+    expect(snapshot.excludePostReportExtras).toBe(true)
   })
 
   it('includes Greif, Placo and Molinos in remito grouping and excludes global/admin companies', () => {
