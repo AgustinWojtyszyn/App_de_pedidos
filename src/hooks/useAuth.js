@@ -30,6 +30,7 @@ export const useAuth = () => {
   const mountedRef = useRef(true)
   const refreshInFlightRef = useRef(null)
   const authenticatedUserIdRef = useRef(null)
+  const permissionOwnerIdRef = useRef(null)
 
   const logRoleDebug = useCallback((...args) => {
     if (import.meta.env.DEV) {
@@ -46,13 +47,20 @@ export const useAuth = () => {
 
     setPermissionLoading(true)
     setPermissionError(null)
-    setIsAdmin(false)
-    setIsCompanyAdmin(false)
-    setCanViewConsumptionReport(false)
-    setCanCreateLateAdminExtraOrder(false)
-    setCanManageLateExtraHistory(false)
-    setCanManageOrderDiscounts(false)
-    setAdminCompanies([])
+
+    // Mantener permisos ya verificados mientras se revalidan. Solo se limpian
+    // cuando realmente cambió el usuario; un timeout/error no debe hacer
+    // desaparecer rutas autorizadas del menú.
+    if (permissionOwnerIdRef.current && permissionOwnerIdRef.current !== authUser?.id) {
+      permissionOwnerIdRef.current = null
+      setIsAdmin(false)
+      setIsCompanyAdmin(false)
+      setCanViewConsumptionReport(false)
+      setCanCreateLateAdminExtraOrder(false)
+      setCanManageLateExtraHistory(false)
+      setCanManageOrderDiscounts(false)
+      setAdminCompanies([])
+    }
 
     try {
       if (import.meta.env.DEV) {
@@ -128,13 +136,21 @@ export const useAuth = () => {
       }
 
       setUser((prev) => (prev ? { ...prev, ...authUser, role: normalizedRole } : { ...authUser, role: normalizedRole }))
-      setIsAdmin(isAdminRole)
-      setIsCompanyAdmin(isCompanyAdminRole)
-      setCanViewConsumptionReport(canViewConsumption)
-      setCanCreateLateAdminExtraOrder(canCreateLateExtra)
-      setCanManageLateExtraHistory(canManageLateHistory)
-      setCanManageOrderDiscounts(canManageDiscounts)
-      setAdminCompanies(contextCompanies)
+
+      if (!accessContextError) {
+        setIsAdmin(isAdminRole)
+        setIsCompanyAdmin(isCompanyAdminRole)
+        setCanViewConsumptionReport(canViewConsumption)
+        setCanCreateLateAdminExtraOrder(canCreateLateExtra)
+        setCanManageLateExtraHistory(canManageLateHistory)
+        setCanManageOrderDiscounts(canManageDiscounts)
+        setAdminCompanies(contextCompanies)
+        permissionOwnerIdRef.current = authUser?.id || null
+      } else if (normalizedRole === 'admin') {
+        // El rol global confirmado por public.users sigue siendo válido aunque
+        // falle temporalmente el contexto adicional.
+        setIsAdmin(true)
+      }
 
       // Access context is the canonical source for protected-route permissions.
       // A failure here must never be interpreted as "the user has no permission".
@@ -171,13 +187,16 @@ export const useAuth = () => {
       }
 
       setUser((prev) => prev || authUser)
-      setIsAdmin(false)
-      setIsCompanyAdmin(false)
-      setCanViewConsumptionReport(false)
-      setCanCreateLateAdminExtraOrder(false)
-      setCanManageLateExtraHistory(false)
-      setCanManageOrderDiscounts(false)
-      setAdminCompanies([])
+      if (permissionOwnerIdRef.current && permissionOwnerIdRef.current !== authUser?.id) {
+        permissionOwnerIdRef.current = null
+        setIsAdmin(false)
+        setIsCompanyAdmin(false)
+        setCanViewConsumptionReport(false)
+        setCanCreateLateAdminExtraOrder(false)
+        setCanManageLateExtraHistory(false)
+        setCanManageOrderDiscounts(false)
+        setAdminCompanies([])
+      }
       setPermissionError(error)
       return { data: null, error }
     } finally {
@@ -218,6 +237,7 @@ export const useAuth = () => {
 
           if (!currentUser) {
             authenticatedUserIdRef.current = null
+            permissionOwnerIdRef.current = null
             roleRequestIdRef.current += 1
             setUser(null)
             setSession(null)
@@ -243,6 +263,7 @@ export const useAuth = () => {
           validateUserRole(currentUser)
         } else {
           authenticatedUserIdRef.current = null
+          permissionOwnerIdRef.current = null
           roleRequestIdRef.current += 1
           setUser(null)
           setSession(null)
@@ -261,6 +282,7 @@ export const useAuth = () => {
       } catch (error) {
         console.error('Error initializing auth:', error)
         authenticatedUserIdRef.current = null
+        permissionOwnerIdRef.current = null
         roleRequestIdRef.current += 1
         setUser(null)
         setSession(null)
@@ -312,6 +334,7 @@ export const useAuth = () => {
         })
       } else if (event === 'SIGNED_OUT') {
         authenticatedUserIdRef.current = null
+        permissionOwnerIdRef.current = null
         roleRequestIdRef.current += 1
         setUser(null)
         setSession(null)
