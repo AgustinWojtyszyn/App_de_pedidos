@@ -89,11 +89,11 @@ const addDetailsSheet = (workbook, summary) => {
   worksheet.columns = Object.keys(rows[0] || {
     Cliente: '',
     'Ubicación / empresa': '',
-    'Fecha de entrega': '',
     'Turno / servicio': '',
     'Menú elegido': '',
     Guarniciones: '',
-    Comentarios: ''
+    Bebidas: '',
+    Postres: ''
   }).map((key) => ({ header: key, key }))
   worksheet.addRows(rows)
   applyHeaderStyle(worksheet)
