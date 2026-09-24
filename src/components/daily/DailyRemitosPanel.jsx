@@ -265,7 +265,7 @@ export const buildDailyRemitoRows = ({
   return rows
 }
 
-const buildFreshGroupForRemito = ({
+export const buildFreshGroupForRemito = ({
   orders = [],
   existing = {},
   fallbackGroup = {},
@@ -436,27 +436,52 @@ const DailyRemitosPanel = ({
     const key = `${group.slug}:${rowLocationKey || 'all'}`
     setBusyKey(key)
     try {
-      const snapshot = buildRemitoSnapshot({
-        group,
+      const refreshedOrders = await onRefresh?.()
+      if (!Array.isArray(refreshedOrders)) {
+        notifyError('No pudimos verificar los pedidos vigentes antes de emitir el remito. Recargá e intentá nuevamente.')
+        return
+      }
+
+      const freshGroup = buildFreshGroupForRemito({
+        orders: refreshedOrders,
+        existing: {
+          company_slug: group.slug,
+          company_name: group.name,
+          delivery_date: deliveryDate,
+          location_key: rowLocationKey
+        },
+        fallbackGroup: group,
         deliveryDate,
-        status: 'issued'
+        excludePostReportExtras
+      })
+
+      if (!Array.isArray(freshGroup.orders) || freshGroup.orders.length === 0) {
+        notifyError('No se puede emitir un remito sin pedidos vigentes.')
+        return
+      }
+
+      const snapshot = buildRemitoSnapshot({
+        group: freshGroup,
+        deliveryDate,
+        status: 'issued',
+        excludePostReportExtras
       })
       const { data, error } = await db.issueCompanyRemito({
-        companySlug: group.slug,
-        companyName: group.name,
+        companySlug: freshGroup.slug,
+        companyName: freshGroup.name,
         deliveryDate,
-        orderIds: getOrderIds(group.orders),
-        requestId: buildRequestId({ group, deliveryDate, locationKey: rowLocationKey }),
+        orderIds: getOrderIds(freshGroup.orders),
+        requestId: buildRequestId({ group: freshGroup, deliveryDate, locationKey: rowLocationKey }),
         snapshot,
         locationKey: rowLocationKey
       })
       if (error) {
-        notifyError(getUserFriendlyErrorMessage(error, getRemitoIssueFallbackMessage(group.displayName, error)))
+        notifyError(getUserFriendlyErrorMessage(error, getRemitoIssueFallbackMessage(freshGroup.displayName, error)))
         return
       }
       const issuedNumber = Number(data?.remito_number)
-      if (!isRemitoNumberInCompanyRange(data?.company_slug || group.slug, issuedNumber, remitoConfigBySlug)) {
-        notifyError(`La nota de pedido para ${group.displayName} recibió un número fuera del rango de su empresa.`)
+      if (!isRemitoNumberInCompanyRange(data?.company_slug || freshGroup.slug, issuedNumber, remitoConfigBySlug)) {
+        notifyError(`La nota de pedido para ${freshGroup.displayName} recibió un número fuera del rango de su empresa.`)
         return
       }
       await loadRemitos()
@@ -515,7 +540,8 @@ const DailyRemitosPanel = ({
           email: existing?.issued_by_email || null,
           name: existing?.issued_by_name || null
         },
-        status: existing.status || 'issued'
+        status: existing.status || 'issued',
+        excludePostReportExtras
       })
       const currentSnapshot = existing?.snapshot && typeof existing.snapshot === 'object' ? existing.snapshot : {}
       const sameOrders = arraysMatchAsSet(currentSnapshot.orderIds || existing.order_ids || [], orderIds)
