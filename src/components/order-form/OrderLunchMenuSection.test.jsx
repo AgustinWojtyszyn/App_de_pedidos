@@ -76,7 +76,7 @@ describe('OrderLunchMenuSection', () => {
     expect(html.slice(html.indexOf('Opción 7'))).toContain('CELIACO')
   })
 
-  it('renders the broken EPSE tail as 5 Bife, 6 Ensalada and one 7 Celíaco', () => {
+  it('renders the broken EPSE tail without bife and compacts Ensalada/Celíaco', () => {
     const brokenEpseMenu = [
       { id: 'main', name: 'Menú principal', description: 'MILANESA', slotIndex: 0 },
       { id: 'one', name: 'Opción 1', description: 'UNO', slotIndex: 1 },
@@ -91,10 +91,10 @@ describe('OrderLunchMenuSection', () => {
 
     const html = renderLunchMenu('epse', filterOrderableMenuItems(brokenEpseMenu, 'epse'))
 
-    expect(textBetween(html, 'Opción 5', 'Opción 6')).toContain('BIFE DE POLLO')
-    expect(textBetween(html, 'Opción 6', 'Opción 7')).toContain('ENSALADA MIX DE HOJAS')
-    expect(html.slice(html.indexOf('Opción 7'))).toContain('CELIACO')
-    expect((html.match(/Opción 7/g) || [])).toHaveLength(1)
+    expect(textBetween(html, 'Opción 5', 'Opción 6')).toContain('ENSALADA MIX DE HOJAS')
+    expect(html.slice(html.indexOf('Opción 6'))).toContain('CELIACO')
+    expect(html).not.toContain('BIFE DE POLLO')
+    expect((html.match(/Opción 7/g) || [])).toHaveLength(0)
   })
 
   it.each(['genneia', 'greif', 'administracion_servifood', 'laja', 'padrebueno', 'ccp', 'losberros'])(
