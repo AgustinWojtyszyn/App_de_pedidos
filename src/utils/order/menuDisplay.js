@@ -327,13 +327,21 @@ const setMenuItemSlot = (item = {}, slotIndex) => {
 const isBifeMenuItem = (item = {}) =>
   /\bbife\b/i.test(normalizeText(`${item?.name || ''} ${item?.displayName || ''} ${item?.description || ''}`))
 
+const isEpseBifeTypeOption = (item = {}, fallbackIndex = null) => {
+  const slotIndex = getMenuSlotIndex(item, fallbackIndex)
+  return !isHyperproteicMenuItem(item) &&
+    Number.isFinite(slotIndex) &&
+    slotIndex >= HYPERPROTEIC_OPTION_SLOT_INDEX &&
+    isBifeMenuItem(item)
+}
+
 const normalizeEpseMenuItems = (items = [], { includeHyperproteic = true } = {}) => {
   const lastHeadSlot = includeHyperproteic
     ? HYPERPROTEIC_OPTION_SLOT_INDEX
     : HYPERPROTEIC_OPTION_SLOT_INDEX - 1
   const nonEmptyItems = items
     .filter((item, index) => !isEmptyNumberedMenuItem(item, index))
-    .filter((item) => !isBifeMenuItem(item))
+    .filter((item, index) => !isEpseBifeTypeOption(item, index))
   const head = nonEmptyItems.filter((item, index) => getMenuSlotIndex(item, index) <= lastHeadSlot)
   const tail = nonEmptyItems.filter((item, index) => getMenuSlotIndex(item, index) > lastHeadSlot)
 
