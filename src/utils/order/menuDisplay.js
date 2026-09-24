@@ -235,6 +235,7 @@ const getMenuItemKey = (item = {}, fallbackIndex = null) => {
   if (slotIndex === 0) return 'menu_principal'
   if (/bife[^a-záéíóúñ]*.*lomo|lomo[^a-záéíóúñ]*.*bife/i.test(text)) return 'bife_lomo'
   if (/bife[^a-záéíóúñ]*.*pollo|pollo[^a-záéíóúñ]*.*bife/i.test(text)) return 'bife_pollo'
+  if (/\bbife\b/i.test(text)) return 'bife_dia'
   if (text.includes('dieta')) return 'dieta'
   if (text.includes('celiac')) return 'celiacos'
   if (text.includes('guarnicion') || text.includes('guarnición')) return 'guarniciones'
