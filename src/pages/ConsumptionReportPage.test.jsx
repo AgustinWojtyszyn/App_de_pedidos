@@ -33,6 +33,13 @@ describe('ConsumptionReportPage', () => {
     expect(source).not.toContain('<option value="isemar">')
   })
 
+  it('loads the report from the RPC even while auth-context permissions are refreshing', () => {
+    expect(source).toContain('// La ruta ya exige sesión. El RPC es la fuente de verdad de permisos:')
+    expect(source).toContain('loadReport()')
+    expect(source).not.toContain('if (isAdmin || canViewConsumptionReport) loadReport()')
+    expect(source).not.toContain("useAuthContext")
+  })
+
   it('does not clear known authorized companies when access-context refresh fails', () => {
     expect(source).toContain("if (!accessResult?.error && Array.isArray(accessResult?.data?.consumption_report_companies))")
     expect(source).toContain('setAuthorizedCompanies(accessResult.data.consumption_report_companies)')
