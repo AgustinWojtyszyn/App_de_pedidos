@@ -58,7 +58,7 @@ export const useEditOrderBootstrap = ({ order, user, navigate, isAdmin = false }
       const mergedItems = mergeCompanyMenuItems(globalData || [], companyResult?.data || [])
       setMenuItems(withGreifRefrigerioMenuItem({
         companySlug: normalizedCompanySlug,
-        items: filterOrderableMenuItems(withMenuSlotIndex(sortMenuItems(mergedItems)), normalizedCompanySlug)
+        items: filterOrderableMenuItems(withMenuSlotIndex(sortMenuItems(mergedItems)), normalizedCompanySlug, menuDate)
       }))
     } catch (err) {
       console.error('Error:', err)
