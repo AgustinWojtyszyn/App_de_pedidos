@@ -80,7 +80,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
   const effectiveLunchMenuItems = useMemo(() => {
     const resolvedCompanySlug = (companyConfig?.slug || rawCompanySlug || '').toString().trim().toLowerCase()
     return resolvedCompanySlug === 'epse'
-      ? filterOrderableMenuItems(menuItems, companyConfig || resolvedCompanySlug)
+      ? filterOrderableMenuItems(menuItems, companyConfig || resolvedCompanySlug, getTomorrowISOInTimeZone())
       : menuItems
   }, [companyConfig, menuItems, rawCompanySlug])
 
