@@ -17,6 +17,13 @@ const resultsSource = readFileSync(
 )
 
 describe('order labels pagination regression', () => {
+  it('keeps the selected service date stable across label printing and page remounts', () => {
+    expect(hookSource).toContain("const LABEL_DELIVERY_DATE_STORAGE_KEY = 'sf-order-labels-delivery-date'")
+    expect(hookSource).toContain('deliveryDate: getPersistedDeliveryDate()')
+    expect(hookSource).toContain("if (name === 'deliveryDate') persistDeliveryDate(value)")
+    expect(hookSource).toContain('window.localStorage.setItem(')
+  })
+
   it('loads the complete server result before applying client filters and UI pagination', () => {
     expect(hookSource).toContain('const SERVER_PAGE_SIZE = 100')
     expect(hookSource).toContain('while (hasMore)')
