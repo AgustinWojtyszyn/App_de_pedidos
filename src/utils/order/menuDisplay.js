@@ -245,6 +245,16 @@ const getMenuItemKey = (item = {}, fallbackIndex = null) => {
 const isMenuItemEnabledForCompany = (item = {}, companyOrSlug = '', fallbackIndex = null) => {
   const configuredItems = getConfiguredMenuItems(companyOrSlug)
   if (configuredItems.length === 0) return true
+
+  const slotIndex = getMenuSlotIndex(item, fallbackIndex)
+  const normalizedCompanySlug = normalizeCompanySlug(companyOrSlug)
+  const fixedBifePolloSetting = FIXED_BIFE_POLLO_COMPANY_SLUGS.has(normalizedCompanySlug) &&
+    slotIndex === FIXED_BIFE_POLLO_SLOT_INDEX
+    ? configuredItems.find((entry) => entry?.key === 'bife_pollo' || entry?.menuItemKey === 'bife_pollo')
+    : null
+
+  if (fixedBifePolloSetting) return fixedBifePolloSetting.enabled !== false
+
   const key = getMenuItemKey(item, fallbackIndex)
   const configured = configuredItems.find((entry) => entry?.key === key || entry?.menuItemKey === key)
   return configured?.enabled !== false
