@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildDailyRemitoRows, filterOrdersForRemitos } from './DailyRemitosPanel.jsx'
+import { DEFAULT_EXCLUDE_POST_REPORT_EXTRAS, buildDailyRemitoRows, filterOrdersForRemitos } from './DailyRemitosPanel.jsx'
 
 const epseGroup = {
   slug: 'epse',
@@ -11,6 +11,22 @@ const epseGroup = {
 }
 
 describe('DailyRemitosPanel remito row matching', () => {
+  it('incluye post_report_extra por defecto para que los remitos contemplen extras del día', () => {
+    expect(DEFAULT_EXCLUDE_POST_REPORT_EXTRAS).toBe(false)
+
+    const result = filterOrdersForRemitos({
+      orders: [
+        { id: 'normal', status: 'archived', location: 'Genneia' },
+        { id: 'extra-dia', status: 'post_report_extra', order_origin: 'admin_extra', location: 'Genneia' }
+      ],
+      companySlug: 'all',
+      location: 'all',
+      excludePostReportExtras: DEFAULT_EXCLUDE_POST_REPORT_EXTRAS
+    })
+
+    expect(result.map((order) => order.id)).toEqual(['normal', 'extra-dia'])
+  })
+
   it('permite remitar sin extras del día y conserva admin_extra que ya pertenecían al cierre', () => {
     const result = filterOrdersForRemitos({
       orders: [

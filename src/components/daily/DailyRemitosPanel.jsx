@@ -33,6 +33,7 @@ const REMITO_PANEL_DEBUG_PREFIX = '[ServiFood remitos panel]'
 const REFRESH_VISIBLE_REMITOS_KEY = '__refresh_visible_remitos__'
 const REFRESH_ALL_REMITOS_KEY = '__refresh_all_remitos__'
 const MULTILOCATION_REMITO_COMPANY_SLUGS = new Set(['epse', 'isemar'])
+export const DEFAULT_EXCLUDE_POST_REPORT_EXTRAS = false
 
 const getSafeRemito = (remito) =>
   remito && typeof remito === 'object' ? remito : {}
@@ -321,7 +322,7 @@ const DailyRemitosPanel = ({
   onRefresh
 }) => {
   const [locationFilter, setLocationFilter] = useState('all')
-  const [excludePostReportExtras, setExcludePostReportExtras] = useState(true)
+  const [excludePostReportExtras, setExcludePostReportExtras] = useState(DEFAULT_EXCLUDE_POST_REPORT_EXTRAS)
   const [remitos, setRemitos] = useState([])
   const [remitoConfigs, setRemitoConfigs] = useState([])
   const [loading, setLoading] = useState(false)
@@ -466,7 +467,7 @@ const DailyRemitosPanel = ({
     }
   }
 
-  const refreshIssuedSnapshot = async (group, existing, { silent = false, manageBusy = true, force = false } = {}) => {
+  const refreshIssuedSnapshot = async (group, existing, { silent = false, manageBusy = true, force = false, sourceOrders = null } = {}) => {
     if (!existing?.remito_id) return false
     const rowLocationKey = group.locationKey ?? locationKey
     const key = `${group.slug}:${rowLocationKey || 'all'}`
@@ -483,7 +484,9 @@ const DailyRemitosPanel = ({
 
     if (manageBusy) setBusyKey(key)
     try {
-      const refreshedOrders = await onRefresh?.()
+      const refreshedOrders = Array.isArray(sourceOrders)
+        ? sourceOrders
+        : await onRefresh?.()
       if (!Array.isArray(refreshedOrders)) {
         if (!silent) {
           notifyError('No pudimos obtener los pedidos vigentes para actualizar el remito. Intentá nuevamente.')
@@ -575,28 +578,50 @@ const DailyRemitosPanel = ({
     }
   }
 
-  const refreshAllVisibleIssuedSnapshots = async () => {
+  const refreshAllIssuedSnapshots = async () => {
     if (busyKey) return
-
-    const issuedRows = remitoRows.filter(({ existing }) => (
-      existing?.remito_id && String(existing?.status || '').toLowerCase() === 'issued'
-    ))
-
-    if (issuedRows.length === 0) {
-      notifyInfo('No hay remitos emitidos visibles para actualizar.')
-      return
-    }
 
     setBusyKey(REFRESH_ALL_REMITOS_KEY)
     const updated = []
     const failed = []
 
     try {
-      for (const { group, existing } of issuedRows) {
+      const refreshedOrders = await onRefresh?.()
+      if (!Array.isArray(refreshedOrders)) {
+        notifyError('No pudimos obtener los pedidos vigentes para actualizar los remitos.')
+        return
+      }
+
+      const { data: allRemitosData, error: allRemitosError } = await db.getCompanyRemitosForDate({
+        deliveryDate,
+        companySlug: null,
+        locationKey: null
+      })
+      if (allRemitosError) {
+        notifyError(getUserFriendlyErrorMessage(allRemitosError, 'No pudimos cargar los remitos emitidos de la fecha.'))
+        return
+      }
+
+      const issuedRemitos = (Array.isArray(allRemitosData) ? allRemitosData : [])
+        .filter((existing) => existing?.remito_id && String(existing?.status || '').toLowerCase() === 'issued')
+
+      if (issuedRemitos.length === 0) {
+        notifyInfo('No hay remitos emitidos para actualizar en esta fecha.')
+        return
+      }
+
+      for (const existing of issuedRemitos) {
+        const group = buildFreshGroupForRemito({
+          orders: refreshedOrders,
+          existing,
+          deliveryDate,
+          excludePostReportExtras
+        })
         const ok = await refreshIssuedSnapshot(group, existing, {
           silent: true,
           manageBusy: false,
-          force: true
+          force: true,
+          sourceOrders: refreshedOrders
         })
         const label = `N° ${existing.remito_number || existing.remito_id}`
         if (ok) {
@@ -706,7 +731,7 @@ const DailyRemitosPanel = ({
               <RotateCcw className="mr-2 h-4 w-4" />
               {isRefreshingVisible ? 'Recargando...' : 'Recargar'}
             </button>
-            <button type="button" disabled={isPanelBusy} onClick={refreshAllVisibleIssuedSnapshots} className="inline-flex items-center rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-bold text-orange-700 disabled:opacity-60">
+            <button type="button" disabled={isPanelBusy} onClick={refreshAllIssuedSnapshots} className="inline-flex items-center rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-bold text-orange-700 disabled:opacity-60">
               <RotateCcw className="mr-2 h-4 w-4" />
               {isRefreshingAll ? 'Actualizando...' : 'Actualizar todos'}
             </button>
