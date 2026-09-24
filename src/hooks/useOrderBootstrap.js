@@ -192,7 +192,7 @@ const useOrderBootstrap = ({
       const mergedItems = mergeCompanyMenuItems(globalData || [], companyResult?.data || [])
       setMenuItems(withGreifRefrigerioMenuItem({
         companySlug: normalizedCompanySlug,
-        items: filterOrderableMenuItems(withMenuSlotIndex(sortMenuItems(mergedItems)), companyConfig || normalizedCompanySlug)
+        items: filterOrderableMenuItems(withMenuSlotIndex(sortMenuItems(mergedItems)), companyConfig || normalizedCompanySlug, menuDate)
       }))
     } catch (err) {
       console.error('Error:', err)
@@ -359,7 +359,8 @@ const useOrderBootstrap = ({
       const mergedLunchMenu = mergeCompanyMenuItems(globalLunchMenuData || [], companyLunchMenuResult?.data || [])
       const normalizedLunchMenu = filterOrderableMenuItems(
         withMenuSlotIndex(sortMenuItems(mergedLunchMenu)),
-        companyConfig || normalizedCompanySlug
+        companyConfig || normalizedCompanySlug,
+        deliveryDate
       )
       setDinnerMenuItems(
         normalizedLunchMenu.map((item, index) => ({
