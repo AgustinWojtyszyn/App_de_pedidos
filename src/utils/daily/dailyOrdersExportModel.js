@@ -293,9 +293,7 @@ export const buildDailyOrdersExcelDetailRow = (order = {}) => {
   const items = extractOrderItems(order)
   const custom = extractCustomResponses(order)
   const sideSummary = getQuantifiedSideSummaryForExcel(order)
-  const deliveryDate = normalizeText(order.delivery_date || '').slice(0, 10)
 
-  void deliveryDate
   return {
     Cliente: getOrderCustomer(order).replace(/^Sin cliente$/, 'Sin nombre'),
     'Ubicación / empresa': getOrderLocation(order).replace(/^Sin ubicación$/, 'Sin ubicación / empresa'),
