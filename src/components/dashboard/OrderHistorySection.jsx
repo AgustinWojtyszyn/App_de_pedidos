@@ -20,9 +20,9 @@ const OrderHistorySection = ({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          Historial de pedidos (días anteriores)
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xl sm:text-2xl font-black text-gray-900">
+          Historial
         </h2>
         <span className="text-sm text-gray-600 font-semibold">
           {pastOrders.length} pedido(s)
