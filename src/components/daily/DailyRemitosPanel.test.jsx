@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_EXCLUDE_POST_REPORT_EXTRAS, buildDailyRemitoRows, filterOrdersForRemitos } from './DailyRemitosPanel.jsx'
+import { DEFAULT_EXCLUDE_POST_REPORT_EXTRAS, buildDailyRemitoRows, buildFreshGroupForRemito, filterOrdersForRemitos } from './DailyRemitosPanel.jsx'
 
 const epseGroup = {
   slug: 'epse',
@@ -40,6 +40,100 @@ describe('DailyRemitosPanel remito row matching', () => {
     })
 
     expect(result.map((order) => order.id)).toEqual(['normal', 'admin-cierre'])
+  })
+
+  it('rebuilds the company group from fresh orders before issuing so an existing extra cannot be omitted', () => {
+    const baseOrder = {
+      id: '50000000-0000-4000-8000-000000000001',
+      status: 'archived',
+      delivery_date: '2026-09-23',
+      company_slug: 'padrebueno',
+      company_name: 'Padre Bueno',
+      location: 'Padre Bueno',
+      total_items: 1,
+      items: [{ id: 'main', name: 'Menú principal', quantity: 1 }]
+    }
+    const extraOrder = {
+      id: '50000000-0000-4000-8000-000000000002',
+      status: 'post_report_extra',
+      order_origin: 'admin_extra',
+      delivery_date: '2026-09-23',
+      company_slug: 'padrebueno',
+      company_name: 'Padre Bueno',
+      location: 'Padre Bueno',
+      total_items: 2,
+      items: [{ id: 'main', name: 'Menú principal', quantity: 2 }]
+    }
+    const fallbackGroup = {
+      slug: 'padrebueno',
+      name: 'Padre Bueno',
+      displayName: 'Padre Bueno',
+      locationKey: '',
+      orders: [baseOrder]
+    }
+
+    const fresh = buildFreshGroupForRemito({
+      orders: [baseOrder, extraOrder],
+      existing: {
+        company_slug: 'padrebueno',
+        company_name: 'Padre Bueno',
+        delivery_date: '2026-09-23',
+        location_key: ''
+      },
+      fallbackGroup,
+      deliveryDate: '2026-09-23',
+      excludePostReportExtras: false
+    })
+
+    expect(fresh.orders.map((order) => order.id).sort()).toEqual([
+      baseOrder.id,
+      extraOrder.id
+    ].sort())
+  })
+
+  it('preserves the explicit option to remitar without post-report extras when rebuilding fresh orders', () => {
+    const baseOrder = {
+      id: '50000000-0000-4000-8000-000000000003',
+      status: 'archived',
+      delivery_date: '2026-09-23',
+      company_slug: 'padrebueno',
+      company_name: 'Padre Bueno',
+      location: 'Padre Bueno',
+      total_items: 1,
+      items: [{ id: 'main', name: 'Menú principal', quantity: 1 }]
+    }
+    const extraOrder = {
+      id: '50000000-0000-4000-8000-000000000004',
+      status: 'post_report_extra',
+      order_origin: 'admin_extra',
+      delivery_date: '2026-09-23',
+      company_slug: 'padrebueno',
+      company_name: 'Padre Bueno',
+      location: 'Padre Bueno',
+      total_items: 2,
+      items: [{ id: 'main', name: 'Menú principal', quantity: 2 }]
+    }
+
+    const fresh = buildFreshGroupForRemito({
+      orders: [baseOrder, extraOrder],
+      existing: {
+        company_slug: 'padrebueno',
+        company_name: 'Padre Bueno',
+        delivery_date: '2026-09-23',
+        location_key: ''
+      },
+      fallbackGroup: {
+        slug: 'padrebueno',
+        name: 'Padre Bueno',
+        displayName: 'Padre Bueno',
+        locationKey: '',
+        orders: [baseOrder]
+      },
+      deliveryDate: '2026-09-23',
+      excludePostReportExtras: true
+    })
+
+    expect(fresh.orders.map((order) => order.id)).toEqual([baseOrder.id])
   })
 
   it('does not show or associate an empty EPSE remito with blank location_key', () => {
