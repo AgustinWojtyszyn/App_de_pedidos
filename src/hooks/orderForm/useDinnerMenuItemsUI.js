@@ -1,9 +1,8 @@
 import { useMemo } from 'react'
-import { filterOrderableMenuItems } from '../../utils/order/menuDisplay'
 
 export const useDinnerMenuItemsUI = ({ menuItems, selectedItemsDinner }) => {
   return useMemo(() => {
-    const orderableMenuItems = filterOrderableMenuItems(menuItems)
+    const orderableMenuItems = Array.isArray(menuItems) ? menuItems : []
     return orderableMenuItems.map((item, index) => {
       const isSelected = !!selectedItemsDinner[item.id]
       const slotIndex = Number.isFinite(item?.slotIndex) ? item.slotIndex : index
