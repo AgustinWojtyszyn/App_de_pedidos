@@ -405,7 +405,8 @@ const DailyRemitosPanel = ({
 
   const downloadIssued = async (remito, group = null) => {
     const snapshot = remito.snapshot && typeof remito.snapshot === 'object' ? remito.snapshot : {}
-    const hasSnapshot = Array.isArray(snapshot.products) || Array.isArray(snapshot.orderIds)
+    const snapshotNeedsRefresh = snapshot.needsRefresh === true
+    const hasSnapshot = !snapshotNeedsRefresh && (Array.isArray(snapshot.products) || Array.isArray(snapshot.orderIds))
     const legacySnapshot = !hasSnapshot && group
       ? buildRemitoSnapshot({
         group,
@@ -413,7 +414,8 @@ const DailyRemitosPanel = ({
         deliveryDate: remito.delivery_date || deliveryDate,
         issuedAt: remito.issued_at || null,
         issuedBy: remito.issued_by || null,
-        status: remito.status || 'issued'
+        status: remito.status || 'issued',
+        excludePostReportExtras
       })
       : snapshot
     const printable = remitoFromSnapshot(legacySnapshot, remito)
@@ -794,8 +796,13 @@ const DailyRemitosPanel = ({
                 })
                 throw error
               }
-              const snapshotOrderCount = existing ? getSnapshotOrderCount(snapshot || {}, existing) : group.orders.length
-              const totalItems = existing ? getSnapshotMenuTotal(snapshot || {}) : liveSnapshot.totalItems
+              const snapshotNeedsRefresh = snapshot?.needsRefresh === true
+              const snapshotOrderCount = existing && !snapshotNeedsRefresh
+                ? getSnapshotOrderCount(snapshot || {}, existing)
+                : group.orders.length
+              const totalItems = existing && !snapshotNeedsRefresh
+                ? getSnapshotMenuTotal(snapshot || {})
+                : liveSnapshot.totalItems
               const busy = busyKey === `${group.slug}:${rowLocationKey || 'all'}`
               const canIssue = canIssueRemitoForCompany(group.slug, remitoConfigBySlug)
               const updatedAt = getUpdatedAt(existing)
