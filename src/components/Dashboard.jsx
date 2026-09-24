@@ -67,6 +67,11 @@ const Dashboard = ({ user, loading }) => {
     headerSummary,
   } = useDashboardDerived({ orders })
 
+  const otherWeeklyOrders = useMemo(
+    () => weeklyOrders.filter((order) => order?.id !== headerOrder?.id),
+    [headerOrder?.id, weeklyOrders]
+  )
+
   const {
     deleteConfirmOrder,
     deleteSubmitting,
@@ -231,21 +236,20 @@ const Dashboard = ({ user, loading }) => {
 
       <StatsCards stats={stats} />
 
-      <WeeklyOrdersSection
-        weeklyOrders={weeklyOrders}
-        formatWeeklyDate={formatWeeklyDate}
-        getServiceLabel={getServiceLabel}
-        getMainMenuLabel={getMainMenuLabel}
-        getStatusLabel={getStatusLabel}
-        getStatusBadgeClass={getStatusBadgeClass}
-        onEditOrder={handleEditOrder}
-        onDeleteOrder={handleDeleteOrder}
-        deleteActionLabel="Cancelar pedido"
-        canEditOrder={(order) => isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)}
-      />
-
-      {/* Support Card - Para usuarios normales */}
-      {!isAdmin && <SupportCard />}
+      {otherWeeklyOrders.length > 0 && (
+        <WeeklyOrdersSection
+          weeklyOrders={otherWeeklyOrders}
+          formatWeeklyDate={formatWeeklyDate}
+          getServiceLabel={getServiceLabel}
+          getMainMenuLabel={getMainMenuLabel}
+          getStatusLabel={getStatusLabel}
+          getStatusBadgeClass={getStatusBadgeClass}
+          onEditOrder={handleEditOrder}
+          onDeleteOrder={handleDeleteOrder}
+          deleteActionLabel="Cancelar pedido"
+          canEditOrder={(order) => isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)}
+        />
+      )}
 
       <ArchivedOrdersSection
         isAdmin={isAdmin}
@@ -263,6 +267,8 @@ const Dashboard = ({ user, loading }) => {
         getStatusLabel={getStatusLabel}
         getStatusBadgeClass={getStatusBadgeClass}
       />
+
+      {!isAdmin && <SupportCard />}
 
       {deleteConfirmOrder && (
         <DeleteConfirmModal
