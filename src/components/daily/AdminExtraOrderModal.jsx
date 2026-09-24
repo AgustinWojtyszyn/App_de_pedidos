@@ -447,7 +447,7 @@ const AdminExtraOrderModal = ({
         const merged = mergeCompanyMenuItems(globalResult.data || [], companyResult.data || [])
         const baseMenuItems = withGreifRefrigerioMenuItem({
           companySlug,
-          items: filterOrderableMenuItems(withMenuSlotIndex(sortMenuItems(merged)), companySlug)
+          items: filterOrderableMenuItems(withMenuSlotIndex(sortMenuItems(merged)), companySlug, resolvedOperationalDate)
         })
         let nextMenuItems = baseMenuItems
 
