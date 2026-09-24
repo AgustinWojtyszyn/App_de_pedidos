@@ -288,7 +288,7 @@ const titleHas = (response: Record<string, unknown>, keywords: string[]) => {
   return keywords.some((keyword) => title.includes(keyword))
 }
 
-const getOperationalResponseRows = (order: NormalizedOrder, kind: 'bebida' | 'postre') => {
+export const getOperationalResponseRows = (order: NormalizedOrder, kind: 'bebida' | 'postre') => {
   const rows = new Map<string, { label: string; quantity: number }>()
   const orderTotal = getOrderTotalItems(order)
   const isTargetLabel = kind === 'bebida' ? isBeverageLabel : isDessertLabel
