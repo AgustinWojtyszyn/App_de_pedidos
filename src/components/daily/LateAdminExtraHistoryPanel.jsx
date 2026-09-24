@@ -69,7 +69,7 @@ const getDetailText = (row = {}) => {
     .join(' · ') || 'Sin detalle'
 }
 
-const LateAdminExtraHistoryPanel = ({ operationalDate = '' }) => {
+const LateAdminExtraHistoryPanel = ({ operationalDate = '', refreshKey = 0 }) => {
   const [selectedDate, setSelectedDate] = useState(operationalDate)
   const [days, setDays] = useState([])
   const [selectedDay, setSelectedDay] = useState(null)
@@ -85,12 +85,13 @@ const LateAdminExtraHistoryPanel = ({ operationalDate = '' }) => {
     units: detailRows.reduce((sum, row) => sum + Number(row.total_items || 0), 0)
   }), [detailRows])
 
-  const loadDays = async () => {
+  const loadDays = async (targetDate = selectedDate) => {
+    const dateFilter = typeof targetDate === 'string' ? targetDate : selectedDate
     setLoadingDays(true)
     try {
       const { data, error } = await db.getLateAdminExtraHistoryDays({
-        fromDate: selectedDate || null,
-        toDate: selectedDate || null
+        fromDate: dateFilter || null,
+        toDate: dateFilter || null
       })
       if (error) {
         notifyError(getUserFriendlyErrorMessage(error, 'No pudimos cargar el histórico de extras.'))
@@ -113,9 +114,11 @@ const LateAdminExtraHistoryPanel = ({ operationalDate = '' }) => {
   }
 
   useEffect(() => {
-    loadDays()
+    if (!operationalDate) return
+    setSelectedDate(operationalDate)
+    loadDays(operationalDate)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [operationalDate, refreshKey])
 
   const viewDay = async (day) => {
     setSelectedDay(day)
@@ -193,7 +196,7 @@ const LateAdminExtraHistoryPanel = ({ operationalDate = '' }) => {
               Fecha de entrega
               <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} className="mt-1 h-9 rounded-lg border border-slate-300 px-3 text-sm font-semibold" />
             </label>
-            <button type="button" onClick={loadDays} disabled={loadingDays} className="inline-flex h-9 items-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-black text-white disabled:opacity-60">
+            <button type="button" onClick={() => loadDays(selectedDate)} disabled={loadingDays} className="inline-flex h-9 items-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-black text-white disabled:opacity-60">
               <RefreshCw className={`h-4 w-4 ${loadingDays ? 'animate-spin' : ''}`} />
               Actualizar
             </button>

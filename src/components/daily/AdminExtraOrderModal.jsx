@@ -32,6 +32,8 @@ const ADMIN_EXTRA_BEVERAGE_OPTION = {
 }
 
 const LATE_ADMIN_TIMEZONE = 'America/Argentina/San_Juan'
+const LATE_ADMIN_WINDOW_START_SECONDS = 22 * 3600 + 60
+const LATE_ADMIN_WINDOW_END_SECONDS = 18 * 3600
 
 const getLateWindowInfo = (date = new Date()) => {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -49,7 +51,7 @@ const getLateWindowInfo = (date = new Date()) => {
   const localDate = `${map.year}-${map.month}-${map.day}`
   const localHour = Number(map.hour || 0) === 24 ? 0 : Number(map.hour || 0)
   const seconds = localHour * 3600 + Number(map.minute || 0) * 60 + Number(map.second || 0)
-  if (seconds >= 22 * 3600) {
+  if (seconds >= LATE_ADMIN_WINDOW_START_SECONDS) {
     return {
       open: true,
       operationalDate: addDaysToISO(localDate, 1),
@@ -57,7 +59,7 @@ const getLateWindowInfo = (date = new Date()) => {
       startsNextDay: true
     }
   }
-  if (seconds < 18 * 3600) {
+  if (seconds < LATE_ADMIN_WINDOW_END_SECONDS) {
     return {
       open: true,
       operationalDate: localDate,

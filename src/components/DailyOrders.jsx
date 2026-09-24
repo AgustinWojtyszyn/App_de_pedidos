@@ -49,6 +49,7 @@ const DailyOrders = ({ user, loading }) => {
   const [discountModalOpen, setDiscountModalOpen] = useState(false)
   const [extraOrderMode, setExtraOrderMode] = useState('standard')
   const [activeSubtab, setActiveSubtab] = useState('orders')
+  const [extraHistoryRefreshKey, setExtraHistoryRefreshKey] = useState(0)
 
   const locations = COMPANY_LOCATIONS
   const navigate = useNavigate()
@@ -271,6 +272,7 @@ const DailyOrders = ({ user, loading }) => {
           open={extraOrderOpen}
           onClose={() => setExtraOrderOpen(false)}
           onCreated={(result) => {
+            setExtraHistoryRefreshKey((value) => value + 1)
             const nextDate = result?.delivery_date || result?.order?.delivery_date || result?.deliveryDate
             if (nextDate && nextDate !== operationalDate) {
               handleOperationalDateChange(nextDate)
@@ -394,7 +396,10 @@ const DailyOrders = ({ user, loading }) => {
         )}
 
         {activeSubtab === 'extra-history' && canManageLateExtraHistory && (
-          <LateAdminExtraHistoryPanel operationalDate={operationalDate} />
+          <LateAdminExtraHistoryPanel
+            operationalDate={operationalDate}
+            refreshKey={extraHistoryRefreshKey}
+          />
         )}
       </div>
     </RequireUser>
