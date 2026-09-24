@@ -105,8 +105,8 @@ describe('menu contract with fixed hyperproteic option 4', () => {
     ])
   })
 
-  it('keeps EPSE at seven numbered options with Celíaco as option 7', () => {
-    const result = filterOrderableMenuItems(fullMenu, 'epse')
+  it('removes every bife option from EPSE and keeps numbering continuous', () => {
+    const result = filterOrderableMenuItems(fullMenu, 'epse', '2026-09-25')
 
     expect(result.map((item) => item.id)).toEqual([
       'main',
@@ -114,7 +114,6 @@ describe('menu contract with fixed hyperproteic option 4', () => {
       'option-2',
       'option-3',
       'hyper',
-      'option-4',
       'option-5',
       'option-6'
     ])
@@ -125,10 +124,49 @@ describe('menu contract with fixed hyperproteic option 4', () => {
       'Opción 3',
       'Opción 4',
       'Opción 5',
-      'Opción 6',
-      'Opción 7'
+      'Opción 6'
     ])
-    expect(dishesFor(result, 'epse')[7]).toBe('Celíaco')
+    expect(dishesFor(result, 'epse').join(' ')).not.toMatch(/bife/i)
+    expect(dishesFor(result, 'epse')[6]).toBe('Celíaco')
+  })
+
+  it('shows Hiperproteica only Monday through Friday and restores numbering on weekends', () => {
+    const friday = filterOrderableMenuItems(fullMenu, 'laja', '2026-09-25')
+    const saturday = filterOrderableMenuItems(fullMenu, 'laja', '2026-09-26')
+
+    expect(friday.some((item) => /hiperprote/i.test(`${item.name || ''} ${item.description || ''}`))).toBe(true)
+    expect(saturday.some((item) => /hiperprote/i.test(`${item.name || ''} ${item.description || ''}`))).toBe(false)
+    expect(labelsFor(saturday, 'laja')).toEqual([
+      'Menú principal',
+      'Opción 1',
+      'Opción 2',
+      'Opción 3',
+      'Opción 4',
+      'Opción 5',
+      'Opción 6'
+    ])
+  })
+
+  it('honors company-specific bife lomo/pollo switches while EPSE always shows none', () => {
+    const menu = [
+      ...fullMenu,
+      { id: 'bife-lomo', name: 'Bife de lomo', description: 'Bife de lomo' },
+      { id: 'bife-pollo', name: 'Bife de pollo', description: 'Bife de pollo' }
+    ]
+    const oneBifeConfig = {
+      slug: 'genneia',
+      menuItems: [
+        { key: 'bife_lomo', enabled: false },
+        { key: 'bife_pollo', enabled: true }
+      ]
+    }
+
+    const configured = filterOrderableMenuItems(menu, oneBifeConfig, '2026-09-25')
+    const epse = filterOrderableMenuItems(menu, 'epse', '2026-09-25')
+
+    expect(configured.some((item) => /bife de lomo/i.test(`${item.name || ''} ${item.description || ''}`))).toBe(false)
+    expect(configured.some((item) => /bife de pollo/i.test(`${item.name || ''} ${item.description || ''}`))).toBe(true)
+    expect(epse.some((item) => /bife/i.test(`${item.name || ''} ${item.description || ''}`))).toBe(false)
   })
 
   it.each(['igarreta', 'isemar'])(
