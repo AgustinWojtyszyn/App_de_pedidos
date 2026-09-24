@@ -125,7 +125,7 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     }
   })
 
-  it('keeps EPSE capped at option 7 with Celíaco in option 7', () => {
+  it('removes the dedicated bife option from EPSE and compacts the tail', () => {
     const result = filterOrderableMenuItems(baseMenu, 'epse')
     const display = displayFor(result, 'epse')
 
@@ -135,7 +135,6 @@ describe('company-specific menu display with hyperproteic option 4', () => {
       'option-2',
       'option-3',
       'hyper',
-      'option-4',
       'option-5',
       'option-6'
     ])
@@ -146,14 +145,16 @@ describe('company-specific menu display with hyperproteic option 4', () => {
       'Opción 3',
       'Opción 4',
       'Opción 5',
-      'Opción 6',
-      'Opción 7'
+      'Opción 6'
     ])
+    expect(display[1].dish).toBe('BIFE DE CARNE CON PURE')
     expect(display[4].dish).toContain('Hiperproteica')
-    expect(display[7].dish).toMatch(/celiaco/i)
+    expect(display[5].dish).toMatch(/hojas/i)
+    expect(display[6].dish).toMatch(/celiaco/i)
+    expect(result.some((item) => item.id === 'option-4')).toBe(false)
   })
 
-  it('does not create option 8 when EPSE already has Celíaco persisted as option 7', () => {
+  it('compacts EPSE when Celíaco is already persisted at option 7', () => {
     const alreadyShifted = baseMenu.map((item) =>
       item.id === 'option-6'
         ? { ...item, name: 'Opción 7', slotIndex: 7 }
@@ -161,8 +162,9 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     )
     const result = filterOrderableMenuItems(alreadyShifted, 'epse')
 
-    expect(Math.max(...result.map((item) => item.slotIndex))).toBe(7)
-    expect(result.find((item) => item.slotIndex === 7)?.description).toMatch(/celiaco/i)
+    expect(Math.max(...result.map((item) => item.slotIndex))).toBe(6)
+    expect(result.find((item) => item.slotIndex === 6)?.description).toMatch(/celiaco/i)
+    expect(result.some((item) => item.id === 'option-4')).toBe(false)
   })
 
 
@@ -196,7 +198,7 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     expect(result.find((item) => item.slotIndex === 7)?.description).toMatch(/cel[ií]aco/i)
   })
 
-  it('repairs the EPSE production shape with empty 5 and duplicated 7', () => {
+  it('repairs the EPSE production shape by removing bife and compacting salad/celíaco', () => {
     const brokenEpseMenu = [
       { id: 'main', name: 'Menú principal', description: 'Milanesa', slotIndex: 0 },
       { id: 'option-1', name: 'Opción 1', description: 'Uno', slotIndex: 1 },
@@ -219,13 +221,11 @@ describe('company-specific menu display with hyperproteic option 4', () => {
       'Opción 3',
       'Opción 4',
       'Opción 5',
-      'Opción 6',
-      'Opción 7'
+      'Opción 6'
     ])
-    expect(display[5].dish).toMatch(/bife de pollo/i)
-    expect(display[6].dish).toMatch(/ensalada/i)
-    expect(display[7].dish).toMatch(/cel[ií]aco/i)
-    expect(display.filter((item) => item.label === 'Opción 7')).toHaveLength(1)
+    expect(display[5].dish).toMatch(/ensalada/i)
+    expect(display[6].dish).toMatch(/cel[ií]aco/i)
+    expect(display.some((item) => /bife de pollo/i.test(item.dish))).toBe(false)
     expect(display.some((item) => item.label === 'Opción 5' && !item.dish)).toBe(false)
   })
 
@@ -253,7 +253,7 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     expect(result.some((item) => item.slotIndex === 5 && !String(item.description || '').trim())).toBe(false)
   })
 
-  it('repairs the exact EPSE case with empty 5 and duplicated option 7', () => {
+  it('repairs the exact EPSE case with empty 5, bife and duplicated option 7', () => {
     const brokenEpseMenu = [
       { id: 'main', name: 'Menú principal', description: 'MILANESA', slotIndex: 0 },
       { id: 'one', name: 'Opción 1', description: 'UNO', slotIndex: 1 },
@@ -276,13 +276,12 @@ describe('company-specific menu display with hyperproteic option 4', () => {
       'Opción 3',
       'Opción 4',
       'Opción 5',
-      'Opción 6',
-      'Opción 7'
+      'Opción 6'
     ])
-    expect(display[5].dish).toMatch(/bife de pollo/i)
-    expect(display[6].dish).toMatch(/ensalada/i)
-    expect(display[7].dish).toMatch(/cel[ií]aco/i)
-    expect(result.filter((item) => item.slotIndex === 7)).toHaveLength(1)
+    expect(display[5].dish).toMatch(/ensalada/i)
+    expect(display[6].dish).toMatch(/cel[ií]aco/i)
+    expect(display.some((item) => /bife de pollo/i.test(item.dish))).toBe(false)
+    expect(result.filter((item) => item.slotIndex === 6)).toHaveLength(1)
     expect(result.some((item) => !String(item.description || '').trim())).toBe(false)
   })
 
