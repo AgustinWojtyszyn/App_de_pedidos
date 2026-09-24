@@ -295,20 +295,15 @@ export const buildDailyOrdersExcelDetailRow = (order = {}) => {
   const sideSummary = getQuantifiedSideSummaryForExcel(order)
   const deliveryDate = normalizeText(order.delivery_date || '').slice(0, 10)
 
+  void deliveryDate
   return {
     Cliente: getOrderCustomer(order).replace(/^Sin cliente$/, 'Sin nombre'),
-    Email: getOrderEmail(order),
-    Organización: getOrderOrganization(order) || 'Sin organización',
     'Ubicación / empresa': getOrderLocation(order).replace(/^Sin ubicación$/, 'Sin ubicación / empresa'),
-    'Lugar de entrega': getOrderDeliveryLocation(order).replace(/^Sin ubicación$/, 'Sin ubicación / empresa'),
-    'Fecha de entrega': formatDateOnly(deliveryDate),
     'Turno / servicio': getOrderServiceLabel(order),
     'Menú elegido': getMenuNames(items),
     Guarniciones: sideSummary || custom.side || 'Sin guarnición',
     Bebidas: custom.beverage || 'Sin bebida',
-    Postres: custom.dessert || 'Sin postre',
-    Origen: getAdminExtraOrderLabel(order),
-    Comentarios: normalizeText(order.comments) || 'Sin comentarios'
+    Postres: custom.dessert || 'Sin postre'
   }
 }
 
