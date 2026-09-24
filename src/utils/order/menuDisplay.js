@@ -114,12 +114,17 @@ const isHyperproteicMenuItem = (item = {}) => {
 const withoutHyperproteicOption4 = (items = []) => {
   const indexedItems = withMenuSlotIndex(items)
   const hadStoredHyperproteic = indexedItems.some(isHyperproteicMenuItem)
+  const hasLegacyOption4 = indexedItems.some((item, index) =>
+    !isHyperproteicMenuItem(item) &&
+    getMenuSlotIndex(item, index) === HYPERPROTEIC_OPTION_SLOT_INDEX
+  )
+  const shouldRestoreShiftedTail = hadStoredHyperproteic && !hasLegacyOption4
 
   return indexedItems
     .filter((item) => !isHyperproteicMenuItem(item))
     .map((item, index) => {
       const slotIndex = getMenuSlotIndex(item, index)
-      if (!hadStoredHyperproteic || !Number.isFinite(slotIndex) || slotIndex <= HYPERPROTEIC_OPTION_SLOT_INDEX) {
+      if (!shouldRestoreShiftedTail || !Number.isFinite(slotIndex) || slotIndex <= HYPERPROTEIC_OPTION_SLOT_INDEX) {
         return item
       }
       return setMenuItemSlot(item, slotIndex - 1)
