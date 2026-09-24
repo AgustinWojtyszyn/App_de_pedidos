@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download, RefreshCw, Search, X } from 'lucide-react'
-import { useAuthContext } from '../contexts/authContextValue'
 import { getCompanyConsumptionOrders } from '../services/consumptionReportService'
 import { usersService } from '../services/users'
 import {
@@ -31,7 +30,6 @@ const getCompanyLabel = (order = {}, slug = '') =>
   String(order.company_name || order.organization || slug || 'Empresa').trim() || 'Empresa'
 
 const ConsumptionReportPage = () => {
-  const { isAdmin, canViewConsumptionReport } = useAuthContext()
   const [year, setYear] = useState(INITIAL_YEAR)
   const [month, setMonth] = useState(INITIAL_MONTH)
   const [orders, setOrders] = useState([])
@@ -68,8 +66,10 @@ const ConsumptionReportPage = () => {
   }, [month, year])
 
   useEffect(() => {
-    if (isAdmin || canViewConsumptionReport) loadReport()
-  }, [loadReport, isAdmin, canViewConsumptionReport])
+    // La ruta ya exige sesión. El RPC es la fuente de verdad de permisos:
+    // así un refresh transitorio del contexto no hace desaparecer el reporte.
+    loadReport()
+  }, [loadReport])
 
   const companyOptions = useMemo(() => {
     const bySlug = new Map()
