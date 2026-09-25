@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
-import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, ClipboardList, BarChart3, Tags, Calculator, FileSpreadsheet } from 'lucide-react'
+import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, ClipboardList, BarChart3, Tags, Calculator, FileSpreadsheet, ShieldCheck } from 'lucide-react'
 import cafeteriaLogo from '../assets/food-delivery (1).png'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
@@ -257,6 +257,7 @@ const Layout = ({ children, user, loading }) => {
               </p>
               <ul className="space-y-1">
                 {renderNavItem({ name: 'Mi Perfil', path: '/profile', icon: UserCircle })}
+                {renderNavItem({ name: 'Política de privacidad', path: '/privacy-policy', icon: ShieldCheck })}
 
                 {isAdmin && (
                   <li>
