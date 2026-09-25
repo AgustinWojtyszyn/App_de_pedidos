@@ -19,8 +19,8 @@ const PREFIX = 'locust.load.'
 const DOMAIN = '@servifood.test'
 const CSV_PATH = path.join(__dirname, '.users.csv')
 
-if (!SUPABASE_URL || !SERVICE_ROLE) {
-  console.error('Faltan VITE_SUPABASE_URL/SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en .env')
+if (!SUPABASE_URL || !ADMIN_KEY) {
+  console.error('Faltan VITE_SUPABASE_URL/SUPABASE_URL o SUPABASE_SECRET_KEY (también se acepta SUPABASE_SERVICE_ROLE_KEY) en .env')
   process.exit(1)
 }
 
