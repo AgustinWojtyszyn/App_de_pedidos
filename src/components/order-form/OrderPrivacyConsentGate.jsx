@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { createElement, useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, Database, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react'
 
 const POLICY_VERSION = '2026-09-v1'
@@ -103,11 +103,11 @@ const OrderPrivacyConsentGate = ({ userId, children }) => {
 
       <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
         <div className="grid gap-3 md:grid-cols-2">
-          {policyItems.map(({ icon: Icon, title, text }) => (
+          {policyItems.map(({ icon, title, text }) => (
             <article key={title} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-start gap-3">
                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-blue-100 bg-white text-blue-700">
-                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  {createElement(icon, { className: 'h-4 w-4', 'aria-hidden': true })}
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-900">{title}</h3>
