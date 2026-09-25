@@ -58,7 +58,7 @@ jobs:
         shell: bash
         run: |
           missing=0
-          for name in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY; do
+          for name in VITE_SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY; do
             if [ -z "${!name}" ]; then
               echo "::error::Missing GitHub Actions secret: $name"
               missing=1
