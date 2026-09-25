@@ -1,4 +1,18 @@
 const CACHE_NAME = 'servifood-pwa-v4'
+const refreshedClients = new Set()
+
+const refreshClientForStaleAsset = async (clientId) => {
+  if (!clientId || refreshedClients.has(clientId)) return
+  refreshedClients.add(clientId)
+
+  const client = await self.clients.get(clientId)
+  if (!client || typeof client.navigate !== 'function') return
+
+  const url = new URL(client.url)
+  url.searchParams.set('__sf_refresh', String(Date.now()))
+  await client.navigate(url.toString())
+}
+
 const APP_SHELL = [
   '/manifest.json',
   '/favicon.ico',
@@ -57,7 +71,8 @@ self.addEventListener('fetch', (event) => {
         const contentType = response.headers.get('content-type') || ''
 
         if (contentType.includes('text/html')) {
-          return new Response('Asset no disponible. Recargá la aplicación.', {
+          event.waitUntil(refreshClientForStaleAsset(event.clientId).catch(() => {}))
+          return new Response('Asset no disponible. Actualizando ServiFood.', {
             status: 404,
             headers: { 'Content-Type': 'text/plain; charset=utf-8' }
           })
