@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import { Database, LockKeyhole, ShieldCheck, UserRound, UsersRound } from 'lucide-react'
 
 const sections = [
@@ -59,11 +60,11 @@ export default function PrivacyPolicyPage() {
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2">
-          {sections.map(({ icon: Icon, title, text }) => (
+          {sections.map(({ icon, title, text }) => (
             <article key={title} className="rounded-xl border border-slate-300 bg-slate-50 p-4">
               <div className="flex items-start gap-3">
                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-blue-200 bg-white text-blue-700">
-                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  {createElement(icon, { className: 'h-4 w-4', 'aria-hidden': true })}
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-950">{title}</h3>
