@@ -61,5 +61,9 @@ codebase-memory-mcp-*
 reports/
 testing/load/reports/
 
+# Locust: credenciales ficticias y resultados locales
+testing/locust/.users.csv
+testing/locust/results/
+
 # Archivos temporales locales
 .tmp/
