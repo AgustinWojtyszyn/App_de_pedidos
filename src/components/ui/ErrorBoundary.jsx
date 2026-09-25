@@ -2,26 +2,7 @@ import { Component } from 'react'
 import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import Button from './Button'
-
-const isChunkLoadError = (error) => {
-  const text = `${error?.name || ''} ${error?.message || ''} ${error?.stack || ''}`.toLowerCase()
-  return text.includes('loading chunk') ||
-    text.includes('chunkloaderror') ||
-    text.includes('failed to fetch dynamically imported module') ||
-    text.includes('importing a module script failed') ||
-    text.includes('module script load')
-}
-
-const clearRuntimeCaches = async () => {
-  if ('serviceWorker' in navigator) {
-    const registrations = await navigator.serviceWorker.getRegistrations()
-    await Promise.all(registrations.map((registration) => registration.unregister()))
-  }
-  if ('caches' in window) {
-    const keys = await caches.keys()
-    await Promise.all(keys.map((key) => caches.delete(key)))
-  }
-}
+import { clearRuntimeAssetCaches, isStaleAssetError, recoverFromStaleAssetError } from '../../utils/staleAssetRecovery'
 
 class ErrorFallback extends Component {
   constructor(props) {
@@ -75,7 +56,7 @@ class ErrorFallback extends Component {
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={() => {
-                  clearRuntimeCaches()
+                  clearRuntimeAssetCaches()
                     .catch((cacheError) => console.error('[ServiFood ErrorBoundary] cache cleanup failed', cacheError))
                     .finally(resetErrorBoundary)
                 }}
@@ -115,11 +96,8 @@ const logError = (error, errorInfo) => {
   console.error('Error info:', errorInfo)
   console.groupEnd()
 
-  if (isChunkLoadError(error) && !sessionStorage.getItem('servifood_chunk_recovered')) {
-    sessionStorage.setItem('servifood_chunk_recovered', '1')
-    clearRuntimeCaches()
-      .catch((cacheError) => console.error('[ServiFood ErrorBoundary] cache cleanup failed', cacheError))
-      .finally(() => window.location.reload())
+  if (isStaleAssetError(error)) {
+    recoverFromStaleAssetError(error)
   }
 
   // Here you could send to error reporting service
