@@ -1,4 +1,4 @@
-const CACHE_NAME = 'servifood-pwa-v3'
+const CACHE_NAME = 'servifood-pwa-v4'
 const APP_SHELL = [
   '/manifest.json',
   '/favicon.ico',
@@ -22,9 +22,10 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys
-        .filter((key) => key !== CACHE_NAME)
-        .map((key) => caches.delete(key))
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
   )
@@ -39,27 +40,31 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request, { cache: 'no-store' })
-        .then((response) => {
-          return response
-        })
-        .catch(() => new Response('ServiFood no está disponible sin conexión. Volvé a intentar cuando tengas internet.', {
-          status: 503,
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-        }))
+        .catch(() => new Response(
+          'ServiFood no está disponible sin conexión. Volvé a intentar cuando tengas internet.',
+          {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+          }
+        ))
     )
     return
   }
 
   if (url.pathname.startsWith('/assets/')) {
     event.respondWith(
-      fetch(request).then((response) => {
+      fetch(request, { cache: 'no-store' }).then((response) => {
         const contentType = response.headers.get('content-type') || ''
-        if (response.ok && !contentType.includes('text/html')) {
-          const copy = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
+
+        if (contentType.includes('text/html')) {
+          return new Response('Asset no disponible. Recargá la aplicación.', {
+            status: 404,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+          })
         }
+
         return response
-      }).catch(() => caches.match(request))
+      })
     )
     return
   }
