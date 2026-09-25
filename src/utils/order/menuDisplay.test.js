@@ -51,14 +51,14 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     }
   })
 
-  it('keeps Bife de pollo at the shifted option 5 for the four Calidra sites', () => {
+  it('uses the shared Bife del día at option 5 for the four Calidra sites', () => {
     for (const companySlug of ['ccp', 'laja', 'padrebueno', 'losberros']) {
       const result = filterOrderableMenuItems(baseMenu, companySlug)
       const bife = result.find((item) => item.slotIndex === 5)
       expect(bife).toMatchObject({
         name: 'Opción 5',
         displayName: 'Opción 5',
-        description: 'Bife de pollo',
+        description: 'BIFE DEL DÍA CARNE',
         slotIndex: 5
       })
     }
@@ -78,18 +78,6 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     }
   })
 
-  it('removes duplicated Bife de pollo outside fixed option 5 for Calidra sites', () => {
-    const menuWithDuplicateBife = [
-      ...baseMenu,
-      { id: 'duplicate-bife', name: 'Bife de pollo', description: 'Bife de pollo', slotIndex: 7 }
-    ]
-    const result = filterOrderableMenuItems(menuWithDuplicateBife, 'laja')
-    const bifeItems = result.filter((item) => /bife\s+de\s+pollo/i.test(`${item.name || ''} ${item.description || ''}`))
-
-    expect(bifeItems).toHaveLength(1)
-    expect(bifeItems[0].slotIndex).toBe(5)
-  })
-
   it('collapses duplicated option 5 for every company with fixed Bife de pollo', () => {
     const menuWithDuplicateFive = [
       { id: 'main', name: 'Menú principal', description: 'Milanesa', slotIndex: 0 },
@@ -106,11 +94,7 @@ describe('company-specific menu display with hyperproteic option 4', () => {
     for (const companySlug of [
       'genneia',
       'greif',
-      'administracion_servifood',
-      'laja',
-      'padrebueno',
-      'ccp',
-      'losberros'
+      'administracion_servifood'
     ]) {
       const result = filterOrderableMenuItems(menuWithDuplicateFive, companySlug)
 
