@@ -26,7 +26,7 @@ export const TUTORIAL_STEPS = [
   },
   {
     title: 'Paso 6: Revisá el estado',
-    content: 'Volvé al panel principal para seguir el estado de tu pedido (pendiente o archivado). Si querés repasar, podés abrir este tutorial de nuevo en cualquier momento.',
+    content: 'Volvé al panel principal para seguir el estado de tu pedido (pendiente o cerrado). Si querés repasar, podés abrir este tutorial de nuevo en cualquier momento.',
     image: '🚀'
   }
 ]
