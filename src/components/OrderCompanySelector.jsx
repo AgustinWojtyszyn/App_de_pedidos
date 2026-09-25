@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building2, ArrowRight, ShieldCheck } from 'lucide-react'
 import RequireUser from './RequireUser'
-import OrderPrivacyConsentGate from './order-form/OrderPrivacyConsentGate'
 import { getVisibleCompanyList } from '../constants/companyConfig'
 import { useAuthContext } from '../contexts/authContextValue'
 import { db } from '../supabaseClient'
@@ -96,8 +95,7 @@ const OrderCompanySelector = ({ user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-      <OrderPrivacyConsentGate userId={user?.id}>
-        <div className="mx-auto max-w-5xl space-y-5 px-2 pb-5 sm:px-3">
+      <div className="mx-auto max-w-5xl space-y-5 px-2 pb-5 sm:px-3">
           <header className="text-center">
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3 py-1.5 text-sm font-bold text-white shadow-md">
               <ShieldCheck className="h-4 w-4" />
@@ -173,8 +171,7 @@ const OrderCompanySelector = ({ user, loading }) => {
               )
             })}
           </div>
-        </div>
-      </OrderPrivacyConsentGate>
+      </div>
     </RequireUser>
   )
 }
