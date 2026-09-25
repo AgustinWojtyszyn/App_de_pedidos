@@ -11,7 +11,7 @@ const IGARRETA_ISEMAR_CELIAC_DISH = 'Celíaco'
 const IGARRETA_ISEMAR_SALAD_DISH = 'Ensalada del día'
 const FIXED_BIFE_POLLO_SLOT_INDEX = 5
 const FIXED_BIFE_POLLO_DISH = 'Bife de pollo'
-const FIXED_BIFE_POLLO_COMPANY_SLUGS = new Set(['ccp', 'laja', 'padrebueno', 'losberros', 'genneia', 'greif', 'administracion_servifood'])
+const FIXED_BIFE_POLLO_COMPANY_SLUGS = new Set(['genneia', 'greif', 'administracion_servifood'])
 const DIETA_COMPANY_SLUGS = new Set(['placo', 'molinos'])
 const SYNTHETIC_FALLBACK_MENU = new Map([
   [1, 'Delicioso plato principal'],
