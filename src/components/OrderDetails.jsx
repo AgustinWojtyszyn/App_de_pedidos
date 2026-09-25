@@ -128,7 +128,10 @@ const OrderDetails = ({ user, loading }) => {
   const serviceIcon = service === 'dinner' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />
 
   const status = String(order?.displayStatus || order?.status || '').toLowerCase()
-  const statusInfo = statusMeta[status] || statusMeta.unknown
+  const baseStatusInfo = statusMeta[status] || statusMeta.unknown
+  const statusInfo = status === 'archived' && !isAdmin
+    ? { ...baseStatusInfo, label: 'Cerrado' }
+    : baseStatusInfo
 
   const company = companyByLocation.get(String(order?.location || '').toLowerCase())
   const isExtra = isAdminExtraOrder(order)
