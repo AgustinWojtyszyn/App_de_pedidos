@@ -119,7 +119,7 @@ const Layout = ({ children, user, loading }) => {
   const operationItems = [
     { name: 'Panel Principal', path: '/dashboard', icon: User },
     { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart },
-    { name: 'Política de privacidad', path: '/privacy-policy', icon: ShieldCheck, featured: true, badge: 'NUEVO' }
+    { name: 'Política de privacidad', path: '/privacy-policy', icon: ShieldCheck, featured: true, badge: 'IMPORTANTE', badgeTone: 'amber' }
   ]
   const reportsItems = []
   const administrationItems = []
@@ -198,7 +198,11 @@ const Layout = ({ children, user, loading }) => {
               )}
               <span className="min-w-0 flex-1 leading-tight">{item.name}</span>
               {item.badge && (
-                <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black tracking-[0.08em] ${isActive ? 'bg-white/15 text-white' : 'bg-blue-600 text-white'}`}>
+                <span className={`ml-2 shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-black tracking-[0.08em] ${isActive
+                  ? 'border-white/20 bg-white/15 text-white'
+                  : item.badgeTone === 'amber'
+                    ? 'border-amber-300 bg-amber-100 text-amber-800'
+                    : 'border-blue-600 bg-blue-600 text-white'}`}>
                   {item.badge}
                 </span>
               )}
