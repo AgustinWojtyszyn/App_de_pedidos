@@ -1,0 +1,141 @@
+name: Locust capacity test
+
+on:
+  workflow_dispatch:
+    inputs:
+      stages:
+        description: "Usuarios simultaneos por etapa (separados por coma)"
+        required: true
+        default: "10,25,50,100,200"
+        type: string
+      run_time:
+        description: "Duracion de cada etapa"
+        required: true
+        default: "45s"
+        type: string
+      company_slug:
+        description: "Empresa de los usuarios ficticios"
+        required: true
+        default: "epse"
+        type: string
+      location:
+        description: "Sede de los usuarios ficticios"
+        required: true
+        default: "Padre Bueno"
+        type: string
+      include_writes:
+        description: "Agregar prueba de creación de pedidos (después de lectura)"
+        required: true
+        default: false
+        type: boolean
+      write_stages:
+        description: "Etapas para escritura si se habilita"
+        required: true
+        default: "10,25,50"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  capacity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      LOCUST_COMPANY_SLUG: ${{ inputs.company_slug }}
+      LOCUST_LOCATION: ${{ inputs.location }}
+      LOCUST_FAIL_RATIO_MAX: "0.01"
+      LOCUST_P95_MAX_MS: "1500"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          missing=0
+          for name in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Determine synthetic user count
+        shell: bash
+        env:
+          READ_STAGES: ${{ inputs.stages }}
+          WRITE_STAGES: ${{ inputs.write_stages }}
+          INCLUDE_WRITES: ${{ inputs.include_writes }}
+        run: |
+          all_stages="$READ_STAGES"
+          if [ "$INCLUDE_WRITES" = "true" ]; then
+            all_stages="$all_stages,$WRITE_STAGES"
+          fi
+          max_users=$(printf '%s' "$all_stages" | tr ',' '\n' | sed '/^$/d' | sort -nr | head -1)
+          if ! [[ "$max_users" =~ ^[0-9]+$ ]] || [ "$max_users" -lt 1 ]; then
+            echo "::error::Invalid stages: $all_stages"
+            exit 1
+          fi
+          if [ "$max_users" -gt 1000 ]; then
+            echo "::error::Safety limit: max 1000 synthetic users per run."
+            exit 1
+          fi
+          echo "LOCUST_TEST_USERS=$max_users" >> "$GITHUB_ENV"
+          echo "Synthetic users required: $max_users"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: testing/locust/requirements.txt
+
+      - name: Install Locust
+        run: python -m pip install -r testing/locust/requirements.txt
+
+      - name: Seed fictitious users
+        run: npm run locust:seed
+
+      - name: Read-only staged capacity test
+        env:
+          LOCUST_STAGES: ${{ inputs.stages }}
+          LOCUST_RUN_TIME: ${{ inputs.run_time }}
+          LOCUST_TAGS: read
+        run: npm run locust:staged
+
+      - name: Controlled write test
+        if: ${{ inputs.include_writes }}
+        env:
+          LOCUST_ENABLE_WRITES: "1"
+          LOCUST_STAGES: ${{ inputs.write_stages }}
+          LOCUST_RUN_TIME: ${{ inputs.run_time }}
+          LOCUST_TAGS: write
+        run: npm run locust:staged
+
+      - name: Upload Locust reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-capacity-${{ github.run_id }}
+          path: testing/locust/results/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Cleanup fictitious users and orders
+        if: always()
+        run: npm run locust:cleanup
