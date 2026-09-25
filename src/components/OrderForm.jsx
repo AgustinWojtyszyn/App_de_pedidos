@@ -15,7 +15,6 @@ import OrderLunchOptionsSection from './order-form/OrderLunchOptionsSection'
 import OrderDinnerOptionsSection from './order-form/OrderDinnerOptionsSection'
 import OrderSuccessScreen from './order-form/OrderSuccessScreen'
 import OrderHoursBanner from './order-form/OrderHoursBanner'
-import OrderPrivacyConsentGate from './order-form/OrderPrivacyConsentGate'
 import InlineSpinner from './ui/InlineSpinner'
 import { formatResponseValue } from '../utils/order/orderFormatters'
 import { useOrderFlowController } from '../hooks/orderForm/useOrderFlowController'
@@ -50,8 +49,7 @@ const OrderForm = ({ user, loading }) => {
           />
           {!controller.form.hasOrderToday && <OrderHoursBanner schedule={controller.schedule} />}
 
-          <OrderPrivacyConsentGate userId={user?.id}>
-            <form onSubmit={controller.submit.handleSubmit} className="space-y-6 sm:space-y-8">
+          <form onSubmit={controller.submit.handleSubmit} className="space-y-6 sm:space-y-8">
               {/* Sugerencias inteligentes */}
               <OrderSuggestionPanel
                 suggestionVisible={controller.suggestions.suggestionVisible}
@@ -188,8 +186,7 @@ const OrderForm = ({ user, loading }) => {
                   )}
                 </button>
               </div>
-            </form>
-          </OrderPrivacyConsentGate>
+          </form>
         </div>
       </div>
 
