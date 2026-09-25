@@ -51,6 +51,8 @@ def _load_credentials():
                 "password": password,
                 "company_slug": (row.get("company_slug") or "global").strip() or "global",
                 "location": (row.get("location") or "La Laja").strip() or "La Laja",
+                "user_id": (row.get("user_id") or "").strip(),
+                "access_token": (row.get("access_token") or "").strip(),
             })
     if not rows:
         raise RuntimeError(f"No valid credentials in {CREDENTIALS_FILE}")
@@ -99,15 +101,16 @@ class OrderAppUser(HttpUser):
             )
 
         self.credential = CREDENTIALS.popleft()
-        self.access_token = ""
-        self.user_id = ""
+        self.access_token = self.credential.get("access_token") or ""
+        self.user_id = self.credential.get("user_id") or ""
         self.menu_item = None
         self.order_created = False
         self.delivery_date = os.getenv("LOCUST_DELIVERY_DATE") or _tomorrow_iso()
         self.company_slug = self.credential["company_slug"]
         self.location = self.credential["location"]
 
-        self._login()
+        if not self.access_token or not self.user_id:
+            self._login()
         self._prime_menu()
 
     def _public_headers(self):
