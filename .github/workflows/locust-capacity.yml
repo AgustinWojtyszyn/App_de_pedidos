@@ -108,7 +108,10 @@ jobs:
       - name: Install Locust
         run: python -m pip install -r testing/locust/requirements.txt
 
-      - name: Seed fictitious users
+      - name: Seed fictitious users and preload sessions
+        env:
+          LOCUST_PREAUTH: "1"
+          LOCUST_PREAUTH_INTERVAL_MS: "650"
         run: npm run locust:seed
 
       - name: Read-only staged capacity test
