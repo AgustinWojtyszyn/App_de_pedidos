@@ -28,6 +28,7 @@ const AuthCallback = lazy(() => import('./pages/AuthCallback'))
 const OrderForm = lazy(loadOrderForm)
 const EditOrderForm = lazy(() => import('./components/EditOrderForm'))
 const Profile = lazy(() => import('./components/Profile'))
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'))
 const MonthlyPanel = lazy(() => import('./components/MonthlyPanel'))
 const AuditLogs = lazy(() => import('./components/AuditLogs'))
 const OrderDetails = lazy(() => import('./components/OrderDetails'))
@@ -83,6 +84,7 @@ const RouteSwitch = ({ user, loading }) => {
           <Route path="/order/:companySlug" element={!loading && (user ? <OrderForm user={user} loading={loading} /> : <Navigate to="/login" />)} />
           <Route path="/edit-order" element={!loading && (user ? <EditOrderForm user={user} loading={loading} /> : <Navigate to="/login" />)} />
           <Route path="/profile" element={!loading && (user ? <Profile user={user} loading={loading} /> : <Navigate to="/login" />)} />
+          <Route path="/privacy-policy" element={!loading && (user ? <PrivacyPolicyPage /> : <Navigate to="/login" />)} />
           <Route path="/orders/:orderId" element={!loading && (user ? <OrderDetails user={user} loading={loading} /> : <Navigate to="/login" />)} />
           {/* Consumption access is enforced by the report RPC itself. Keeping this out of
               RequireAdmin prevents a transient permission-context request from hiding a
