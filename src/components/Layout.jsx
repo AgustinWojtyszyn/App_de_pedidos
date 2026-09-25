@@ -119,7 +119,7 @@ const Layout = ({ children, user, loading }) => {
   const operationItems = [
     { name: 'Panel Principal', path: '/dashboard', icon: User },
     { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart },
-    { name: 'Política de privacidad', path: '/privacy-policy', icon: ShieldCheck }
+    { name: 'Política de privacidad', path: '/privacy-policy', icon: ShieldCheck, featured: true, badge: 'NUEVO' }
   ]
   const reportsItems = []
   const administrationItems = []
@@ -152,11 +152,13 @@ const Layout = ({ children, user, loading }) => {
     { label: 'Administración', items: administrationItems }
   ].filter((section) => section.items.length > 0)
 
-  const navItemClasses = ({ isActive }) => [
+  const getNavItemClasses = (item, isActive) => [
     'flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-bold transition-colors duration-150',
     isActive
       ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-      : 'text-slate-700 hover:bg-blue-50 hover:text-blue-700'
+      : item.featured
+        ? 'border border-blue-200 bg-blue-50 text-blue-800 shadow-sm hover:border-blue-300 hover:bg-blue-100'
+        : 'text-slate-700 hover:bg-blue-50 hover:text-blue-700'
   ].join(' ')
 
   const handleNavClick = (event, item) => {
@@ -175,20 +177,33 @@ const Layout = ({ children, user, loading }) => {
       <li key={item.path}>
         <NavLink
           to={item.path}
-          className={navItemClasses}
+          className={({ isActive }) => getNavItemClasses(item, isActive)}
           onClick={(event) => handleNavClick(event, item)}
         >
-          {item.logoSrc ? (
-            <img
-              src={item.logoSrc}
-              alt=""
-              aria-hidden="true"
-              className="mr-3 h-5 w-5 shrink-0 object-contain"
-            />
-          ) : (
-            <Icon className="mr-3 h-5 w-5 shrink-0" />
+          {({ isActive }) => (
+            <>
+              {item.logoSrc ? (
+                <img
+                  src={item.logoSrc}
+                  alt=""
+                  aria-hidden="true"
+                  className="mr-3 h-5 w-5 shrink-0 object-contain"
+                />
+              ) : item.featured ? (
+                <span className={`mr-3 grid h-7 w-7 shrink-0 place-items-center rounded-full ${isActive ? 'bg-white/15 text-white' : 'bg-blue-600 text-white'}`}>
+                  <Icon className="h-4 w-4" />
+                </span>
+              ) : (
+                <Icon className="mr-3 h-5 w-5 shrink-0" />
+              )}
+              <span className="min-w-0 flex-1 leading-tight">{item.name}</span>
+              {item.badge && (
+                <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black tracking-[0.08em] ${isActive ? 'bg-white/15 text-white' : 'bg-blue-600 text-white'}`}>
+                  {item.badge}
+                </span>
+              )}
+            </>
           )}
-          <span className="min-w-0 flex-1 leading-tight">{item.name}</span>
         </NavLink>
       </li>
     )
