@@ -15,6 +15,12 @@
     "test:light": "node testing/load/test-load.js 10 5",
     "test:medium": "node testing/load/test-load.js 50 10",
     "test:heavy": "node testing/load/test-load.js 100 20",
+    "locust:install": "python -m pip install -r testing/locust/requirements.txt",
+    "locust:seed": "node testing/locust/manage-test-users.mjs seed",
+    "locust:cleanup": "node testing/locust/manage-test-users.mjs cleanup",
+    "locust:ui": "python -m locust -f testing/locust/locustfile.py",
+    "locust:smoke": "python -m locust -f testing/locust/locustfile.py --headless -u 10 -r 2 -t 30s --tags read --only-summary",
+    "locust:staged": "python testing/locust/run_staged.py",
     "audit:unlighthouse": "npx unlighthouse --config-file unlighthouse.config.mjs",
     "check:optimizations": "./testing/scripts/check-optimizations.sh",
     "deploy": "npm run build && echo 'Build completado. Listo para deployment'"
