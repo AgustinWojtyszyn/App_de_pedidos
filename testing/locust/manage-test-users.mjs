@@ -11,6 +11,9 @@ dotenv.config({ path: path.join(root, '.env') })
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const ADMIN_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+const PUBLIC_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+const PREAUTH = process.env.LOCUST_PREAUTH === '1'
+const PREAUTH_INTERVAL_MS = Math.max(Number(process.env.LOCUST_PREAUTH_INTERVAL_MS || 650), 250)
 const COUNT = Number(process.env.LOCUST_TEST_USERS || 250)
 const PASSWORD = process.env.LOCUST_TEST_PASSWORD || 'LocustTest-2026!'
 const COMPANY_SLUG = process.env.LOCUST_COMPANY_SLUG || 'epse'
@@ -27,6 +30,12 @@ if (!SUPABASE_URL || !ADMIN_KEY) {
 const supabase = createClient(SUPABASE_URL, ADMIN_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
 })
+
+const publicSupabase = PUBLIC_KEY
+  ? createClient(SUPABASE_URL, PUBLIC_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false }
+    })
+  : null
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 const todayArgentina = () =>
@@ -97,7 +106,49 @@ async function ensureUser(index, existingByEmail) {
     throw dailyProfileError
   }
 
-  return { email, password: PASSWORD, company_slug: COMPANY_SLUG, location: LOCATION }
+  return {
+    email,
+    password: PASSWORD,
+    company_slug: COMPANY_SLUG,
+    location: LOCATION,
+    user_id: user.id,
+    access_token: ''
+  }
+}
+
+async function preauthenticate(row) {
+  if (!publicSupabase) {
+    throw new Error('LOCUST_PREAUTH=1 requiere VITE_SUPABASE_PUBLISHABLE_KEY/SUPABASE_PUBLISHABLE_KEY')
+  }
+
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
+    const { data, error } = await publicSupabase.auth.signInWithPassword({
+      email: row.email,
+      password: row.password
+    })
+
+    const accessToken = data?.session?.access_token || ''
+    const userId = data?.user?.id || row.user_id || ''
+
+    if (!error && accessToken && userId) {
+      return { ...row, access_token: accessToken, user_id: userId }
+    }
+
+    const rateLimited =
+      error?.status === 429 ||
+      error?.code === 'over_request_rate_limit' ||
+      /rate limit/i.test(error?.message || '')
+
+    if (!rateLimited || attempt === 8) {
+      throw error || new Error(`No se pudo preautenticar ${row.email}`)
+    }
+
+    const backoff = Math.min(10000, attempt * 1500)
+    console.log(`  Auth limitado para ${row.email}; reintento ${attempt}/8 en ${backoff} ms`)
+    await sleep(backoff)
+  }
+
+  throw new Error(`No se pudo preautenticar ${row.email}`)
 }
 
 async function seed() {
@@ -117,14 +168,35 @@ async function seed() {
     if (rows.length < COUNT) await sleep(250)
   }
 
-  const header = 'email,password,company_slug,location\n'
-  const body = rows
-    .map(row => [row.email, row.password, row.company_slug, row.location]
+  let finalRows = rows
+  if (PREAUTH) {
+    console.log(`Preautenticando ${rows.length} sesiones a ritmo controlado...`)
+    finalRows = []
+    for (let index = 0; index < rows.length; index += 1) {
+      const sessionRow = await preauthenticate(rows[index])
+      finalRows.push(sessionRow)
+      if ((index + 1) % 10 === 0 || index + 1 === rows.length) {
+        console.log(`  sesiones listas: ${index + 1}/${rows.length}`)
+      }
+      if (index + 1 < rows.length) await sleep(PREAUTH_INTERVAL_MS)
+    }
+  }
+
+  const header = 'email,password,company_slug,location,user_id,access_token\n'
+  const body = finalRows
+    .map(row => [
+      row.email,
+      row.password,
+      row.company_slug,
+      row.location,
+      row.user_id || '',
+      row.access_token || ''
+    ]
       .map(value => `"${String(value).replaceAll('"', '""')}"`).join(','))
     .join('\n')
   fs.writeFileSync(CSV_PATH, header + body + '\n', 'utf8')
 
-  console.log(`OK: ${rows.length} usuarios ficticios listos.`)
+  console.log(`OK: ${finalRows.length} usuarios ficticios listos${PREAUTH ? ' con sesión precargada' : ''}.`)
   console.log(`Credenciales locales: ${CSV_PATH}`)
 }
 
