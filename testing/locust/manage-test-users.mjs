@@ -10,7 +10,7 @@ const root = path.resolve(__dirname, '../..')
 dotenv.config({ path: path.join(root, '.env') })
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
-const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY
+const ADMIN_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 const COUNT = Number(process.env.LOCUST_TEST_USERS || 250)
 const PASSWORD = process.env.LOCUST_TEST_PASSWORD || 'LocustTest-2026!'
 const COMPANY_SLUG = process.env.LOCUST_COMPANY_SLUG || 'epse'
@@ -24,7 +24,7 @@ if (!SUPABASE_URL || !SERVICE_ROLE) {
   process.exit(1)
 }
 
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
+const supabase = createClient(SUPABASE_URL, ADMIN_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
 })
 
