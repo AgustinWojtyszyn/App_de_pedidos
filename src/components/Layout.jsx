@@ -118,7 +118,8 @@ const Layout = ({ children, user, loading }) => {
 
   const operationItems = [
     { name: 'Panel Principal', path: '/dashboard', icon: User },
-    { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart }
+    { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart },
+    { name: 'Política de privacidad', path: '/privacy-policy', icon: ShieldCheck }
   ]
   const reportsItems = []
   const administrationItems = []
@@ -257,7 +258,6 @@ const Layout = ({ children, user, loading }) => {
               </p>
               <ul className="space-y-1">
                 {renderNavItem({ name: 'Mi Perfil', path: '/profile', icon: UserCircle })}
-                {renderNavItem({ name: 'Política de privacidad', path: '/privacy-policy', icon: ShieldCheck })}
 
                 {isAdmin && (
                   <li>
