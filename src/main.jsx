@@ -6,6 +6,7 @@ import './styles/mobile-optimizations.css'
 import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext'
 import AppErrorBoundary from './components/ui/ErrorBoundary'
+import { recoverFromStaleAssetError } from './utils/staleAssetRecovery'
 
 // No limpiar localStorage ni sessionStorage para mantener la sesión activa
 
@@ -66,6 +67,19 @@ const registerServiceWorker = () => {
 }
 
 registerServiceWorker()
+
+window.addEventListener('error', (event) => {
+  const targetUrl = event?.target?.src || event?.target?.href || ''
+  const resourceError = targetUrl.includes('/assets/')
+    ? new Error(`module script load failed for asset: ${targetUrl}`)
+    : event?.error || event?.message
+
+  recoverFromStaleAssetError(resourceError)
+}, true)
+
+window.addEventListener('unhandledrejection', (event) => {
+  recoverFromStaleAssetError(event?.reason)
+})
 
 // Diagnóstico de arranque en desarrollo
 if (import.meta.env.DEV) {
