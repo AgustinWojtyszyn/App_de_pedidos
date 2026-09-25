@@ -15,7 +15,13 @@ CREDENTIALS_FILE = Path(
     os.getenv("LOCUST_CREDENTIALS_FILE", ROOT / "testing/locust/.users.csv")
 )
 SUPABASE_URL = (os.getenv("VITE_SUPABASE_URL") or os.getenv("SUPABASE_URL") or "").rstrip("/")
-SUPABASE_PUBLISHABLE_KEY = (\n    os.getenv("VITE_SUPABASE_PUBLISHABLE_KEY")\n    or os.getenv("SUPABASE_PUBLISHABLE_KEY")\n    or os.getenv("VITE_SUPABASE_ANON_KEY")\n    or os.getenv("SUPABASE_ANON_KEY")\n    or ""\n)
+SUPABASE_PUBLISHABLE_KEY = (
+    os.getenv("VITE_SUPABASE_PUBLISHABLE_KEY")
+    or os.getenv("SUPABASE_PUBLISHABLE_KEY")
+    or os.getenv("VITE_SUPABASE_ANON_KEY")
+    or os.getenv("SUPABASE_ANON_KEY")
+    or ""
+)
 ENABLE_WRITES = os.getenv("LOCUST_ENABLE_WRITES", "0") == "1"
 FAIL_RATIO_MAX = float(os.getenv("LOCUST_FAIL_RATIO_MAX", "0.01"))
 P95_MAX_MS = int(os.getenv("LOCUST_P95_MAX_MS", "1500"))
