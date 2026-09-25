@@ -1,0 +1,89 @@
+name: Locust one-shot capacity probe
+
+on:
+  push:
+    paths:
+      - ".github/workflows/locust-capacity-once.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      LOCUST_TEST_USERS: "100"
+      LOCUST_COMPANY_SLUG: "epse"
+      LOCUST_LOCATION: "Padre Bueno"
+      LOCUST_FAIL_RATIO_MAX: "0.01"
+      LOCUST_P95_MAX_MS: "1500"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Supabase secrets
+        id: secrets
+        shell: bash
+        run: |
+          ready=true
+          for name in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub Actions secret: $name"
+              ready=false
+            fi
+          done
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          [ "$ready" = "true" ]
+
+      - name: Setup Node
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Node dependencies
+        if: steps.secrets.outputs.ready == 'true'
+        run: npm ci
+
+      - name: Setup Python
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: testing/locust/requirements.txt
+
+      - name: Install Locust
+        if: steps.secrets.outputs.ready == 'true'
+        run: python -m pip install -r testing/locust/requirements.txt
+
+      - name: Seed 100 fictitious users
+        if: steps.secrets.outputs.ready == 'true'
+        run: npm run locust:seed
+
+      - name: Probe 10 to 100 simultaneous users
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          LOCUST_STAGES: "10,25,50,100"
+          LOCUST_RUN_TIME: "30s"
+          LOCUST_TAGS: "read"
+        run: npm run locust:staged
+
+      - name: Upload reports
+        if: always() && steps.secrets.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-one-shot-${{ github.run_id }}
+          path: testing/locust/results/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Cleanup fictitious data
+        if: always() && steps.secrets.outputs.ready == 'true'
+        run: npm run locust:cleanup
