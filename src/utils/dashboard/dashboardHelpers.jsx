@@ -118,7 +118,7 @@ const normalizeOrderStatus = (status) => {
 
 const getStatusLabel = (status = 'pending') => {
   const normalized = normalizeOrderStatus(status)
-  if (normalized === 'archived') return 'Archivado'
+  if (normalized === 'archived') return 'Cerrado'
   if (normalized === 'pending') return 'Pendiente'
   if (normalized === 'post_report_extra') return 'EXTRA POSTERIOR AL REPORTE'
   if (normalized === 'cancelled') return 'Cancelado'
