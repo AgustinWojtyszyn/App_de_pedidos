@@ -1,0 +1,36 @@
+name: Validate Locust load suite
+
+on:
+  push:
+    paths:
+      - "testing/locust/**"
+      - "package.json"
+      - ".github/workflows/locust-validate.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: testing/locust/requirements.txt
+
+      - name: Install Locust
+        run: python -m pip install -r testing/locust/requirements.txt
+
+      - name: Validate Python
+        run: |
+          python -m py_compile testing/locust/locustfile.py
+          python -m py_compile testing/locust/run_staged.py
+          python -m locust --version
+
+      - name: Validate Node helper
+        run: node --check testing/locust/manage-test-users.mjs
