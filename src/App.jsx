@@ -13,6 +13,7 @@ import NoticeHost from './components/NoticeHost'
 import ConfirmHost from './components/ConfirmHost'
 import RequireAdmin from './components/RequireAdmin'
 import InstallAppButton from './components/InstallAppButton'
+import { recoverFromStaleAssetError } from './utils/staleAssetRecovery'
 
 const loadOrderForm = () => import('./components/OrderForm')
 const loadAdminPanel = () => import('./components/AdminPanel')
@@ -119,7 +120,7 @@ function App() {
     let cancelled = false, idleId = null, timeoutId = null, index = 0
     const scheduleNext = () => {
       if (cancelled || index >= IDLE_ROUTE_PRELOADERS.length) return
-      const run = () => { if (cancelled || index >= IDLE_ROUTE_PRELOADERS.length) return; const preload = IDLE_ROUTE_PRELOADERS[index++]; Promise.resolve(preload()).catch(() => {}); scheduleNext() }
+      const run = () => { if (cancelled || index >= IDLE_ROUTE_PRELOADERS.length) return; const preload = IDLE_ROUTE_PRELOADERS[index++]; Promise.resolve(preload()).catch((error) => { recoverFromStaleAssetError(error) }); scheduleNext() }
       if ('requestIdleCallback' in window) idleId = window.requestIdleCallback(run, { timeout: 3500 }); else timeoutId = window.setTimeout(run, 1200)
     }
     scheduleNext()
