@@ -16,7 +16,7 @@ const StatsCards = ({ stats }) => (
   <div className="grid grid-cols-1 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white sm:grid-cols-3 sm:divide-x sm:divide-y-0">
     <Stat icon={<ShoppingBag className="h-4 w-4" />} label="Pedidos hoy" value={stats.total} />
     <Stat icon={<Clock className="h-4 w-4" />} label="Pendientes" value={stats.pending} />
-    <Stat icon={<CheckCircle className="h-4 w-4" />} label="Archivados" value={stats.archived} />
+    <Stat icon={<CheckCircle className="h-4 w-4" />} label="Cerrados" value={stats.archived} />
   </div>
 )
 
