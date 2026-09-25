@@ -75,7 +75,7 @@ describe('menu contract with fixed hyperproteic option 4', () => {
     expect(getMenuDisplay(result[4], 4, 'genneia').dish).toBe('Hiperproteica')
   })
 
-  it('honors the company bife switch without hiding unrelated numbered slots', () => {
+  it('honors the company Bife del día switch without hiding unrelated numbered slots', () => {
     const companyConfig = {
       slug: 'laja',
       menuItems: [
@@ -86,6 +86,7 @@ describe('menu contract with fixed hyperproteic option 4', () => {
         { key: 'otros_menus', enabled: false },
         { key: 'dieta', enabled: false },
         { key: 'celiacos', enabled: false },
+        { key: 'bife_dia', enabled: false },
         { key: 'bife_lomo', enabled: false },
         { key: 'bife_pollo', enabled: false }
       ]
