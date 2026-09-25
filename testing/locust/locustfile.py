@@ -53,8 +53,11 @@ def _load_credentials():
 
 if not SUPABASE_URL:
     raise RuntimeError("Missing VITE_SUPABASE_URL/SUPABASE_URL")
-if not SUPABASE_ANON_KEY:
-    raise RuntimeError("Missing VITE_SUPABASE_ANON_KEY/SUPABASE_ANON_KEY")
+if not SUPABASE_PUBLISHABLE_KEY:
+    raise RuntimeError(
+        "Missing VITE_SUPABASE_PUBLISHABLE_KEY/SUPABASE_PUBLISHABLE_KEY "
+        "(legacy VITE_SUPABASE_ANON_KEY/SUPABASE_ANON_KEY is also accepted)"
+    )
 
 CREDENTIALS = _load_credentials()
 
