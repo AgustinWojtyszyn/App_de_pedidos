@@ -97,7 +97,7 @@ describe('OrderLunchMenuSection', () => {
     expect((html.match(/Opción 7/g) || [])).toHaveLength(0)
   })
 
-  it.each(['genneia', 'greif', 'administracion_servifood', 'laja', 'padrebueno', 'ccp', 'losberros'])(
+  it.each(['genneia', 'greif', 'administracion_servifood'])(
     'renders %s with a single option 5 Bife de pollo',
     (companySlug) => {
       const duplicatedFiveMenu = [
@@ -121,14 +121,18 @@ describe('OrderLunchMenuSection', () => {
     }
   )
 
-  it('renders Hiperproteica as option 4 and shifts Bife to option 5 for a regular company', () => {
-    const html = renderLunchMenu('laja')
+  it.each(['laja', 'losberros', 'ccp', 'padrebueno'])(
+    'renders %s with Hiperproteica 4 and the shared daily bife at option 5',
+    (companySlug) => {
+      const html = renderLunchMenu(companySlug)
 
-    expect(textBetween(html, 'Opción 1', 'Opción 2')).toContain('BIFE DE CARNE CON PURE DE CALABAZA')
-    expect(textBetween(html, 'Opción 3', 'Opción 4')).toContain('TARTA PASCUALINA')
-    expect(textBetween(html, 'Opción 4', 'Opción 5')).toContain('Hiperproteica')
-    expect(textBetween(html, 'Opción 5', 'Opción 6')).toContain('Bife de pollo')
-    expect(textBetween(html, 'Opción 6', 'Opción 7')).toContain('ENSALADA MIX DE HOJAS')
-    expect(html.slice(html.indexOf('Opción 7'))).toContain('CELIACO')
-  })
+      expect(textBetween(html, 'Opción 1', 'Opción 2')).toContain('BIFE DE CARNE CON PURE DE CALABAZA')
+      expect(textBetween(html, 'Opción 3', 'Opción 4')).toContain('TARTA PASCUALINA')
+      expect(textBetween(html, 'Opción 4', 'Opción 5')).toContain('Hiperproteica')
+      expect(textBetween(html, 'Opción 5', 'Opción 6')).toContain('BIFE DE CARNE')
+      expect(textBetween(html, 'Opción 5', 'Opción 6')).not.toContain('Bife de pollo')
+      expect(textBetween(html, 'Opción 6', 'Opción 7')).toContain('ENSALADA MIX DE HOJAS')
+      expect(html.slice(html.indexOf('Opción 7'))).toContain('CELIACO')
+    }
+  )
 })
